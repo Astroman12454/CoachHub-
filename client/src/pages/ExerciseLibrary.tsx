@@ -6,7 +6,7 @@ import ExerciseCard from "@/components/ExerciseCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,8 +35,10 @@ export default function ExerciseLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const isEditing = !!editingExercise;
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -44,44 +46,95 @@ export default function ExerciseLibrary() {
     queryKey: ['/api/exercises'],
   });
 
+  const emptyFormValues: ExerciseFormData = {
+    name: "",
+    description: "",
+    category: "shooting",
+    duration: 15,
+    difficulty: "medium",
+    instructions: "",
+    imageUrl: "",
+  };
+
   const form = useForm<ExerciseFormData>({
     resolver: zodResolver(exerciseFormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      category: "shooting",
-      duration: 15,
-      difficulty: "medium",
-      instructions: "",
-      imageUrl: "",
-    },
+    defaultValues: emptyFormValues,
   });
 
-  const createExerciseMutation = useMutation({
+  const openCreateForm = () => {
+    setEditingExercise(null);
+    form.reset(emptyFormValues);
+    setIsFormOpen(true);
+  };
+
+  const openEditForm = (exercise: Exercise) => {
+    setEditingExercise(exercise);
+    form.reset({
+      name: exercise.name,
+      description: exercise.description,
+      category: exercise.category,
+      duration: exercise.duration,
+      difficulty: exercise.difficulty,
+      instructions: exercise.instructions ?? "",
+      imageUrl: exercise.imageUrl ?? "",
+    });
+    setIsFormOpen(true);
+  };
+
+  const saveExerciseMutation = useMutation({
     mutationFn: async (data: ExerciseFormData) => {
-      return apiRequest("POST", "/api/exercises", data);
+      return isEditing
+        ? apiRequest("PUT", `/api/exercises/${editingExercise.id}`, data)
+        : apiRequest("POST", "/api/exercises", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/exercises'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Success",
-        description: "Exercise created successfully",
+        description: isEditing ? "Exercise updated successfully" : "Exercise created successfully",
       });
-      setIsCreateModalOpen(false);
-      form.reset();
+      setIsFormOpen(false);
+      form.reset(emptyFormValues);
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create exercise",
+        description: isEditing ? "Failed to update exercise" : "Failed to create exercise",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteExerciseMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest("DELETE", `/api/exercises/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/exercises'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      toast({
+        title: "Success",
+        description: "Exercise deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete exercise",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: ExerciseFormData) => {
-    createExerciseMutation.mutate(data);
+    saveExerciseMutation.mutate(data);
+  };
+
+  const handleDeleteExercise = (id: number) => {
+    if (confirm("Are you sure you want to delete this exercise?")) {
+      deleteExerciseMutation.mutate(id);
+    }
   };
 
   // Filter exercises
@@ -156,16 +209,18 @@ export default function ExerciseLibrary() {
             </Select>
           </div>
 
-          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto">
-                <i className="fas fa-plus mr-2"></i>
-                Add Exercise
-              </Button>
-            </DialogTrigger>
+          <Button
+            className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
+            onClick={openCreateForm}
+          >
+            <i className="fas fa-plus mr-2"></i>
+            Add Exercise
+          </Button>
+
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Create New Exercise</DialogTitle>
+                <DialogTitle>{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
               </DialogHeader>
               
               <Form {...form}>
@@ -312,19 +367,21 @@ export default function ExerciseLibrary() {
                   />
 
                   <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsCreateModalOpen(false)}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsFormOpen(false)}
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="basketball-orange basketball-orange-hover text-white"
-                      disabled={createExerciseMutation.isPending}
+                      disabled={saveExerciseMutation.isPending}
                     >
-                      {createExerciseMutation.isPending ? "Creating..." : "Create Exercise"}
+                      {saveExerciseMutation.isPending
+                        ? (isEditing ? "Saving..." : "Creating...")
+                        : (isEditing ? "Save Changes" : "Create Exercise")}
                     </Button>
                   </div>
                 </form>
@@ -348,9 +405,9 @@ export default function ExerciseLibrary() {
                 }
               </p>
               {!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && (
-                <Button 
+                <Button
                   className="basketball-orange basketball-orange-hover text-white"
-                  onClick={() => setIsCreateModalOpen(true)}
+                  onClick={openCreateForm}
                 >
                   <i className="fas fa-plus mr-2"></i>
                   Add First Exercise
@@ -361,7 +418,12 @@ export default function ExerciseLibrary() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExercises.map((exercise) => (
-              <ExerciseCard key={exercise.id} exercise={exercise} />
+              <ExerciseCard
+                key={exercise.id}
+                exercise={exercise}
+                onEdit={() => openEditForm(exercise)}
+                onDelete={() => handleDeleteExercise(exercise.id)}
+              />
             ))}
           </div>
         )}

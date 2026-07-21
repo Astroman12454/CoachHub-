@@ -125,7 +125,7 @@ export default function TrainingSessions() {
                       <div className="flex items-center text-sm text-gray-500 space-x-4">
                         <span>
                           <i className="fas fa-calendar mr-1"></i>
-                          {new Date(session.date).toLocaleDateString()}
+                          {new Date(`${session.date}T00:00:00`).toLocaleDateString()}
                         </span>
                         <span>
                           <i className="fas fa-clock mr-1"></i>

@@ -5,21 +5,48 @@ import { CATEGORY_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types"
 interface ExerciseCardProps {
   exercise: Exercise;
   onClick?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export default function ExerciseCard({ exercise, onClick }: ExerciseCardProps) {
+export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: ExerciseCardProps) {
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
   const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
 
   return (
-    <div 
+    <div
       className="basketball-card border-2 border-orange-100 rounded-xl p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-1 hover:border-basketball-orange group"
       onClick={onClick}
     >
-      <div className="absolute top-3 right-3 w-6 h-6 bg-basketball-orange bg-opacity-20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-        <i className="fas fa-arrow-right text-basketball-orange text-xs"></i>
-      </div>
-      
+      {(onEdit || onDelete) ? (
+        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center"
+              aria-label="Edit exercise"
+            >
+              <i className="fas fa-edit text-gray-600 text-xs"></i>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="w-6 h-6 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center"
+              aria-label="Delete exercise"
+            >
+              <i className="fas fa-trash text-red-600 text-xs"></i>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="absolute top-3 right-3 w-6 h-6 bg-basketball-orange bg-opacity-20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <i className="fas fa-arrow-right text-basketball-orange text-xs"></i>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className={`w-10 h-10 ${categoryColorClass} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-300`}>
