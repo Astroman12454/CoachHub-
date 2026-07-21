@@ -66,7 +66,7 @@ export default function TrainingSessions() {
           onSearch={setSearchQuery}
           searchPlaceholder="Search sessions..."
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Skeleton key={i} className="h-64" />
@@ -87,7 +87,7 @@ export default function TrainingSessions() {
         searchPlaceholder="Search sessions..."
       />
       
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {sortedSessions.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>

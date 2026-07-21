@@ -10,15 +10,18 @@ import Players from "@/pages/Players";
 import WeeklySchedule from "@/pages/WeeklySchedule";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/Sidebar";
+import { SidebarProvider } from "@/hooks/use-sidebar";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 overflow-hidden">
-        {children}
+    <SidebarProvider>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 overflow-hidden">
+          {children}
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 

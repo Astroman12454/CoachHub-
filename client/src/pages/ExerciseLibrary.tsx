@@ -99,7 +99,7 @@ export default function ExerciseLibrary() {
           onSearch={setSearchQuery}
           searchPlaceholder="Search exercises..."
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Skeleton key={i} className="h-80" />
@@ -119,12 +119,12 @@ export default function ExerciseLibrary() {
         searchPlaceholder="Search exercises..."
       />
       
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {/* Filters and Add Button */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
@@ -136,9 +136,9 @@ export default function ExerciseLibrary() {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filter by difficulty" />
               </SelectTrigger>
               <SelectContent>
@@ -151,10 +151,10 @@ export default function ExerciseLibrary() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button className="basketball-orange basketball-orange-hover text-white">
+              <Button className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto">
                 <i className="fas fa-plus mr-2"></i>
                 Add Exercise
               </Button>

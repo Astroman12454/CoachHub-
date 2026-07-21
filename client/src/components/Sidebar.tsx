@@ -1,5 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useSidebar } from "@/hooks/use-sidebar";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: "fas fa-tachometer-alt" },
@@ -11,11 +13,11 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: "fas fa-chart-line" },
 ];
 
-export default function Sidebar() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
 
   return (
-    <div className="w-64 basketball-orange basketball-pattern shadow-2xl flex flex-col">
+    <div className="basketball-orange basketball-pattern shadow-2xl flex flex-col h-full">
       {/* Logo and Brand */}
       <div className="p-6 border-b border-white border-opacity-20 bg-black bg-opacity-10">
         <div className="flex items-center space-x-3 bounce-in">
@@ -30,12 +32,12 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navigation.map((item, index) => {
           const isActive = location === item.href || (location === "/" && item.href === "/dashboard");
-          
+
           return (
-            <Link key={item.name} href={item.href}>
+            <Link key={item.name} href={item.href} onClick={onNavigate}>
               <div
                 className={cn(
                   "flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 relative overflow-hidden slide-up transform hover:scale-105",
@@ -47,8 +49,8 @@ export default function Sidebar() {
               >
                 <div className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300",
-                  isActive 
-                    ? "bg-white bg-opacity-30" 
+                  isActive
+                    ? "bg-white bg-opacity-30"
                     : "bg-white bg-opacity-10 group-hover:bg-opacity-20"
                 )}>
                   <i className={`${item.icon} text-sm`}></i>
@@ -79,5 +81,26 @@ export default function Sidebar() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Sidebar() {
+  const { isMobileOpen, closeMobile } = useSidebar();
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex w-64 flex-shrink-0">
+        <SidebarContent />
+      </div>
+
+      {/* Mobile sidebar (drawer) */}
+      <Sheet open={isMobileOpen} onOpenChange={(open) => !open && closeMobile()}>
+        <SheetContent side="left" className="p-0 w-72 border-0 text-white">
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SidebarContent onNavigate={closeMobile} />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

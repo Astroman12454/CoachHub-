@@ -164,7 +164,7 @@ export default function WeeklySchedule() {
           title="Weekly Schedule" 
           subtitle="Plan your week and manage attendance"
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Skeleton className="h-96 w-full" />
         </main>
       </div>
@@ -178,32 +178,26 @@ export default function WeeklySchedule() {
         subtitle="Plan your training week and track attendance"
       />
       
-      <main className="flex-1 overflow-y-auto p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
         {/* Header with Week Navigation */}
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="outline" 
-            onClick={() => navigateWeek('prev')}
-            className="flex items-center gap-2"
-          >
-            <i className="fas fa-chevron-left"></i>
-            Previous Week
-          </Button>
-          
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-4">
+          <div className="col-span-2 text-center sm:col-span-1 sm:order-2">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
               {weekDates[0].toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
               {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </h2>
-            <p className="text-gray-600 mt-1">Training Schedule Overview</p>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Training Schedule Overview</p>
           </div>
 
-          <Button 
-            variant="outline" 
-            onClick={() => navigateWeek('next')}
-            className="flex items-center gap-2"
-          >
-            Next Week
+          <Button variant="outline" onClick={() => navigateWeek('prev')} className="flex items-center justify-center gap-2 sm:order-1">
+            <i className="fas fa-chevron-left"></i>
+            <span className="sm:hidden">Previous</span>
+            <span className="hidden sm:inline">Previous Week</span>
+          </Button>
+
+          <Button variant="outline" onClick={() => navigateWeek('next')} className="flex items-center justify-center gap-2 sm:order-3">
+            <span className="sm:hidden">Next</span>
+            <span className="hidden sm:inline">Next Week</span>
             <i className="fas fa-chevron-right"></i>
           </Button>
         </div>
@@ -384,9 +378,9 @@ export default function WeeklySchedule() {
                   return (
                     <Card key={player.id} className="border hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center font-bold text-gray-700">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center font-bold text-gray-700 flex-shrink-0">
                               {player.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <div>
@@ -397,17 +391,17 @@ export default function WeeklySchedule() {
                               </div>
                             </div>
                           </div>
-                          
-                          <div className="flex gap-2">
+
+                          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
                             {Object.entries(ATTENDANCE_STATUS).map(([status, config]) => (
                               <Button
                                 key={status}
                                 variant={currentStatus === status ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => handleAttendanceToggle(player.id, status)}
-                                className={`flex items-center gap-2 ${
-                                  currentStatus === status 
-                                    ? "bg-basketball-orange hover:bg-basketball-orange-hover text-white" 
+                                className={`flex items-center justify-center gap-2 ${
+                                  currentStatus === status
+                                    ? "bg-basketball-orange hover:bg-basketball-orange-hover text-white"
                                     : "hover:bg-gray-50"
                                 }`}
                                 disabled={markAttendanceMutation.isPending}
