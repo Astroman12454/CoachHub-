@@ -48,276 +48,6 @@ export interface IStorage {
   getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }>;
 }
 
-export class MemStorage implements IStorage {
-  private exercises: Map<number, Exercise>;
-  private trainingSessions: Map<number, TrainingSession>;
-  private players: Map<number, Player>;
-  private currentExerciseId: number;
-  private currentSessionId: number;
-  private currentPlayerId: number;
-
-  constructor() {
-    this.exercises = new Map();
-    this.trainingSessions = new Map();
-    this.players = new Map();
-    this.currentExerciseId = 1;
-    this.currentSessionId = 1;
-    this.currentPlayerId = 1;
-
-    // Initialize with some sample data
-    this.initializeSampleData();
-  }
-
-  private initializeSampleData() {
-    // Sample exercises
-    const sampleExercises: InsertExercise[] = [
-      {
-        name: "Free Throw Form Drill",
-        description: "Focus on consistent shooting form and follow-through technique",
-        category: "shooting",
-        duration: 15,
-        difficulty: "medium",
-        instructions: "Stand at the free throw line, focus on form and follow-through",
-        imageUrl: "https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200"
-      },
-      {
-        name: "Cone Weaving Drill",
-        description: "Improve ball handling and agility through cone navigation",
-        category: "dribbling",
-        duration: 10,
-        difficulty: "easy",
-        instructions: "Dribble through cones using both hands",
-        imageUrl: "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200"
-      },
-      {
-        name: "Defensive Sliding Drill",
-        description: "Build lateral quickness and proper defensive stance",
-        category: "defense",
-        duration: 20,
-        difficulty: "hard",
-        instructions: "Maintain low stance, slide laterally without crossing feet",
-        imageUrl: "https://images.unsplash.com/photo-1518611012118-696072aa579a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200"
-      },
-      {
-        name: "Chest Pass Accuracy",
-        description: "Improve passing accuracy and technique",
-        category: "passing",
-        duration: 12,
-        difficulty: "medium",
-        instructions: "Pass the ball using proper chest pass technique to targets",
-      },
-      {
-        name: "Suicide Sprints",
-        description: "Build cardiovascular endurance and speed",
-        category: "conditioning",
-        duration: 8,
-        difficulty: "hard",
-        instructions: "Sprint to each line and back, touch each line",
-      }
-    ];
-
-    sampleExercises.forEach(exercise => {
-      this.createExercise(exercise);
-    });
-
-    // Sample training sessions
-    const sampleSessions: InsertTrainingSession[] = [
-      {
-        name: "Offensive Fundamentals",
-        date: "2025-06-24",
-        time: "16:00",
-        duration: 120,
-        exerciseIds: ["1", "4"],
-        notes: "Focus on shooting form and ball movement",
-        attendanceCount: 16,
-        totalPlayers: 18
-      },
-      {
-        name: "Defensive Drills",
-        date: "2025-06-25",
-        time: "15:30",
-        duration: 120,
-        exerciseIds: ["3"],
-        notes: "Emphasis on team defense",
-        attendanceCount: 18,
-        totalPlayers: 18
-      }
-    ];
-
-    sampleSessions.forEach(session => {
-      this.createTrainingSession(session);
-    });
-
-    // Sample players
-    const samplePlayers: InsertPlayer[] = [
-      { name: "Carlos García", position: "Point Guard", isActive: 1 },
-      { name: "Miguel Rodriguez", position: "Shooting Guard", isActive: 1 },
-      { name: "Antonio López", position: "Center", isActive: 1 },
-      { name: "José Martínez", position: "Power Forward", isActive: 1 },
-      { name: "Luis Hernández", position: "Small Forward", isActive: 1 },
-      { name: "Francisco Silva", position: "Point Guard", isActive: 1 },
-      { name: "Pablo Ruiz", position: "Shooting Guard", isActive: 1 },
-      { name: "Diego Morales", position: "Center", isActive: 1 },
-      { name: "Andrés Vásquez", position: "Power Forward", isActive: 1 },
-      { name: "Ricardo Torres", position: "Small Forward", isActive: 1 },
-      { name: "Alejandro Pérez", position: "Point Guard", isActive: 1 },
-      { name: "Fernando Castro", position: "Shooting Guard", isActive: 1 },
-      { name: "Javier Mendoza", position: "Small Forward", isActive: 1 },
-      { name: "Roberto Jiménez", position: "Power Forward", isActive: 1 },
-      { name: "Sergio Romero", position: "Center", isActive: 1 },
-      { name: "Manuel Gutiérrez", position: "Point Guard", isActive: 1 },
-      { name: "Raúl Vargas", position: "Shooting Guard", isActive: 1 },
-      { name: "Eduardo Ramos", position: "Small Forward", isActive: 1 }
-    ];
-
-    samplePlayers.forEach(player => {
-      this.createPlayer(player);
-    });
-  }
-
-  // Exercise methods
-  async getAllExercises(): Promise<Exercise[]> {
-    return Array.from(this.exercises.values());
-  }
-
-  async getExerciseById(id: number): Promise<Exercise | undefined> {
-    return this.exercises.get(id);
-  }
-
-  async getExercisesByCategory(category: string): Promise<Exercise[]> {
-    return Array.from(this.exercises.values()).filter(
-      exercise => exercise.category === category
-    );
-  }
-
-  async createExercise(insertExercise: InsertExercise): Promise<Exercise> {
-    const id = this.currentExerciseId++;
-    const exercise: Exercise = { 
-      ...insertExercise, 
-      id,
-      instructions: insertExercise.instructions || null,
-      imageUrl: insertExercise.imageUrl || null
-    };
-    this.exercises.set(id, exercise);
-    return exercise;
-  }
-
-  async updateExercise(id: number, updateData: Partial<InsertExercise>): Promise<Exercise | undefined> {
-    const existing = this.exercises.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Exercise = { ...existing, ...updateData };
-    this.exercises.set(id, updated);
-    return updated;
-  }
-
-  async deleteExercise(id: number): Promise<boolean> {
-    return this.exercises.delete(id);
-  }
-
-  // Training Session methods
-  async getAllTrainingSessions(): Promise<TrainingSession[]> {
-    return Array.from(this.trainingSessions.values());
-  }
-
-  async getTrainingSessionById(id: number): Promise<TrainingSession | undefined> {
-    return this.trainingSessions.get(id);
-  }
-
-  async createTrainingSession(insertSession: InsertTrainingSession): Promise<TrainingSession> {
-    const id = this.currentSessionId++;
-    const session: TrainingSession = { 
-      ...insertSession, 
-      id,
-      exerciseIds: insertSession.exerciseIds || null,
-      notes: insertSession.notes || null,
-      attendanceCount: insertSession.attendanceCount || null,
-      totalPlayers: insertSession.totalPlayers || null,
-      status: insertSession.status || null
-    };
-    this.trainingSessions.set(id, session);
-    return session;
-  }
-
-  async updateTrainingSession(id: number, updateData: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
-    const existing = this.trainingSessions.get(id);
-    if (!existing) return undefined;
-    
-    const updated: TrainingSession = { ...existing, ...updateData };
-    this.trainingSessions.set(id, updated);
-    return updated;
-  }
-
-  async deleteTrainingSession(id: number): Promise<boolean> {
-    return this.trainingSessions.delete(id);
-  }
-
-  // Player methods
-  async getAllPlayers(): Promise<Player[]> {
-    return Array.from(this.players.values());
-  }
-
-  async getPlayerById(id: number): Promise<Player | undefined> {
-    return this.players.get(id);
-  }
-
-  async createPlayer(insertPlayer: InsertPlayer): Promise<Player> {
-    const id = this.currentPlayerId++;
-    const player: Player = { 
-      ...insertPlayer, 
-      id,
-      position: insertPlayer.position || null,
-      isActive: insertPlayer.isActive || null
-    };
-    this.players.set(id, player);
-    return player;
-  }
-
-  async updatePlayer(id: number, updateData: Partial<InsertPlayer>): Promise<Player | undefined> {
-    const existing = this.players.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Player = { ...existing, ...updateData };
-    this.players.set(id, updated);
-    return updated;
-  }
-
-  async deletePlayer(id: number): Promise<boolean> {
-    return this.players.delete(id);
-  }
-
-  async getActivePlayersCount(): Promise<number> {
-    return Array.from(this.players.values()).filter(player => player.isActive === 1).length;
-  }
-
-  // Stub methods for attendance (MemStorage doesn't need these)
-  async getTrainingSessionsByDateRange(startDate: string, endDate: string): Promise<TrainingSession[]> {
-    return Array.from(this.trainingSessions.values()).filter(session => 
-      session.date >= startDate && session.date <= endDate
-    );
-  }
-
-  async getAttendanceBySession(sessionId: number): Promise<Attendance[]> {
-    return [];
-  }
-
-  async getAttendanceByPlayer(playerId: number): Promise<Attendance[]> {
-    return [];
-  }
-
-  async markAttendance(attendance: InsertAttendance): Promise<Attendance> {
-    throw new Error("Attendance not supported in MemStorage");
-  }
-
-  async updateAttendance(id: number, attendance: Partial<InsertAttendance>): Promise<Attendance | undefined> {
-    throw new Error("Attendance not supported in MemStorage");
-  }
-
-  async getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }> {
-    return { total: 0, present: 0, absent: 0, rate: 0 };
-  }
-}
-
 export class DatabaseStorage implements IStorage {
   // Exercise methods
   async getAllExercises(): Promise<Exercise[]> {
@@ -460,6 +190,7 @@ export class DatabaseStorage implements IStorage {
       .insert(attendance)
       .values(insertAttendance)
       .returning();
+    await this.syncSessionAttendanceCount(attendanceRecord.sessionId);
     return attendanceRecord;
   }
 
@@ -469,7 +200,28 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(attendance.id, id))
       .returning();
+
+    if (attendanceRecord) {
+      await this.syncSessionAttendanceCount(attendanceRecord.sessionId);
+    }
+
     return attendanceRecord || undefined;
+  }
+
+  // Keeps a training session's attendanceCount/totalPlayers columns (used for
+  // the quick-glance badges on the dashboard and schedule) in sync with the
+  // actual attendance records, since those are the source of truth.
+  private async syncSessionAttendanceCount(sessionId: number): Promise<void> {
+    const sessionAttendance = await this.getAttendanceBySession(sessionId);
+    const presentCount = sessionAttendance.filter(
+      (a) => a.status === "present" || a.status === "late",
+    ).length;
+    const totalPlayers = await this.getActivePlayersCount();
+
+    await db
+      .update(trainingSessions)
+      .set({ attendanceCount: presentCount, totalPlayers })
+      .where(eq(trainingSessions.id, sessionId));
   }
 
   async getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }> {

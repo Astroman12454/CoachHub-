@@ -1,7 +1,18 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertExerciseSchema, insertTrainingSessionSchema, insertPlayerSchema, insertAttendanceSchema } from "@shared/schema";
+
+// Parses a route param as a positive integer id, or responds 400 and returns
+// null so callers can bail out instead of querying the DB with NaN.
+function parseId(req: Request, res: Response, param = "id"): number | null {
+  const id = parseInt(req.params[param]);
+  if (isNaN(id)) {
+    res.status(400).json({ message: `Invalid ${param}` });
+    return null;
+  }
+  return id;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Exercise routes
@@ -24,7 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/exercises/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const exercise = await storage.getExerciseById(id);
       
       if (!exercise) {
@@ -49,7 +61,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/exercises/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const updateData = insertExerciseSchema.partial().parse(req.body);
       const exercise = await storage.updateExercise(id, updateData);
       
@@ -65,7 +78,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/exercises/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const deleted = await storage.deleteExercise(id);
       
       if (!deleted) {
@@ -98,7 +112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/training-sessions/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const session = await storage.getTrainingSessionById(id);
       
       if (!session) {
@@ -123,7 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/training-sessions/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const updateData = insertTrainingSessionSchema.partial().parse(req.body);
       const session = await storage.updateTrainingSession(id, updateData);
       
@@ -139,7 +155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/training-sessions/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const deleted = await storage.deleteTrainingSession(id);
       
       if (!deleted) {
@@ -183,7 +200,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/players/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const updateData = insertPlayerSchema.partial().parse(req.body);
       const player = await storage.updatePlayer(id, updateData);
       
@@ -199,7 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/players/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const deleted = await storage.deletePlayer(id);
       
       if (!deleted) {
@@ -215,7 +234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Attendance routes
   app.get("/api/attendance/session/:sessionId", async (req, res) => {
     try {
-      const sessionId = parseInt(req.params.sessionId);
+      const sessionId = parseId(req, res, "sessionId");
+      if (sessionId === null) return;
       const attendanceRecords = await storage.getAttendanceBySession(sessionId);
       res.json(attendanceRecords);
     } catch (error) {
@@ -225,7 +245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/attendance/player/:playerId", async (req, res) => {
     try {
-      const playerId = parseInt(req.params.playerId);
+      const playerId = parseId(req, res, "playerId");
+      if (playerId === null) return;
       const attendanceRecords = await storage.getAttendanceByPlayer(playerId);
       res.json(attendanceRecords);
     } catch (error) {
@@ -245,7 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/attendance/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req, res);
+      if (id === null) return;
       const updateData = insertAttendanceSchema.partial().parse(req.body);
       const attendanceRecord = await storage.updateAttendance(id, updateData);
       
@@ -261,7 +283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/players/:playerId/attendance-stats", async (req, res) => {
     try {
-      const playerId = parseInt(req.params.playerId);
+      const playerId = parseId(req, res, "playerId");
+      if (playerId === null) return;
       const stats = await storage.getPlayerAttendanceStats(playerId);
       res.json(stats);
     } catch (error) {

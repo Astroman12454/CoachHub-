@@ -93,6 +93,8 @@ export default function WeeklySchedule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/attendance/session'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Success",
         description: "Attendance updated successfully",
