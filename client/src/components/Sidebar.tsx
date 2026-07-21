@@ -9,8 +9,6 @@ const navigation = [
   { name: "Training Sessions", href: "/training-sessions", icon: "fas fa-calendar-alt" },
   { name: "Exercise Library", href: "/exercise-library", icon: "fas fa-dumbbell" },
   { name: "Players", href: "/players", icon: "fas fa-users" },
-  { name: "Shared Exercises", href: "/shared", icon: "fas fa-share-alt" },
-  { name: "Analytics", href: "/analytics", icon: "fas fa-chart-line" },
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import type { Exercise } from "@shared/schema";
+import type { Exercise, TrainingSession } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
 
 const sessionFormSchema = insertTrainingSessionSchema.extend({
@@ -26,10 +26,21 @@ type SessionFormData = z.infer<typeof sessionFormSchema>;
 interface SessionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  session?: TrainingSession | null;
 }
 
-export default function SessionModal({ isOpen, onClose }: SessionModalProps) {
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
+export default function SessionModal({ isOpen, onClose, session }: SessionModalProps) {
+  const isEditing = !!session;
+
+  // Fetch exercises for selection
+  const { data: exercises = [] } = useQuery<Exercise[]>({
+    queryKey: ['/api/exercises'],
+  });
+
+  const initialExerciseIds = session?.exerciseIds ?? [];
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(() =>
+    exercises.filter(ex => initialExerciseIds.includes(ex.id.toString()))
+  );
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -37,41 +48,38 @@ export default function SessionModal({ isOpen, onClose }: SessionModalProps) {
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
     defaultValues: {
-      name: "",
-      date: "",
-      time: "",
-      duration: 120,
-      exerciseIds: [],
-      notes: "",
-      attendanceCount: 0,
-      totalPlayers: 18,
+      name: session?.name ?? "",
+      date: session?.date ?? "",
+      time: session?.time ?? "",
+      duration: session?.duration ?? 120,
+      exerciseIds: session?.exerciseIds ?? [],
+      notes: session?.notes ?? "",
+      attendanceCount: session?.attendanceCount ?? 0,
+      totalPlayers: session?.totalPlayers ?? 18,
     },
   });
 
-  // Fetch exercises for selection
-  const { data: exercises = [] } = useQuery<Exercise[]>({
-    queryKey: ['/api/exercises'],
-  });
-
   // Filter exercises by category
-  const filteredExercises = exerciseCategory === "all" 
-    ? exercises 
+  const filteredExercises = exerciseCategory === "all"
+    ? exercises
     : exercises.filter(ex => ex.category === exerciseCategory);
 
-  const createSessionMutation = useMutation({
+  const saveSessionMutation = useMutation({
     mutationFn: async (data: SessionFormData) => {
       const sessionData = {
         ...data,
         exerciseIds: selectedExercises.map(ex => ex.id.toString()),
       };
-      return apiRequest("POST", "/api/training-sessions", sessionData);
+      return isEditing
+        ? apiRequest("PUT", `/api/training-sessions/${session.id}`, sessionData)
+        : apiRequest("POST", "/api/training-sessions", sessionData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Success",
-        description: "Training session created successfully",
+        description: isEditing ? "Training session updated successfully" : "Training session created successfully",
       });
       onClose();
       form.reset();
@@ -80,14 +88,14 @@ export default function SessionModal({ isOpen, onClose }: SessionModalProps) {
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to create training session",
+        description: isEditing ? "Failed to update training session" : "Failed to create training session",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: SessionFormData) => {
-    createSessionMutation.mutate(data);
+    saveSessionMutation.mutate(data);
   };
 
   const addExercise = (exercise: Exercise) => {
@@ -104,7 +112,9 @@ export default function SessionModal({ isOpen, onClose }: SessionModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Create Training Session</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            {isEditing ? "Edit Training Session" : "Create Training Session"}
+          </DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -267,12 +277,14 @@ export default function SessionModal({ isOpen, onClose }: SessionModalProps) {
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="basketball-orange basketball-orange-hover text-white"
-                disabled={createSessionMutation.isPending}
+                disabled={saveSessionMutation.isPending}
               >
-                {createSessionMutation.isPending ? "Creating..." : "Create Session"}
+                {saveSessionMutation.isPending
+                  ? (isEditing ? "Saving..." : "Creating...")
+                  : (isEditing ? "Save Changes" : "Create Session")}
               </Button>
             </div>
           </form>

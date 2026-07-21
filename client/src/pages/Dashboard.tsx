@@ -21,7 +21,6 @@ interface DashboardStats {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -54,8 +53,7 @@ export default function Dashboard() {
   };
 
   const handleCategoryClick = (category: string) => {
-    setSelectedCategory(category);
-    navigateToPage('/exercise-library');
+    navigateToPage(`/exercise-library?category=${category}`);
   };
 
   const handleSessionClick = (sessionId: number) => {

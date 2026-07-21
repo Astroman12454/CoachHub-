@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
+import SessionModal from "@/components/SessionModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,8 @@ import type { TrainingSession } from "@shared/schema";
 
 export default function TrainingSessions() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -99,7 +102,10 @@ export default function TrainingSessions() {
                 {searchQuery ? "No sessions match your search criteria." : "Get started by creating your first training session."}
               </p>
               {!searchQuery && (
-                <Button className="basketball-orange basketball-orange-hover text-white">
+                <Button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="basketball-orange basketball-orange-hover text-white"
+                >
                   <i className="fas fa-plus mr-2"></i>
                   Create First Session
                 </Button>
@@ -132,6 +138,7 @@ export default function TrainingSessions() {
                         variant="ghost"
                         size="sm"
                         className="text-gray-500 hover:text-gray-700"
+                        onClick={() => setEditingSession(session)}
                       >
                         <i className="fas fa-edit"></i>
                       </Button>
@@ -191,13 +198,14 @@ export default function TrainingSessions() {
                   )}
                   
                   <div className="pt-3 border-t border-gray-200">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="w-full"
                       size="sm"
+                      onClick={() => setEditingSession(session)}
                     >
-                      <i className="fas fa-eye mr-2"></i>
-                      View Details
+                      <i className="fas fa-edit mr-2"></i>
+                      Edit Session
                     </Button>
                   </div>
                 </CardContent>
@@ -206,6 +214,21 @@ export default function TrainingSessions() {
           </div>
         )}
       </main>
+
+      {isCreateModalOpen && (
+        <SessionModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+        />
+      )}
+
+      {editingSession && (
+        <SessionModal
+          isOpen={!!editingSession}
+          onClose={() => setEditingSession(null)}
+          session={editingSession}
+        />
+      )}
     </div>
   );
 }

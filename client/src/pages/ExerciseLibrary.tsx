@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
@@ -28,8 +29,11 @@ const exerciseFormSchema = insertExerciseSchema.extend({
 type ExerciseFormData = z.infer<typeof exerciseFormSchema>;
 
 export default function ExerciseLibrary() {
+  const search = useSearch();
+  const initialCategory = new URLSearchParams(search).get("category") ?? "all";
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
