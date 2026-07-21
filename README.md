@@ -6,7 +6,7 @@ Coach Hub es una aplicación web full-stack para ayudar a entrenadores de balonc
 
 - **Frontend**: React 18 + TypeScript, Vite, Wouter (routing), TanStack Query, Tailwind CSS, shadcn/ui, React Hook Form + Zod
 - **Backend**: Node.js + Express, TypeScript (ES modules)
-- **Base de datos**: PostgreSQL con Drizzle ORM (compatible con Neon serverless)
+- **Base de datos**: PostgreSQL con Drizzle ORM (driver `pg`/`node-postgres`, funciona con cualquier Postgres: local, Neon, Supabase, Railway, etc.)
 
 ## Estructura del proyecto
 
@@ -19,7 +19,7 @@ shared/     Esquema de base de datos y tipos compartidos (Drizzle + Zod)
 ## Requisitos previos
 
 - Node.js 20+
-- Una base de datos PostgreSQL (por ejemplo [Neon](https://neon.tech))
+- Una base de datos PostgreSQL, local o remota (por ejemplo [Neon](https://neon.tech), [Supabase](https://supabase.com) o [Railway](https://railway.app))
 
 ## Configuración
 
