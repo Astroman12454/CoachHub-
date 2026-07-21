@@ -42,7 +42,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
           )}
         </div>
       ) : (
-        <div className="absolute top-3 right-3 w-6 h-6 bg-basketball-orange bg-opacity-20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+        <div className="absolute top-3 right-3 w-6 h-6 bg-[hsl(16,100%,60%,0.2)] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
           <i className="fas fa-arrow-right text-basketball-orange text-xs"></i>
         </div>
       )}

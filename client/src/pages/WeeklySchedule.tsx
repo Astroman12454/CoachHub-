@@ -283,7 +283,7 @@ export default function WeeklySchedule() {
                       {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                     {isToday && (
-                      <Badge className="mt-2 bg-basketball-orange text-white">Today</Badge>
+                      <Badge className="mt-2 basketball-orange text-white">Today</Badge>
                     )}
                   </div>
                 </CardHeader>
@@ -354,7 +354,7 @@ export default function WeeklySchedule() {
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-medium">Attendance Rate:</span>
-                    <Badge className="bg-basketball-orange text-white">
+                    <Badge className="basketball-orange text-white">
                       {getAttendanceRate()}%
                     </Badge>
                   </div>
@@ -401,7 +401,7 @@ export default function WeeklySchedule() {
                                 onClick={() => handleAttendanceToggle(player.id, status)}
                                 className={`flex items-center justify-center gap-2 ${
                                   currentStatus === status
-                                    ? "bg-basketball-orange hover:bg-basketball-orange-hover text-white"
+                                    ? "basketball-orange basketball-orange-hover text-white"
                                     : "hover:bg-gray-50"
                                 }`}
                                 disabled={markAttendanceMutation.isPending}

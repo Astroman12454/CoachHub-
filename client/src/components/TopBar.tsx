@@ -32,8 +32,8 @@ export default function TopBar({
   return (
     <>
       <header className="bg-gradient-to-r from-white to-orange-50 border-b-2 border-orange-200 px-4 py-3 lg:px-6 lg:py-4 relative overflow-hidden shadow-lg">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-basketball-orange opacity-5 rounded-full -translate-y-16 translate-x-16"></div>
-        <div className="absolute bottom-0 left-0 w-20 h-20 bg-basketball-orange opacity-10 rounded-full translate-y-10 -translate-x-10"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 basketball-orange opacity-5 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-20 h-20 basketball-orange opacity-10 rounded-full translate-y-10 -translate-x-10"></div>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between relative z-10">
           <div className="bounce-in flex items-center gap-3">

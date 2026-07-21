@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Exercise, TrainingSession } from "@shared/schema";
-import { CATEGORY_COLORS, CATEGORY_ICONS } from "@/lib/types";
+import { CATEGORY_SOLID_COLORS, CATEGORY_ICONS } from "@/lib/types";
 
 interface DashboardStats {
   totalSessions: number;
@@ -292,17 +292,17 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {Object.entries(exercisesByCategory).map(([category, count]) => {
-                  const colorClass = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
+                  const solidColorClass = CATEGORY_SOLID_COLORS[category as keyof typeof CATEGORY_SOLID_COLORS];
                   const iconClass = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
-                  
+
                   return (
-                    <div 
-                      key={category} 
+                    <div
+                      key={category}
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                       onClick={() => handleCategoryClick(category)}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 ${colorClass.replace('text-', 'bg-').replace('100', '500')} rounded-lg flex items-center justify-center`}>
+                        <div className={`w-8 h-8 ${solidColorClass} rounded-lg flex items-center justify-center`}>
                           <i className={`${iconClass} text-white text-sm`}></i>
                         </div>
                         <span className="font-medium capitalize">{category}</span>
