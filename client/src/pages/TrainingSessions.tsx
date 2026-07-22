@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import type { TrainingSession } from "@shared/schema";
 
 export default function TrainingSessions() {
@@ -16,48 +15,32 @@ export default function TrainingSessions() {
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const { data: sessions = [], isLoading } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions'],
   });
 
-  const deleteSessionMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/training-sessions/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Success",
-        description: "Training session deleted successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete training session",
-        variant: "destructive",
-      });
-    },
+  const { requestDelete, isPendingDelete } = useDeleteWithUndo({
+    endpoint: "/api/training-sessions",
+    errorMessage: "Failed to delete training session",
   });
 
-  // Filter by search query, then sort by date (most recent first)
+  // Filter by search query, then sort by date (most recent first); sessions
+  // mid-undo-window are hidden immediately rather than waiting on the server.
   const sortedSessions = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return sessions
+      .filter(session => !isPendingDelete(session.id))
       .filter(session =>
         session.name.toLowerCase().includes(query) ||
         session.notes?.toLowerCase().includes(query)
       )
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sessions, searchQuery]);
+  }, [sessions, searchQuery, isPendingDelete]);
 
   const confirmDeleteSession = () => {
     if (sessionToDelete) {
-      deleteSessionMutation.mutate(sessionToDelete.id);
+      requestDelete(sessionToDelete.id, `"${sessionToDelete.name}" deleted.`);
       setSessionToDelete(null);
     }
   };
@@ -151,7 +134,6 @@ export default function TrainingSessions() {
                         size="sm"
                         className="text-red-500 hover:text-red-700"
                         onClick={() => setSessionToDelete(session)}
-                        disabled={deleteSessionMutation.isPending}
                         aria-label={`Delete ${session.name}`}
                       >
                         <i className="fas fa-trash" aria-hidden="true"></i>
@@ -241,7 +223,6 @@ export default function TrainingSessions() {
         title="Delete training session?"
         description={`This will permanently delete "${sessionToDelete?.name}". This can't be undone.`}
         onConfirm={confirmDeleteSession}
-        isPending={deleteSessionMutation.isPending}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -15,10 +15,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
 import { insertExerciseSchema } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
+import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 
@@ -41,9 +40,6 @@ export default function ExerciseLibrary() {
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
   const isEditing = !!editingExercise;
-
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
@@ -95,25 +91,9 @@ export default function ExerciseLibrary() {
     },
   });
 
-  const deleteExerciseMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest("DELETE", `/api/exercises/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/exercises'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Success",
-        description: "Exercise deleted successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete exercise",
-        variant: "destructive",
-      });
-    },
+  const { requestDelete, isPendingDelete } = useDeleteWithUndo({
+    endpoint: "/api/exercises",
+    errorMessage: "Failed to delete exercise",
   });
 
   const onSubmit = (data: ExerciseFormData) => {
@@ -122,15 +102,17 @@ export default function ExerciseLibrary() {
 
   const confirmDeleteExercise = () => {
     if (exerciseToDelete) {
-      deleteExerciseMutation.mutate(exerciseToDelete.id);
+      requestDelete(exerciseToDelete.id, `"${exerciseToDelete.name}" deleted.`);
       setExerciseToDelete(null);
     }
   };
 
-  // Filter exercises
+  // Filter exercises; exercises mid-undo-window are hidden immediately
+  // rather than waiting on the server.
   const filteredExercises = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return exercises.filter(exercise => {
+      if (isPendingDelete(exercise.id)) return false;
       const matchesSearch = exercise.name.toLowerCase().includes(query) ||
                            exercise.description.toLowerCase().includes(query);
       const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
@@ -138,7 +120,7 @@ export default function ExerciseLibrary() {
 
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter]);
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, isPendingDelete]);
 
   if (isLoading) {
     return (
@@ -428,7 +410,6 @@ export default function ExerciseLibrary() {
         title="Delete exercise?"
         description={`This will permanently delete "${exerciseToDelete?.name}". This can't be undone.`}
         onConfirm={confirmDeleteExercise}
-        isPending={deleteExerciseMutation.isPending}
       />
     </div>
   );

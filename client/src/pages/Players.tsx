@@ -69,20 +69,32 @@ export default function Players() {
     mutationFn: async ({ id, isActive }: { id: number; isActive: number }) => {
       return apiRequest("PUT", `/api/players/${id}`, { isActive });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/players'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Éxito",
-        description: "Estado del jugador actualizado",
-      });
+    // Flips the badge/button right away instead of waiting on the server,
+    // since the toggle is the only feedback the coach needs here.
+    onMutate: async ({ id, isActive }) => {
+      const queryKey = ['/api/players'];
+      await queryClient.cancelQueries({ queryKey });
+      const previousPlayers = queryClient.getQueryData<Player[]>(queryKey);
+
+      queryClient.setQueryData<Player[]>(queryKey, (old = []) =>
+        old.map(player => player.id === id ? { ...player, isActive } : player)
+      );
+
+      return { previousPlayers, queryKey };
     },
-    onError: () => {
+    onError: (_err, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousPlayers);
+      }
       toast({
         title: "Error",
         description: "Error al actualizar el jugador",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/players'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
     },
   });
 

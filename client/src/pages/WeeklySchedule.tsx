@@ -91,21 +91,42 @@ export default function WeeklySchedule() {
         return apiRequest("POST", "/api/attendance", { sessionId, playerId, status });
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/attendance/session'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Success",
-        description: "Attendance updated successfully",
+    // Applies the tap immediately so the button highlights without waiting on
+    // the round trip; a coach marking 15+ players in a row needs it to feel instant.
+    onMutate: async ({ sessionId, playerId, status }) => {
+      const queryKey = ['/api/attendance/session', selectedSession?.id];
+      await queryClient.cancelQueries({ queryKey });
+      const previousAttendance = queryClient.getQueryData<Attendance[]>(queryKey);
+
+      queryClient.setQueryData<Attendance[]>(queryKey, (old = []) => {
+        const existingIndex = old.findIndex(a => a.playerId === playerId);
+        if (existingIndex !== -1) {
+          const updated = [...old];
+          updated[existingIndex] = { ...updated[existingIndex], status, markedAt: new Date() };
+          return updated;
+        }
+        return [
+          ...old,
+          { id: -Date.now(), sessionId, playerId, status, notes: null, markedAt: new Date() },
+        ];
       });
+
+      return { previousAttendance, queryKey };
     },
-    onError: () => {
+    onError: (_err, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousAttendance);
+      }
       toast({
         title: "Error",
         description: "Failed to update attendance",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/attendance/session'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
     },
   });
 
@@ -404,7 +425,6 @@ export default function WeeklySchedule() {
                                     ? "basketball-orange basketball-orange-hover text-white"
                                     : "hover:bg-gray-50"
                                 }`}
-                                disabled={markAttendanceMutation.isPending}
                               >
                                 <i className={config.icon}></i>
                                 {config.label}
