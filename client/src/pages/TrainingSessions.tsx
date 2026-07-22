@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ export default function TrainingSessions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -53,9 +55,10 @@ export default function TrainingSessions() {
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const handleDeleteSession = (id: number) => {
-    if (confirm("Are you sure you want to delete this training session?")) {
-      deleteSessionMutation.mutate(id);
+  const confirmDeleteSession = () => {
+    if (sessionToDelete) {
+      deleteSessionMutation.mutate(sessionToDelete.id);
+      setSessionToDelete(null);
     }
   };
 
@@ -139,17 +142,19 @@ export default function TrainingSessions() {
                         size="sm"
                         className="text-gray-500 hover:text-gray-700"
                         onClick={() => setEditingSession(session)}
+                        aria-label={`Edit ${session.name}`}
                       >
-                        <i className="fas fa-edit"></i>
+                        <i className="fas fa-edit" aria-hidden="true"></i>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteSession(session.id)}
+                        onClick={() => setSessionToDelete(session)}
                         disabled={deleteSessionMutation.isPending}
+                        aria-label={`Delete ${session.name}`}
                       >
-                        <i className="fas fa-trash"></i>
+                        <i className="fas fa-trash" aria-hidden="true"></i>
                       </Button>
                     </div>
                   </div>
@@ -229,6 +234,15 @@ export default function TrainingSessions() {
           session={editingSession}
         />
       )}
+
+      <ConfirmDialog
+        open={!!sessionToDelete}
+        onOpenChange={(open) => !open && setSessionToDelete(null)}
+        title="Delete training session?"
+        description={`This will permanently delete "${sessionToDelete?.name}". This can't be undone.`}
+        onConfirm={confirmDeleteSession}
+        isPending={deleteSessionMutation.isPending}
+      />
     </div>
   );
 }

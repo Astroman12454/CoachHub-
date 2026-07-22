@@ -44,9 +44,9 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
                 className="w-8 h-8 bg-white shadow-sm border border-gray-200 hover:bg-gray-100 rounded-full flex items-center justify-center"
-                aria-label="Edit exercise"
+                aria-label={`Edit ${exercise.name}`}
               >
-                <i className="fas fa-edit text-gray-600 text-xs"></i>
+                <i className="fas fa-edit text-gray-600 text-xs" aria-hidden="true"></i>
               </button>
             )}
             {onDelete && (
@@ -54,9 +54,9 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
                 className="w-8 h-8 bg-white shadow-sm border border-red-200 hover:bg-red-100 rounded-full flex items-center justify-center"
-                aria-label="Delete exercise"
+                aria-label={`Delete ${exercise.name}`}
               >
-                <i className="fas fa-trash text-red-600 text-xs"></i>
+                <i className="fas fa-trash text-red-600 text-xs" aria-hidden="true"></i>
               </button>
             )}
           </div>

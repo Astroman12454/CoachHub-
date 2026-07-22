@@ -234,12 +234,13 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                           className="flex items-center gap-2"
                         >
                           {exercise.name}
-                          <button 
+                          <button
                             type="button"
                             onClick={() => removeExercise(exercise.id)}
                             className="text-gray-500 hover:text-gray-700"
+                            aria-label={`Remove ${exercise.name}`}
                           >
-                            <i className="fas fa-times text-xs"></i>
+                            <i className="fas fa-times text-xs" aria-hidden="true"></i>
                           </button>
                         </Badge>
                       ))}

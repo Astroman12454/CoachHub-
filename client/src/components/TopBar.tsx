@@ -42,7 +42,7 @@ export default function TopBar({
               className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-xl flex items-center justify-center shadow-lg"
               aria-label="Open navigation menu"
             >
-              <i className="fas fa-bars text-white"></i>
+              <i className="fas fa-bars text-white" aria-hidden="true"></i>
             </button>
             <div>
               <div className="flex items-center space-x-3 mb-1">

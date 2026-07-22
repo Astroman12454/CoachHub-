@@ -82,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
           >
-            <i className="fas fa-right-from-bracket text-white text-xs"></i>
+            <i className="fas fa-right-from-bracket text-white text-xs" aria-hidden="true"></i>
           </button>
         </div>
       </div>

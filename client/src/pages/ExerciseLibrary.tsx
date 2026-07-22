@@ -3,6 +3,7 @@ import { useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +38,7 @@ export default function ExerciseLibrary() {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
   const isEditing = !!editingExercise;
 
   const queryClient = useQueryClient();
@@ -131,9 +133,10 @@ export default function ExerciseLibrary() {
     saveExerciseMutation.mutate(data);
   };
 
-  const handleDeleteExercise = (id: number) => {
-    if (confirm("Are you sure you want to delete this exercise?")) {
-      deleteExerciseMutation.mutate(id);
+  const confirmDeleteExercise = () => {
+    if (exerciseToDelete) {
+      deleteExerciseMutation.mutate(exerciseToDelete.id);
+      setExerciseToDelete(null);
     }
   };
 
@@ -422,12 +425,21 @@ export default function ExerciseLibrary() {
                 key={exercise.id}
                 exercise={exercise}
                 onEdit={() => openEditForm(exercise)}
-                onDelete={() => handleDeleteExercise(exercise.id)}
+                onDelete={() => setExerciseToDelete(exercise)}
               />
             ))}
           </div>
         )}
       </main>
+
+      <ConfirmDialog
+        open={!!exerciseToDelete}
+        onOpenChange={(open) => !open && setExerciseToDelete(null)}
+        title="Delete exercise?"
+        description={`This will permanently delete "${exerciseToDelete?.name}". This can't be undone.`}
+        onConfirm={confirmDeleteExercise}
+        isPending={deleteExerciseMutation.isPending}
+      />
     </div>
   );
 }
