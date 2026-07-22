@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useSidebar } from "@/hooks/use-sidebar";
+import { useAuth } from "@/hooks/use-auth";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: "fas fa-tachometer-alt" },
@@ -13,6 +14,7 @@ const navigation = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
+  const { logout } = useAuth();
 
   return (
     <div className="basketball-orange basketball-pattern shadow-2xl flex flex-col h-full">
@@ -73,8 +75,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="font-medium text-white">Coach Johnson</p>
             <p className="text-sm text-orange-200">Lakers High School</p>
           </div>
-          <button className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-all">
-            <i className="fas fa-cog text-white text-xs"></i>
+          <button
+            type="button"
+            onClick={logout}
+            className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-all"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            <i className="fas fa-right-from-bracket text-white text-xs"></i>
           </button>
         </div>
       </div>

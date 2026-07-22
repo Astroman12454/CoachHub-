@@ -1,10 +1,16 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { setupAuth, requireAuth } from "./auth";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Registers /api/login, /api/logout and /api/session (unprotected); every
+// other /api/* route registered below requireAuth needs a valid session.
+setupAuth(app);
+app.use("/api", requireAuth);
 
 app.use((req, res, next) => {
   const start = Date.now();

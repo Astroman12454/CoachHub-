@@ -1,7 +1,16 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+export const SESSION_QUERY_KEY = "/api/session";
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // A 401 from any endpoint (not just the session check itself) means the
+    // session expired or was revoked server-side — reflect that immediately
+    // so the app falls back to the login screen instead of failing calls
+    // silently until the next unrelated re-render.
+    if (res.status === 401 && !res.url.endsWith(SESSION_QUERY_KEY)) {
+      queryClient.setQueryData([SESSION_QUERY_KEY], { authenticated: false });
+    }
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);
   }

@@ -17,3 +17,5 @@ services:
         fromDatabase:
           name: coach-hub-db
           property: connectionString
+      - key: APP_PASSCODE
+        sync: false
