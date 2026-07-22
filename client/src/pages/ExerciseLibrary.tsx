@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
@@ -128,14 +128,17 @@ export default function ExerciseLibrary() {
   };
 
   // Filter exercises
-  const filteredExercises = exercises.filter(exercise => {
-    const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         exercise.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
-    const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
-    
-    return matchesSearch && matchesCategory && matchesDifficulty;
-  });
+  const filteredExercises = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return exercises.filter(exercise => {
+      const matchesSearch = exercise.name.toLowerCase().includes(query) ||
+                           exercise.description.toLowerCase().includes(query);
+      const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
+      const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
+
+      return matchesSearch && matchesCategory && matchesDifficulty;
+    });
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter]);
 
   if (isLoading) {
     return (

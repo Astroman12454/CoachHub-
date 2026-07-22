@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,23 +96,28 @@ export default function Players() {
   };
 
   // Filter players
-  const filteredPlayers = players.filter(player => {
-    const matchesSearch = player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (player.position && player.position.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus = filterActive === "all" || 
-                         (filterActive === "active" && player.isActive === 1) ||
-                         (filterActive === "inactive" && player.isActive === 0);
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredPlayers = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return players.filter(player => {
+      const matchesSearch = player.name.toLowerCase().includes(query) ||
+                           (player.position && player.position.toLowerCase().includes(query));
+      const matchesStatus = filterActive === "all" ||
+                           (filterActive === "active" && player.isActive === 1) ||
+                           (filterActive === "inactive" && player.isActive === 0);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [players, searchQuery, filterActive]);
 
   // Group players by position
-  const playersByPosition = filteredPlayers.reduce((acc, player) => {
-    const position = player.position || "Sin Posición";
-    if (!acc[position]) acc[position] = [];
-    acc[position].push(player);
-    return acc;
-  }, {} as Record<string, Player[]>);
+  const playersByPosition = useMemo(() => {
+    return filteredPlayers.reduce((acc, player) => {
+      const position = player.position || "Sin Posición";
+      if (!acc[position]) acc[position] = [];
+      acc[position].push(player);
+      return acc;
+    }, {} as Record<string, Player[]>);
+  }, [filteredPlayers]);
 
   if (isLoading) {
     return (

@@ -6,7 +6,11 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+// How long a dismissed toast stays in state before being removed from the
+// array — just needs to outlast the close animation. The original shadcn
+// template shipped this at 1_000_000ms (~16 min), holding a setTimeout per
+// toast far longer than necessary.
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string

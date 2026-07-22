@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import TopBar from "@/components/TopBar";
@@ -42,10 +42,12 @@ export default function Dashboard() {
   const recentExercises = exercises.slice(-3);
 
   // Calculate exercise counts by category
-  const exercisesByCategory = exercises.reduce((acc, exercise) => {
-    acc[exercise.category] = (acc[exercise.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const exercisesByCategory = useMemo(() => {
+    return exercises.reduce((acc, exercise) => {
+      acc[exercise.category] = (acc[exercise.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [exercises]);
 
   // Navigation functions
   const navigateToPage = (path: string) => {

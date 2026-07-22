@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
@@ -44,16 +44,16 @@ export default function TrainingSessions() {
     },
   });
 
-  // Filter sessions based on search query
-  const filteredSessions = sessions.filter(session =>
-    session.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    session.notes?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Sort sessions by date (most recent first)
-  const sortedSessions = filteredSessions.sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  // Filter by search query, then sort by date (most recent first)
+  const sortedSessions = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return sessions
+      .filter(session =>
+        session.name.toLowerCase().includes(query) ||
+        session.notes?.toLowerCase().includes(query)
+      )
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [sessions, searchQuery]);
 
   const confirmDeleteSession = () => {
     if (sessionToDelete) {
