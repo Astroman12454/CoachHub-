@@ -83,8 +83,8 @@ export default function TrainingSessions() {
               <div className="w-24 h-24 basketball-orange rounded-full flex items-center justify-center mx-auto mb-4">
                 <i className="fas fa-calendar-alt text-white text-3xl"></i>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Training Sessions</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Training Sessions</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {searchQuery ? "No sessions match your search criteria." : "Get started by creating your first training session."}
               </p>
               {!searchQuery && (
@@ -105,10 +105,10 @@ export default function TrainingSessions() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-gray-900 mb-1">
+                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                         {session.name}
                       </CardTitle>
-                      <div className="flex items-center text-sm text-gray-500 space-x-4">
+                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
                         <span>
                           <i className="fas fa-calendar mr-1"></i>
                           {new Date(`${session.date}T00:00:00`).toLocaleDateString()}
@@ -123,7 +123,7 @@ export default function TrainingSessions() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                         onClick={() => setEditingSession(session)}
                         aria-label={`Edit ${session.name}`}
                       >
@@ -132,7 +132,7 @@ export default function TrainingSessions() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
                         onClick={() => setSessionToDelete(session)}
                         aria-label={`Delete ${session.name}`}
                       >
@@ -144,19 +144,19 @@ export default function TrainingSessions() {
                 
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Duration:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Duration:</span>
                     <span className="font-medium">{session.duration} minutes</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Attendance:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Attendance:</span>
                     <span className="font-medium">
                       {session.attendanceCount}/{session.totalPlayers} players
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Attendance Rate:</span>
+                    <span className="text-gray-600 dark:text-gray-400">Attendance Rate:</span>
                     <Badge variant={
                       ((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100 >= 80
                         ? "default"
@@ -168,7 +168,7 @@ export default function TrainingSessions() {
                   
                   {session.exerciseIds && session.exerciseIds.length > 0 && (
                     <div>
-                      <span className="text-sm text-gray-600">Exercises:</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Exercises:</span>
                       <div className="mt-1">
                         <Badge variant="outline" className="text-xs">
                           {session.exerciseIds.length} exercise{session.exerciseIds.length !== 1 ? 's' : ''}
@@ -179,12 +179,12 @@ export default function TrainingSessions() {
                   
                   {session.notes && (
                     <div>
-                      <span className="text-sm text-gray-600">Notes:</span>
-                      <p className="text-sm text-gray-900 mt-1 line-clamp-2">{session.notes}</p>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Notes:</span>
+                      <p className="text-sm text-gray-900 dark:text-gray-100 mt-1 line-clamp-2">{session.notes}</p>
                     </div>
                   )}
                   
-                  <div className="pt-3 border-t border-gray-200">
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                     <Button
                       variant="outline"
                       className="w-full"

@@ -252,7 +252,7 @@ export default function Players() {
                     )}
                   />
 
-                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <Button 
                       type="button" 
                       variant="outline" 
@@ -280,10 +280,10 @@ export default function Players() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Jugadores</p>
-                  <p className="text-3xl font-bold text-gray-900">{players.length}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Jugadores</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{players.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-users text-blue-600 text-xl"></i>
                 </div>
               </div>
@@ -294,12 +294,12 @@ export default function Players() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Jugadores Activos</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Jugadores Activos</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {players.filter(p => p.isActive === 1).length}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-check-circle text-green-600 text-xl"></i>
                 </div>
               </div>
@@ -310,12 +310,12 @@ export default function Players() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Posiciones</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Posiciones</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {Object.keys(playersByPosition).length}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-basketball-ball text-purple-600 text-xl"></i>
                 </div>
               </div>
@@ -326,12 +326,12 @@ export default function Players() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Tasa de Actividad</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tasa de Actividad</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                     {Math.round((players.filter(p => p.isActive === 1).length / players.length) * 100)}%
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-chart-pie text-orange-600 text-xl"></i>
                 </div>
               </div>
@@ -343,11 +343,11 @@ export default function Players() {
         {filteredPlayers.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-users text-gray-400 text-3xl"></i>
+              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-users text-gray-400 dark:text-gray-500 text-3xl"></i>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No se encontraron jugadores</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No se encontraron jugadores</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {searchQuery || filterActive !== "all"
                   ? "No hay jugadores que coincidan con los filtros actuales."
                   : "Comienza añadiendo tu primer jugador al equipo."
@@ -379,19 +379,19 @@ export default function Players() {
                     {positionPlayers.map((player) => (
                       <div 
                         key={player.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{player.name}</h4>
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100">{player.name}</h4>
                           <Badge 
                             variant={player.isActive === 1 ? "default" : "secondary"}
-                            className={player.isActive === 1 ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+                            className={player.isActive === 1 ? "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"}
                           >
                             {player.isActive === 1 ? "Activo" : "Inactivo"}
                           </Badge>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-600">{player.position}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{player.position}</p>
                           <Button
                             variant="outline"
                             size="sm"

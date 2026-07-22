@@ -29,9 +29,14 @@ export default function TopBar({
     onSearch?.(value);
   };
 
+  const clearSearch = () => {
+    setSearchQuery("");
+    onSearch?.("");
+  };
+
   return (
     <>
-      <header className="bg-gradient-to-r from-white to-orange-50 border-b-2 border-orange-200 px-4 py-3 lg:px-6 lg:py-4 relative overflow-hidden shadow-lg">
+      <header className="bg-gradient-to-r from-white to-orange-50 dark:from-gray-900 dark:to-gray-900 border-b-2 border-orange-200 dark:border-orange-900/40 px-4 py-3 lg:px-6 lg:py-4 relative overflow-hidden shadow-lg">
         <div className="absolute top-0 right-0 w-32 h-32 basketball-orange opacity-5 rounded-full -translate-y-16 translate-x-16"></div>
         <div className="absolute bottom-0 left-0 w-20 h-20 basketball-orange opacity-10 rounded-full translate-y-10 -translate-x-10"></div>
 
@@ -49,9 +54,9 @@ export default function TopBar({
                 <div className="hidden lg:flex w-10 h-10 basketball-orange rounded-xl items-center justify-center shadow-lg">
                   <i className="fas fa-basketball-ball text-white"></i>
                 </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900">{title}</h2>
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h2>
               </div>
-              <p className="text-sm lg:text-base text-gray-600 lg:ml-[52px]">{subtitle}</p>
+              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 lg:ml-[52px]">{subtitle}</p>
             </div>
           </div>
 
@@ -63,9 +68,19 @@ export default function TopBar({
                   placeholder={searchPlaceholder}
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="pl-12 pr-4 py-2.5 lg:py-3 w-full lg:w-64 border-2 border-orange-200 rounded-xl focus:border-basketball-orange transition-all duration-300 shadow-sm hover:shadow-md"
+                  className={`pl-12 py-2.5 lg:py-3 w-full lg:w-64 border-2 border-orange-200 dark:border-orange-900/40 rounded-xl focus:border-basketball-orange transition-all duration-300 shadow-sm hover:shadow-md ${searchQuery ? "pr-9" : "pr-4"}`}
                 />
                 <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-basketball-orange"></i>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <i className="fas fa-times text-xs" aria-hidden="true"></i>
+                  </button>
+                )}
               </div>
             )}
             {showNewSessionButton && (

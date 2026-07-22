@@ -100,16 +100,16 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Sessions</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.totalSessions || 0}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Sessions</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.totalSessions || 0}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-calendar-check text-blue-600 text-xl"></i>
                 </div>
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-green-600 font-medium">+12%</span>
-                <span className="text-gray-500 ml-2">from last month</span>
+                <span className="text-gray-500 dark:text-gray-400 ml-2">from last month</span>
               </div>
             </CardContent>
           </Card>
@@ -118,16 +118,16 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Active Players</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.activePlayersCount || 0}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Players</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.activePlayersCount || 0}</p>
                 </div>
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-users text-orange-600 text-xl"></i>
                 </div>
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-green-600 font-medium">+2</span>
-                <span className="text-gray-500 ml-2">new this week</span>
+                <span className="text-gray-500 dark:text-gray-400 ml-2">new this week</span>
               </div>
             </CardContent>
           </Card>
@@ -136,16 +136,16 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Exercise Library</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.totalExercises || 0}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Exercise Library</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.totalExercises || 0}</p>
                 </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-dumbbell text-purple-600 text-xl"></i>
                 </div>
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-green-600 font-medium">+8</span>
-                <span className="text-gray-500 ml-2">added this week</span>
+                <span className="text-gray-500 dark:text-gray-400 ml-2">added this week</span>
               </div>
             </CardContent>
           </Card>
@@ -154,16 +154,16 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Attendance</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats?.avgAttendance || 0}%</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Attendance</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats?.avgAttendance || 0}%</p>
                 </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
                   <i className="fas fa-chart-line text-green-600 text-xl"></i>
                 </div>
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-green-600 font-medium">+5%</span>
-                <span className="text-gray-500 ml-2">improvement</span>
+                <span className="text-gray-500 dark:text-gray-400 ml-2">improvement</span>
               </div>
             </CardContent>
           </Card>
@@ -174,7 +174,7 @@ export default function Dashboard() {
           {/* Upcoming Sessions */}
           <div className="lg:col-span-2">
             <Card className="basketball-card border-0 shadow-xl slide-up">
-              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-white to-orange-50 rounded-t-lg">
+              <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-white to-orange-50 dark:from-gray-900 dark:to-gray-900 rounded-t-lg">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 basketball-orange rounded-xl flex items-center justify-center">
                     <i className="fas fa-calendar-week text-white"></i>
@@ -191,12 +191,12 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {upcomingSessions.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No upcoming sessions scheduled</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No upcoming sessions scheduled</p>
                 ) : (
                   upcomingSessions.map((session) => (
                     <div 
                       key={session.id} 
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-white rounded-xl hover:from-orange-100 hover:to-orange-50 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-basketball-orange transform hover:scale-102 hover:shadow-lg group"
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-gray-900 rounded-xl hover:from-orange-100 hover:to-orange-50 dark:hover:from-orange-950/40 dark:hover:to-orange-950/20 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-basketball-orange transform hover:scale-102 hover:shadow-lg group"
                       onClick={() => handleSessionClick(session.id)}
                     >
                       <div className="flex items-center space-x-4">
@@ -204,13 +204,13 @@ export default function Dashboard() {
                           <i className="fas fa-basketball-ball text-white text-lg pulse-orange"></i>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900 group-hover:text-basketball-orange transition-colors">{session.name}</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-basketball-orange transition-colors">{session.name}</h4>
                           <div className="flex items-center space-x-2 mt-1">
-                            <div className="flex items-center space-x-1 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
                               <i className="fas fa-calendar text-basketball-orange text-xs"></i>
                               <span>{session.date}</span>
                             </div>
-                            <div className="flex items-center space-x-1 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
                               <i className="fas fa-clock text-basketball-orange text-xs"></i>
                               <span>{session.time}</span>
                             </div>
@@ -219,15 +219,15 @@ export default function Dashboard() {
                       </div>
                       <div className="text-right">
                         <div className="flex items-center space-x-2 mb-1">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
                             <i className="fas fa-users text-green-600 text-xs"></i>
                           </div>
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                             {session.attendanceCount}/{session.totalPlayers}
                           </p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
+                          <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                             <div
                               className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500"
                               style={{ width: `${Math.round(((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100)}%` }}
@@ -300,7 +300,7 @@ export default function Dashboard() {
                   return (
                     <div
                       key={category}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                       onClick={() => handleCategoryClick(category)}
                     >
                       <div className="flex items-center space-x-3">
@@ -309,7 +309,7 @@ export default function Dashboard() {
                         </div>
                         <span className="font-medium capitalize">{category}</span>
                       </div>
-                      <span className="text-sm text-gray-600">{count} exercises</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{count} exercises</span>
                     </div>
                   );
                 })}
@@ -382,7 +382,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {recentExercises.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No exercises in library</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">No exercises in library</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {recentExercises.map((exercise) => (
@@ -416,20 +416,20 @@ export default function Dashboard() {
             </DialogHeader>
             
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
-                <h4 className="font-semibold text-orange-800 mb-2">Performance Analysis</h4>
-                <p className="text-sm text-orange-700">Based on recent training data and player performance metrics.</p>
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 p-4 rounded-lg border border-orange-200 dark:border-orange-800/40">
+                <h4 className="font-semibold text-orange-800 dark:text-orange-300 mb-2">Performance Analysis</h4>
+                <p className="text-sm text-orange-700 dark:text-orange-400">Based on recent training data and player performance metrics.</p>
               </div>
 
               <div className="space-y-3">
                 <div className="border rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-red-100 dark:bg-red-950/40 rounded-lg flex items-center justify-center">
                       <i className="fas fa-shield-alt text-red-600 text-sm"></i>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-medium text-gray-900">Focus on Defensive Positioning</h5>
-                      <p className="text-sm text-gray-600 mt-1">Your team allowed 15% more points in the paint during the last three games. Consider adding more defensive sliding drills.</p>
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100">Focus on Defensive Positioning</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Your team allowed 15% more points in the paint during the last three games. Consider adding more defensive sliding drills.</p>
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -447,12 +447,12 @@ export default function Dashboard() {
 
                 <div className="border rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-950/40 rounded-lg flex items-center justify-center">
                       <i className="fas fa-basketball-ball text-blue-600 text-sm"></i>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-medium text-gray-900">Improve Free Throw Shooting</h5>
-                      <p className="text-sm text-gray-600 mt-1">Current team average: 68% (Target: 75%). Schedule more shooting practice sessions.</p>
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100">Improve Free Throw Shooting</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Current team average: 68% (Target: 75%). Schedule more shooting practice sessions.</p>
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -470,12 +470,12 @@ export default function Dashboard() {
 
                 <div className="border rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
                       <i className="fas fa-running text-green-600 text-sm"></i>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-medium text-gray-900">Increase Conditioning Work</h5>
-                      <p className="text-sm text-gray-600 mt-1">Player fatigue was noticeable in the 4th quarter. Add more endurance training.</p>
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100">Increase Conditioning Work</h5>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Player fatigue was noticeable in the 4th quarter. Add more endurance training.</p>
                       <Button 
                         size="sm" 
                         variant="outline" 

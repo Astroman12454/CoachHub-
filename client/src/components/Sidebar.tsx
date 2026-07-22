@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/use-auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: "fas fa-tachometer-alt" },
@@ -75,6 +76,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="font-medium text-white">Coach Johnson</p>
             <p className="text-sm text-orange-200">Lakers High School</p>
           </div>
+          <ThemeToggle />
           <button
             type="button"
             onClick={logout}

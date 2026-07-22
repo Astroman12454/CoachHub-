@@ -16,18 +16,18 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center basketball-orange basketball-pattern p-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-8 bounce-in">
+      <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 bounce-in">
         <div className="flex flex-col items-center mb-6">
           <div className="w-16 h-16 basketball-orange rounded-2xl flex items-center justify-center shadow-lg mb-4 pulse-orange">
             <i className="fas fa-basketball-ball text-white text-2xl"></i>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Coach Hub</h1>
-          <p className="text-gray-600 text-sm">Basketball Training</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Coach Hub</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Basketball Training</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="passcode" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="passcode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Passcode
             </label>
             <Input
@@ -38,7 +38,7 @@ export default function Login() {
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
               placeholder="Ingresá el passcode"
-              className="border-2 border-orange-200 focus:border-basketball-orange"
+              className="border-2 border-orange-200 dark:border-orange-900 focus:border-basketball-orange"
             />
             {loginError && (
               <p className="text-sm text-red-600 mt-2" role="alert">

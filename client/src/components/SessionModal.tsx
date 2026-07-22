@@ -186,8 +186,8 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
             {/* Exercise Selection */}
             <div>
-              <h4 className="text-lg font-medium text-gray-900 mb-4">Add Exercises</h4>
-              <div className="border border-gray-200 rounded-lg p-4">
+              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Add Exercises</h4>
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center space-x-4 mb-4">
                   <Select value={exerciseCategory} onValueChange={setExerciseCategory}>
                     <SelectTrigger className="w-48">
@@ -207,19 +207,19 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 {/* Selected Exercises */}
                 {selectedExercises.length > 0 && (
                   <div className="mb-4">
-                    <h5 className="font-medium text-gray-900 mb-2">Selected Exercises:</h5>
+                    <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Selected Exercises:</h5>
                     <div className="flex flex-wrap gap-2">
                       {selectedExercises.map(exercise => (
-                        <Badge 
-                          key={exercise.id} 
-                          variant="secondary" 
+                        <Badge
+                          key={exercise.id}
+                          variant="secondary"
                           className="flex items-center gap-2"
                         >
                           {exercise.name}
                           <button
                             type="button"
                             onClick={() => removeExercise(exercise.id)}
-                            className="text-gray-500 hover:text-gray-700"
+                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             aria-label={`Remove ${exercise.name}`}
                           >
                             <i className="fas fa-times text-xs" aria-hidden="true"></i>
@@ -233,22 +233,22 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 {/* Available Exercises */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
                   {filteredExercises.map(exercise => (
-                    <div 
+                    <div
                       key={exercise.id}
-                      className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
                       onClick={() => addExercise(exercise)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <Badge 
-                          variant="secondary" 
+                        <Badge
+                          variant="secondary"
                           className={CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS]}
                         >
                           {exercise.category}
                         </Badge>
-                        <span className="text-xs text-gray-500">{exercise.duration} min</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{exercise.duration} min</span>
                       </div>
-                      <h6 className="font-medium text-gray-900 mb-1">{exercise.name}</h6>
-                      <p className="text-sm text-gray-600 line-clamp-2">{exercise.description}</p>
+                      <h6 className="font-medium text-gray-900 dark:text-gray-100 mb-1">{exercise.name}</h6>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{exercise.description}</p>
                     </div>
                   ))}
                 </div>
@@ -256,7 +256,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>

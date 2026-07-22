@@ -22,17 +22,17 @@ const DAYS_OF_WEEK = [
 ];
 
 const ATTENDANCE_STATUS = {
-  present: { label: "Present", color: "bg-green-100 text-green-800 border-green-200", icon: "fas fa-check-circle" },
-  absent: { label: "Absent", color: "bg-red-100 text-red-800 border-red-200", icon: "fas fa-times-circle" },
-  late: { label: "Late", color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: "fas fa-clock" },
-  excused: { label: "Excused", color: "bg-blue-100 text-blue-800 border-blue-200", icon: "fas fa-info-circle" }
+  present: { label: "Present", color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800/40", icon: "fas fa-check-circle" },
+  absent: { label: "Absent", color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40", icon: "fas fa-times-circle" },
+  late: { label: "Late", color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/40", icon: "fas fa-clock" },
+  excused: { label: "Excused", color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40", icon: "fas fa-info-circle" }
 };
 
 const STATUS_COLORS = {
-  scheduled: "bg-blue-50 border-blue-200 text-blue-800",
-  in_progress: "bg-orange-50 border-orange-200 text-orange-800",
-  completed: "bg-green-50 border-green-200 text-green-800",
-  cancelled: "bg-gray-50 border-gray-200 text-gray-800"
+  scheduled: "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800/40 dark:text-blue-300",
+  in_progress: "bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/40 dark:border-orange-800/40 dark:text-orange-300",
+  completed: "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800/40 dark:text-green-300",
+  cancelled: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200"
 };
 
 export default function WeeklySchedule() {
@@ -203,11 +203,11 @@ export default function WeeklySchedule() {
         {/* Header with Week Navigation */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-4">
           <div className="col-span-2 text-center sm:col-span-1 sm:order-2">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
               {weekDates[0].toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
               {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </h2>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Training Schedule Overview</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Training Schedule Overview</p>
           </div>
 
           <Button variant="outline" onClick={() => navigateWeek('prev')} className="flex items-center justify-center gap-2 sm:order-1">
@@ -225,12 +225,12 @@ export default function WeeklySchedule() {
 
         {/* Weekly Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-blue-200 dark:border-blue-800/40">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-600 text-sm font-medium">Total Sessions</p>
-                  <p className="text-2xl font-bold text-blue-800">{weekStats.total}</p>
+                  <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">Total Sessions</p>
+                  <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{weekStats.total}</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                   <i className="fas fa-calendar-alt text-white"></i>
@@ -239,12 +239,12 @@ export default function WeeklySchedule() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/30 border-green-200 dark:border-green-800/40">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-600 text-sm font-medium">Completed</p>
-                  <p className="text-2xl font-bold text-green-800">{weekStats.completed}</p>
+                  <p className="text-green-600 dark:text-green-400 text-sm font-medium">Completed</p>
+                  <p className="text-2xl font-bold text-green-800 dark:text-green-300">{weekStats.completed}</p>
                 </div>
                 <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                   <i className="fas fa-check-circle text-white"></i>
@@ -253,12 +253,12 @@ export default function WeeklySchedule() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 border-orange-200 dark:border-orange-800/40">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-600 text-sm font-medium">Upcoming</p>
-                  <p className="text-2xl font-bold text-orange-800">{weekStats.scheduled}</p>
+                  <p className="text-orange-600 dark:text-orange-400 text-sm font-medium">Upcoming</p>
+                  <p className="text-2xl font-bold text-orange-800 dark:text-orange-300">{weekStats.scheduled}</p>
                 </div>
                 <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
                   <i className="fas fa-clock text-white"></i>
@@ -267,12 +267,12 @@ export default function WeeklySchedule() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30 border-purple-200 dark:border-purple-800/40">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-600 text-sm font-medium">Attendance</p>
-                  <p className="text-2xl font-bold text-purple-800">{weekStats.totalAttendance}</p>
+                  <p className="text-purple-600 dark:text-purple-400 text-sm font-medium">Attendance</p>
+                  <p className="text-2xl font-bold text-purple-800 dark:text-purple-300">{weekStats.totalAttendance}</p>
                 </div>
                 <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                   <i className="fas fa-users text-white"></i>
@@ -296,11 +296,11 @@ export default function WeeklySchedule() {
                   isToday ? 'ring-2 ring-basketball-orange shadow-lg' : ''
                 }`}
               >
-                <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-gray-100">
+                <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
                   <div className="text-center">
-                    <div className="font-bold text-lg text-gray-800">{dayInfo.short}</div>
-                    <div className="text-sm text-gray-600">{dayInfo.full}</div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="font-bold text-lg text-gray-800 dark:text-gray-200">{dayInfo.short}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">{dayInfo.full}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                     {isToday && (
@@ -311,8 +311,8 @@ export default function WeeklySchedule() {
                 <CardContent className="p-3 space-y-2">
                   {daySessions.length === 0 ? (
                     <div className="text-center py-8">
-                      <i className="fas fa-calendar-plus text-gray-300 text-2xl mb-2"></i>
-                      <p className="text-xs text-gray-400">No sessions</p>
+                      <i className="fas fa-calendar-plus text-gray-300 dark:text-gray-600 text-2xl mb-2"></i>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">No sessions</p>
                     </div>
                   ) : (
                     daySessions.map((session) => (
@@ -342,7 +342,7 @@ export default function WeeklySchedule() {
                             {session.status || 'scheduled'}
                           </Badge>
                           {session.attendanceCount !== undefined && (
-                            <div className="text-xs text-gray-600">
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
                               {session.attendanceCount}/{session.totalPlayers}
                             </div>
                           )}
@@ -364,7 +364,7 @@ export default function WeeklySchedule() {
                 <i className="fas fa-clipboard-list text-basketball-orange"></i>
                 Attendance - {selectedSession?.name}
               </DialogTitle>
-              <div className="text-sm text-gray-600 mt-2">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 <div className="flex items-center gap-4">
                   <span>📅 {selectedSession?.date}</span>
                   <span>🕐 {selectedSession?.time}</span>
@@ -401,12 +401,12 @@ export default function WeeklySchedule() {
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center font-bold text-gray-700 flex-shrink-0">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center font-bold text-gray-700 dark:text-gray-300 flex-shrink-0">
                               {player.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <div>
                               <div className="font-semibold text-lg">{player.name}</div>
-                              <div className="text-sm text-gray-600 flex items-center gap-2">
+                              <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
                                 <i className="fas fa-basketball-ball text-basketball-orange"></i>
                                 {player.position}
                               </div>
@@ -423,7 +423,7 @@ export default function WeeklySchedule() {
                                 className={`flex items-center justify-center gap-2 ${
                                   currentStatus === status
                                     ? "basketball-orange basketball-orange-hover text-white"
-                                    : "hover:bg-gray-50"
+                                    : "hover:bg-gray-50 dark:hover:bg-gray-800"
                                 }`}
                               >
                                 <i className={config.icon}></i>
@@ -440,7 +440,7 @@ export default function WeeklySchedule() {
                               {ATTENDANCE_STATUS[playerAttendance.status as keyof typeof ATTENDANCE_STATUS]?.label}
                             </Badge>
                             {playerAttendance.markedAt && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
                                 Marked at {new Date(playerAttendance.markedAt).toLocaleTimeString()}
                               </span>
                             )}

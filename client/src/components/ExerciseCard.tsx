@@ -18,7 +18,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
 
   return (
     <div
-      className="basketball-card border-2 border-orange-100 rounded-xl p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-1 hover:border-basketball-orange group"
+      className="basketball-card border-2 border-orange-100 dark:border-orange-900/30 rounded-xl p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-1 hover:border-basketball-orange group"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2 mb-4">
@@ -26,7 +26,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
           <div className={`w-10 h-10 flex-shrink-0 ${categoryColorClass} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-300`}>
             <i className={`${categoryIconClass} text-white`}></i>
           </div>
-          <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">
+          <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 dark:border-orange-900/40 dark:text-orange-300 dark:bg-orange-950/40">
             {exercise.category}
           </Badge>
           <Badge className={`${difficultyColorClass} shadow-sm`}>
@@ -43,17 +43,17 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="w-8 h-8 bg-white shadow-sm border border-gray-200 hover:bg-gray-100 rounded-full flex items-center justify-center"
+                className="w-8 h-8 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center justify-center"
                 aria-label={`Edit ${exercise.name}`}
               >
-                <i className="fas fa-edit text-gray-600 text-xs" aria-hidden="true"></i>
+                <i className="fas fa-edit text-gray-600 dark:text-gray-300 text-xs" aria-hidden="true"></i>
               </button>
             )}
             {onDelete && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="w-8 h-8 bg-white shadow-sm border border-red-200 hover:bg-red-100 rounded-full flex items-center justify-center"
+                className="w-8 h-8 bg-white dark:bg-gray-800 shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
                 aria-label={`Delete ${exercise.name}`}
               >
                 <i className="fas fa-trash text-red-600 text-xs" aria-hidden="true"></i>
@@ -80,18 +80,18 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
         </div>
       )}
       
-      <h4 className="font-semibold text-gray-900 mb-2 group-hover:text-basketball-orange transition-colors duration-300">
+      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-basketball-orange transition-colors duration-300">
         {exercise.name}
       </h4>
-      <p className="text-sm text-gray-600 mb-4 line-clamp-2">{exercise.description}</p>
-      
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{exercise.description}</p>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1">
-            <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
+            <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
               <i className="fas fa-clock text-orange-600 text-xs"></i>
             </div>
-            <span className="text-xs text-gray-600">{exercise.duration} min</span>
+            <span className="text-xs text-gray-600 dark:text-gray-400">{exercise.duration} min</span>
           </div>
         </div>
         

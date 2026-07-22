@@ -341,7 +341,7 @@ export default function ExerciseLibrary() {
                     )}
                   />
 
-                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <Button
                       type="button"
                       variant="outline"
@@ -369,11 +369,11 @@ export default function ExerciseLibrary() {
         {filteredExercises.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-dumbbell text-gray-400 text-3xl"></i>
+              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-dumbbell text-gray-400 dark:text-gray-500 text-3xl"></i>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Exercises Found</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Exercises Found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
                   ? "No exercises match your current filters."
                   : "Get started by adding your first exercise to the library."

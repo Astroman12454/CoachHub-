@@ -16,11 +16,11 @@ export type ExerciseCategory = typeof EXERCISE_CATEGORIES[number];
 export type DifficultyLevel = typeof DIFFICULTY_LEVELS[number];
 
 export const CATEGORY_COLORS = {
-  shooting: 'bg-blue-100 text-blue-800',
-  dribbling: 'bg-green-100 text-green-800',
-  defense: 'bg-red-100 text-red-800',
-  passing: 'bg-purple-100 text-purple-800',
-  conditioning: 'bg-yellow-100 text-yellow-800'
+  shooting: 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300',
+  dribbling: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300',
+  defense: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300',
+  passing: 'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300',
+  conditioning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300'
 } as const;
 
 // Solid (500-weight) counterpart of CATEGORY_COLORS, for icon chips that
@@ -43,7 +43,7 @@ export const CATEGORY_ICONS = {
 } as const;
 
 export const DIFFICULTY_COLORS = {
-  easy: 'bg-green-100 text-green-800',
-  medium: 'bg-yellow-100 text-yellow-800',
-  hard: 'bg-red-100 text-red-800'
+  easy: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300',
+  medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300',
+  hard: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'
 } as const;
