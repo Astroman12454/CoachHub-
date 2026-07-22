@@ -16,6 +16,7 @@ import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { insertPlayerSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useSaveMutation } from "@/hooks/use-save-mutation";
 import type { Player } from "@shared/schema";
 
 const playerFormSchema = insertPlayerSchema.extend({
@@ -53,26 +54,14 @@ export default function Players() {
     },
   });
 
-  const createPlayerMutation = useMutation({
-    mutationFn: async (data: PlayerFormData) => {
-      return apiRequest("POST", "/api/players", data);
-    },
+  const createPlayerMutation = useSaveMutation<PlayerFormData>({
+    endpoint: "/api/players",
+    successTitle: "Éxito",
+    successMessage: "Jugador añadido exitosamente",
+    errorMessage: "Error al añadir el jugador",
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/players'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Éxito",
-        description: "Jugador añadido exitosamente",
-      });
       setIsCreateModalOpen(false);
       form.reset();
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Error al añadir el jugador",
-        variant: "destructive",
-      });
     },
   });
 

@@ -18,6 +18,7 @@ import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { insertExerciseSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useSaveMutation } from "@/hooks/use-save-mutation";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 
@@ -83,28 +84,14 @@ export default function ExerciseLibrary() {
     setIsFormOpen(true);
   };
 
-  const saveExerciseMutation = useMutation({
-    mutationFn: async (data: ExerciseFormData) => {
-      return isEditing
-        ? apiRequest("PUT", `/api/exercises/${editingExercise.id}`, data)
-        : apiRequest("POST", "/api/exercises", data);
-    },
+  const saveExerciseMutation = useSaveMutation<ExerciseFormData>({
+    endpoint: "/api/exercises",
+    id: editingExercise?.id,
+    successMessage: isEditing ? "Exercise updated successfully" : "Exercise created successfully",
+    errorMessage: isEditing ? "Failed to update exercise" : "Failed to create exercise",
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/exercises'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Success",
-        description: isEditing ? "Exercise updated successfully" : "Exercise created successfully",
-      });
       setIsFormOpen(false);
       form.reset(emptyFormValues);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: isEditing ? "Failed to update exercise" : "Failed to create exercise",
-        variant: "destructive",
-      });
     },
   });
 

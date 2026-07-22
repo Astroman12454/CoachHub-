@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
 import { insertTrainingSessionSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { useSaveMutation } from "@/hooks/use-save-mutation";
 import type { Exercise, TrainingSession } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
 
@@ -42,8 +41,6 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     exercises.filter(ex => initialExerciseIds.includes(ex.id.toString()))
   );
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
@@ -64,38 +61,23 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     ? exercises
     : exercises.filter(ex => ex.category === exerciseCategory);
 
-  const saveSessionMutation = useMutation({
-    mutationFn: async (data: SessionFormData) => {
-      const sessionData = {
-        ...data,
-        exerciseIds: selectedExercises.map(ex => ex.id.toString()),
-      };
-      return isEditing
-        ? apiRequest("PUT", `/api/training-sessions/${session.id}`, sessionData)
-        : apiRequest("POST", "/api/training-sessions", sessionData);
-    },
+  const saveSessionMutation = useSaveMutation<SessionFormData>({
+    endpoint: "/api/training-sessions",
+    id: session?.id,
+    successMessage: isEditing ? "Training session updated successfully" : "Training session created successfully",
+    errorMessage: isEditing ? "Failed to update training session" : "Failed to create training session",
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-      toast({
-        title: "Success",
-        description: isEditing ? "Training session updated successfully" : "Training session created successfully",
-      });
       onClose();
       form.reset();
       setSelectedExercises([]);
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: isEditing ? "Failed to update training session" : "Failed to create training session",
-        variant: "destructive",
-      });
-    },
   });
 
   const onSubmit = (data: SessionFormData) => {
-    saveSessionMutation.mutate(data);
+    saveSessionMutation.mutate({
+      ...data,
+      exerciseIds: selectedExercises.map(ex => ex.id.toString()),
+    });
   };
 
   const addExercise = (exercise: Exercise) => {
