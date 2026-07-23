@@ -3,31 +3,15 @@ import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
+import ExerciseForm from "@/components/ExerciseForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { insertExerciseSchema } from "@shared/schema";
-import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
-
-const exerciseFormSchema = insertExerciseSchema.extend({
-  name: z.string().min(1, "Exercise name is required"),
-  description: z.string().min(1, "Description is required"),
-  duration: z.number().min(1, "Duration must be at least 1 minute"),
-});
-
-type ExerciseFormData = z.infer<typeof exerciseFormSchema>;
 
 export default function ExerciseLibrary() {
   const search = useSearch();
@@ -36,69 +20,18 @@ export default function ExerciseLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
-  const isEditing = !!editingExercise;
 
   const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
-  });
-
-  const emptyFormValues: ExerciseFormData = {
-    name: "",
-    description: "",
-    category: "shooting",
-    duration: 15,
-    difficulty: "medium",
-    instructions: "",
-    imageUrl: "",
-  };
-
-  const form = useForm<ExerciseFormData>({
-    resolver: zodResolver(exerciseFormSchema),
-    defaultValues: emptyFormValues,
-  });
-
-  const openCreateForm = () => {
-    setEditingExercise(null);
-    form.reset(emptyFormValues);
-    setIsFormOpen(true);
-  };
-
-  const openEditForm = (exercise: Exercise) => {
-    setEditingExercise(exercise);
-    form.reset({
-      name: exercise.name,
-      description: exercise.description,
-      category: exercise.category,
-      duration: exercise.duration,
-      difficulty: exercise.difficulty,
-      instructions: exercise.instructions ?? "",
-      imageUrl: exercise.imageUrl ?? "",
-    });
-    setIsFormOpen(true);
-  };
-
-  const saveExerciseMutation = useSaveMutation<ExerciseFormData>({
-    endpoint: "/api/exercises",
-    id: editingExercise?.id,
-    successMessage: isEditing ? "Exercise updated successfully" : "Exercise created successfully",
-    errorMessage: isEditing ? "Failed to update exercise" : "Failed to create exercise",
-    onSuccess: () => {
-      setIsFormOpen(false);
-      form.reset(emptyFormValues);
-    },
   });
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/exercises",
     errorMessage: "Failed to delete exercise",
   });
-
-  const onSubmit = (data: ExerciseFormData) => {
-    saveExerciseMutation.mutate(data);
-  };
 
   const confirmDeleteExercise = () => {
     if (exerciseToDelete) {
@@ -125,8 +58,8 @@ export default function ExerciseLibrary() {
   if (isLoading) {
     return (
       <div className="flex flex-col h-full">
-        <TopBar 
-          title="Exercise Library" 
+        <TopBar
+          title="Exercise Library"
           subtitle="Browse and manage your basketball training exercises"
           onSearch={setSearchQuery}
           searchPlaceholder="Search exercises..."
@@ -144,13 +77,13 @@ export default function ExerciseLibrary() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar 
-        title="Exercise Library" 
+      <TopBar
+        title="Exercise Library"
         subtitle="Browse and manage your basketball training exercises"
         onSearch={setSearchQuery}
         searchPlaceholder="Search exercises..."
       />
-      
+
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {/* Filters and Add Button */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -186,183 +119,11 @@ export default function ExerciseLibrary() {
 
           <Button
             className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
-            onClick={openCreateForm}
+            onClick={() => setIsCreateFormOpen(true)}
           >
             <i className="fas fa-plus mr-2"></i>
             Add Exercise
           </Button>
-
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
-              </DialogHeader>
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Exercise Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Free Throw Form Drill" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="duration"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Duration (minutes)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              min="1"
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category</FormLabel>
-                          <FormControl>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {EXERCISE_CATEGORIES.map(category => (
-                                  <SelectItem key={category} value={category}>
-                                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="difficulty"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Difficulty</FormLabel>
-                          <FormControl>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select difficulty" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {DIFFICULTY_LEVELS.map(difficulty => (
-                                  <SelectItem key={difficulty} value={difficulty}>
-                                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief description of the exercise..."
-                            className="min-h-20"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="instructions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instructions (Optional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Detailed instructions for the exercise..."
-                            className="min-h-32"
-                            {...field}
-                            value={field.value ?? ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="imageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Image URL (Optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="url"
-                            placeholder="https://example.com/image.jpg"
-                            {...field}
-                            value={field.value ?? ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsFormOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="basketball-orange basketball-orange-hover text-white"
-                      disabled={saveExerciseMutation.isPending}
-                    >
-                      {saveExerciseMutation.isPending
-                        ? (isEditing ? "Saving..." : "Creating...")
-                        : (isEditing ? "Save Changes" : "Create Exercise")}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
         </div>
 
         {/* Exercise Grid */}
@@ -382,7 +143,7 @@ export default function ExerciseLibrary() {
               {!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && (
                 <Button
                   className="basketball-orange basketball-orange-hover text-white"
-                  onClick={openCreateForm}
+                  onClick={() => setIsCreateFormOpen(true)}
                 >
                   <i className="fas fa-plus mr-2"></i>
                   Add First Exercise
@@ -396,13 +157,28 @@ export default function ExerciseLibrary() {
               <ExerciseCard
                 key={exercise.id}
                 exercise={exercise}
-                onEdit={() => openEditForm(exercise)}
+                onEdit={() => setEditingExercise(exercise)}
                 onDelete={() => setExerciseToDelete(exercise)}
               />
             ))}
           </div>
         )}
       </main>
+
+      {isCreateFormOpen && (
+        <ExerciseForm
+          isOpen={isCreateFormOpen}
+          onClose={() => setIsCreateFormOpen(false)}
+        />
+      )}
+
+      {editingExercise && (
+        <ExerciseForm
+          isOpen={!!editingExercise}
+          onClose={() => setEditingExercise(null)}
+          exercise={editingExercise}
+        />
+      )}
 
       <ConfirmDialog
         open={!!exerciseToDelete}
