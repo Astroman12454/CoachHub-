@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
+import StatCard from "@/components/StatCard";
+import EmptyState from "@/components/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,94 +143,48 @@ export default function Players() {
 
         {/* Player Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Jugadores</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{players.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-users text-blue-600 text-xl"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Jugadores Activos</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                    {players.filter(p => p.isActive === 1).length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-check-circle text-green-600 text-xl"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Posiciones</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                    {Object.keys(playersByPosition).length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-basketball-ball text-purple-600 text-xl"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tasa de Actividad</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                    {Math.round((players.filter(p => p.isActive === 1).length / players.length) * 100)}%
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-chart-pie text-orange-600 text-xl"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="Total Jugadores"
+            value={players.length}
+            icon="fas fa-users"
+            color="blue"
+          />
+          <StatCard
+            label="Jugadores Activos"
+            value={players.filter(p => p.isActive === 1).length}
+            icon="fas fa-check-circle"
+            color="green"
+          />
+          <StatCard
+            label="Posiciones"
+            value={Object.keys(playersByPosition).length}
+            icon="fas fa-basketball-ball"
+            color="purple"
+          />
+          <StatCard
+            label="Tasa de Actividad"
+            value={`${Math.round((players.filter(p => p.isActive === 1).length / players.length) * 100)}%`}
+            icon="fas fa-chart-pie"
+            color="orange"
+          />
         </div>
 
         {/* Players List */}
         {filteredPlayers.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-users text-gray-400 dark:text-gray-500 text-3xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No se encontraron jugadores</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {searchQuery || filterActive !== "all"
-                  ? "No hay jugadores que coincidan con los filtros actuales."
-                  : "Comienza añadiendo tu primer jugador al equipo."
-                }
-              </p>
-              {!searchQuery && filterActive === "all" && (
-                <Button
-                  className="basketball-orange basketball-orange-hover text-white"
-                  onClick={() => setIsCreateModalOpen(true)}
-                >
-                  <i className="fas fa-user-plus mr-2"></i>
-                  Añadir Primer Jugador
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon="fas fa-users"
+            title="No se encontraron jugadores"
+            description={
+              searchQuery || filterActive !== "all"
+                ? "No hay jugadores que coincidan con los filtros actuales."
+                : "Comienza añadiendo tu primer jugador al equipo."
+            }
+            action={!searchQuery && filterActive === "all" ? {
+              label: "Añadir Primer Jugador",
+              icon: "fas fa-user-plus",
+              onClick: () => setIsCreateModalOpen(true),
+            } : undefined}
+          />
         ) : (
           <div className="space-y-6">
             {Object.entries(playersByPosition).map(([position, positionPlayers]) => (

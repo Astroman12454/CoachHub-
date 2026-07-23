@@ -5,7 +5,7 @@ import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
 import ExerciseForm from "@/components/ExerciseForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { Card, CardContent } from "@/components/ui/card";
+import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,29 +128,20 @@ export default function ExerciseLibrary() {
 
         {/* Exercise Grid */}
         {filteredExercises.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-dumbbell text-gray-400 dark:text-gray-500 text-3xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Exercises Found</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
-                  ? "No exercises match your current filters."
-                  : "Get started by adding your first exercise to the library."
-                }
-              </p>
-              {!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && (
-                <Button
-                  className="basketball-orange basketball-orange-hover text-white"
-                  onClick={() => setIsCreateFormOpen(true)}
-                >
-                  <i className="fas fa-plus mr-2"></i>
-                  Add First Exercise
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon="fas fa-dumbbell"
+            title="No Exercises Found"
+            description={
+              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
+                ? "No exercises match your current filters."
+                : "Get started by adding your first exercise to the library."
+            }
+            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" ? {
+              label: "Add First Exercise",
+              icon: "fas fa-plus",
+              onClick: () => setIsCreateFormOpen(true),
+            } : undefined}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExercises.map((exercise) => (

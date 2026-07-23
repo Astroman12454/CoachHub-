@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import EmptyState from "@/components/EmptyState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,26 +79,18 @@ export default function TrainingSessions() {
       
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {sortedSessions.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="w-24 h-24 basketball-orange rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-calendar-alt text-white text-3xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Training Sessions</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {searchQuery ? "No sessions match your search criteria." : "Get started by creating your first training session."}
-              </p>
-              {!searchQuery && (
-                <Button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="basketball-orange basketball-orange-hover text-white"
-                >
-                  <i className="fas fa-plus mr-2"></i>
-                  Create First Session
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon="fas fa-calendar-alt"
+            iconWrapperClassName="basketball-orange"
+            iconClassName="text-white"
+            title="No Training Sessions"
+            description={searchQuery ? "No sessions match your search criteria." : "Get started by creating your first training session."}
+            action={!searchQuery ? {
+              label: "Create First Session",
+              icon: "fas fa-plus",
+              onClick: () => setIsCreateModalOpen(true),
+            } : undefined}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedSessions.map((session) => (
