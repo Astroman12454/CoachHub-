@@ -15,7 +15,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center basketball-orange basketball-pattern p-4">
+    <main className="min-h-screen flex items-center justify-center basketball-orange basketball-pattern p-4">
       <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 bounce-in">
         <div className="flex flex-col items-center mb-6">
           <div className="w-16 h-16 basketball-orange rounded-2xl flex items-center justify-center shadow-lg mb-4 pulse-orange">
@@ -56,6 +56,6 @@ export default function Login() {
           </Button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

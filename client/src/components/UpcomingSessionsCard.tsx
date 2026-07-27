@@ -41,7 +41,7 @@ export default function UpcomingSessionsCard({ sessions, onSessionClick, onViewA
                   <i className="fas fa-basketball-ball text-white text-lg pulse-orange"></i>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-basketball-orange transition-colors">{session.name}</h4>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-basketball-orange transition-colors">{session.name}</h3>
                   <div className="flex items-center space-x-2 mt-1">
                     <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
                       <i className="fas fa-calendar text-basketball-orange text-xs"></i>

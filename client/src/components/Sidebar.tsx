@@ -18,7 +18,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { logout } = useAuth();
 
   return (
-    <div className="basketball-orange basketball-pattern shadow-2xl flex flex-col h-full">
+    <nav aria-label="Main" className="basketball-orange basketball-pattern shadow-2xl flex flex-col h-full">
       {/* Logo and Brand */}
       <div className="p-6 border-b border-white border-opacity-20 bg-black bg-opacity-10">
         <div className="flex items-center space-x-3 bounce-in">
@@ -33,7 +33,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <div className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navigation.map((item, index) => {
           const isActive = location === item.href || (location === "/" && item.href === "/dashboard");
 
@@ -64,7 +64,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           );
         })}
-      </nav>
+      </div>
 
       {/* User Profile */}
       <div className="p-4 border-t border-white border-opacity-20 bg-black bg-opacity-10">
@@ -88,7 +88,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }
 

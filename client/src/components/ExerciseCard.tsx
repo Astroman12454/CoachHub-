@@ -80,9 +80,9 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
         </div>
       )}
       
-      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-basketball-orange transition-colors duration-300">
+      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-basketball-orange transition-colors duration-300">
         {exercise.name}
-      </h4>
+      </h3>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{exercise.description}</p>
 
       <div className="flex items-center justify-between">

@@ -13,6 +13,9 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./client/src/test/setup.ts"],
+    // e2e/ holds Playwright specs (different test runner/API) — exclude them
+    // from Vitest's own discovery alongside its usual defaults.
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
     env: {
       // Read at import time by server/auth.ts; needed for server/*.test.ts
       // even though those files run in a node environment, not jsdom.

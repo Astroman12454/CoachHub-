@@ -46,7 +46,7 @@ export default function AICoachBanner({ onOpenRecommendations }: AICoachBannerPr
         </div>
 
         <Button
-          className="mt-4 w-full bg-white text-orange-600 hover:bg-gray-100 font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          className="mt-4 w-full bg-white text-orange-700 hover:bg-gray-100 font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           onClick={onOpenRecommendations}
         >
           <i className="fas fa-chart-line mr-2"></i>

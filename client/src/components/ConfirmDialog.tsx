@@ -8,6 +8,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -28,8 +29,14 @@ export default function ConfirmDialog({
   confirmLabel = "Delete",
   isPending = false,
 }: ConfirmDialogProps) {
+  const restoreFocus = useDialogFocusReturn(open);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) restoreFocus();
+    onOpenChange(next);
+  };
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

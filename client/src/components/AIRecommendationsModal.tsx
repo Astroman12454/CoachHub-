@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 
 interface AIRecommendationsModalProps {
   open: boolean;
@@ -14,8 +15,14 @@ export default function AIRecommendationsModal({
   onViewCategory,
   onCreateSession,
 }: AIRecommendationsModalProps) {
+  const restoreFocus = useDialogFocusReturn(open);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) restoreFocus();
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -26,7 +33,7 @@ export default function AIRecommendationsModal({
 
         <div className="space-y-4">
           <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 p-4 rounded-lg border border-orange-200 dark:border-orange-800/40">
-            <h4 className="font-semibold text-orange-800 dark:text-orange-300 mb-2">Performance Analysis</h4>
+            <h3 className="font-semibold text-orange-800 dark:text-orange-300 mb-2">Performance Analysis</h3>
             <p className="text-sm text-orange-700 dark:text-orange-400">Based on recent training data and player performance metrics.</p>
           </div>
 
@@ -37,7 +44,7 @@ export default function AIRecommendationsModal({
                   <i className="fas fa-shield-alt text-red-600 text-sm"></i>
                 </div>
                 <div className="flex-1">
-                  <h5 className="font-medium text-gray-900 dark:text-gray-100">Focus on Defensive Positioning</h5>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Focus on Defensive Positioning</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Your team allowed 15% more points in the paint during the last three games. Consider adding more defensive sliding drills.</p>
                   <Button
                     size="sm"
@@ -57,7 +64,7 @@ export default function AIRecommendationsModal({
                   <i className="fas fa-basketball-ball text-blue-600 text-sm"></i>
                 </div>
                 <div className="flex-1">
-                  <h5 className="font-medium text-gray-900 dark:text-gray-100">Improve Free Throw Shooting</h5>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Improve Free Throw Shooting</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Current team average: 68% (Target: 75%). Schedule more shooting practice sessions.</p>
                   <Button
                     size="sm"
@@ -77,7 +84,7 @@ export default function AIRecommendationsModal({
                   <i className="fas fa-running text-green-600 text-sm"></i>
                 </div>
                 <div className="flex-1">
-                  <h5 className="font-medium text-gray-900 dark:text-gray-100">Increase Conditioning Work</h5>
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Increase Conditioning Work</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Player fatigue was noticeable in the 4th quarter. Add more endurance training.</p>
                   <Button
                     size="sm"
@@ -96,7 +103,7 @@ export default function AIRecommendationsModal({
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
             >
               Close
             </Button>

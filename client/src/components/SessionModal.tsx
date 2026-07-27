@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
+import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import type { Exercise, TrainingSession } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
 
@@ -30,6 +31,11 @@ interface SessionModalProps {
 
 export default function SessionModal({ isOpen, onClose, session }: SessionModalProps) {
   const isEditing = !!session;
+  const restoreFocus = useDialogFocusReturn(isOpen);
+  const handleOpenChange = (open: boolean) => {
+    if (!open) restoreFocus();
+    onClose();
+  };
 
   // Fetch exercises for selection
   const { data: exercises = [] } = useQuery<Exercise[]>({
@@ -67,6 +73,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     successMessage: isEditing ? "Training session updated successfully" : "Training session created successfully",
     errorMessage: isEditing ? "Failed to update training session" : "Failed to create training session",
     onSuccess: () => {
+      restoreFocus();
       onClose();
       form.reset();
       setSelectedExercises([]);
@@ -91,7 +98,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
@@ -123,19 +130,19 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Duration (minutes)</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                    <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
+                      <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select duration" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="60">60 minutes</SelectItem>
-                          <SelectItem value="90">90 minutes</SelectItem>
-                          <SelectItem value="120">120 minutes</SelectItem>
-                          <SelectItem value="150">150 minutes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="60">60 minutes</SelectItem>
+                        <SelectItem value="90">90 minutes</SelectItem>
+                        <SelectItem value="120">120 minutes</SelectItem>
+                        <SelectItem value="150">150 minutes</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -186,11 +193,11 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
             {/* Exercise Selection */}
             <div>
-              <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Add Exercises</h4>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Add Exercises</h3>
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center space-x-4 mb-4">
                   <Select value={exerciseCategory} onValueChange={setExerciseCategory}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-48" aria-label="Filter by category">
                       <SelectValue placeholder="Filter by category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -207,7 +214,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 {/* Selected Exercises */}
                 {selectedExercises.length > 0 && (
                   <div className="mb-4">
-                    <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Selected Exercises:</h5>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Selected Exercises:</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedExercises.map(exercise => (
                         <Badge
@@ -231,7 +238,12 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 )}
                 
                 {/* Available Exercises */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
+                <div
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto"
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Available exercises"
+                >
                   {filteredExercises.map(exercise => (
                     <div
                       key={exercise.id}
@@ -247,7 +259,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                         </Badge>
                         <span className="text-xs text-gray-500 dark:text-gray-400">{exercise.duration} min</span>
                       </div>
-                      <h6 className="font-medium text-gray-900 dark:text-gray-100 mb-1">{exercise.name}</h6>
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">{exercise.name}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{exercise.description}</p>
                     </div>
                   ))}
@@ -257,7 +269,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
             {/* Action Buttons */}
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
               <Button

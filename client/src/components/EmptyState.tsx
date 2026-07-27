@@ -26,7 +26,7 @@ export default function EmptyState({
     <Card className="text-center py-12">
       <CardContent>
         <div className={`w-24 h-24 ${iconWrapperClassName} rounded-full flex items-center justify-center mx-auto mb-4`}>
-          <i className={`${icon} ${iconClassName} text-3xl`}></i>
+          <i className={`${icon} ${iconClassName} text-3xl`} aria-hidden="true"></i>
         </div>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
         <p className="text-gray-600 dark:text-gray-400 mb-6">{description}</p>

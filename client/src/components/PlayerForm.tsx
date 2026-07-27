@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
+import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { insertPlayerSchema } from "@shared/schema";
 
 const playerFormSchema = insertPlayerSchema.extend({
@@ -30,6 +31,12 @@ interface PlayerFormProps {
 }
 
 export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
+  const restoreFocus = useDialogFocusReturn(isOpen);
+  const handleOpenChange = (open: boolean) => {
+    if (!open) restoreFocus();
+    onClose();
+  };
+
   const form = useForm<PlayerFormData>({
     resolver: zodResolver(playerFormSchema),
     defaultValues: {
@@ -44,7 +51,7 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
     successTitle: "Éxito",
     successMessage: "Jugador añadido exitosamente",
     errorMessage: "Error al añadir el jugador",
-    onSuccess: onClose,
+    onSuccess: () => handleOpenChange(false),
   });
 
   const onSubmit = (data: PlayerFormData) => {
@@ -52,7 +59,7 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Añadir Nuevo Jugador</DialogTitle>
@@ -80,20 +87,20 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Posición</FormLabel>
-                  <FormControl>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                    <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar posición" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {positions.map(position => (
-                          <SelectItem key={position} value={position}>
-                            {position}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
+                    </FormControl>
+                    <SelectContent>
+                      {positions.map(position => (
+                        <SelectItem key={position} value={position}>
+                          {position}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -126,7 +133,7 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancelar
               </Button>

@@ -13,7 +13,7 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(16, 100%, 60%);
+  --primary: hsl(16, 100%, 43%);
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(60, 4.8%, 95.9%);
   --secondary-foreground: hsl(24, 9.8%, 10%);
@@ -23,10 +23,12 @@
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
   --ring: hsl(16, 90%, 54%);
   --radius: 0.5rem;
-  
-  /* Basketball theme colors */
-  --basketball-orange: hsl(16, 100%, 60%);
-  --basketball-orange-hover: hsl(16, 100%, 55%);
+
+  /* Basketball theme colors. Darkened from the original hsl(16,100%,60%)
+     to hsl(16,100%,43%) so white text on this background clears WCAG AA
+     (4.5:1) — the original only measured ~2.9:1. */
+  --basketball-orange: hsl(16, 100%, 43%);
+  --basketball-orange-hover: hsl(16, 100%, 38%);
   --court-brown: hsl(25, 65%, 25%);
   --court-green: hsl(120, 61%, 34%);
   --basketball-red: hsl(0, 84%, 60%);
@@ -45,7 +47,7 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(16, 100%, 60%);
+  --primary: hsl(16, 100%, 43%);
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
@@ -55,10 +57,11 @@
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(16, 90%, 60%);
   --radius: 0.5rem;
-  
-  /* Basketball theme colors for dark mode */
-  --basketball-orange: hsl(16, 100%, 60%);
-  --basketball-orange-hover: hsl(16, 100%, 55%);
+
+  /* Basketball theme colors for dark mode — same darkened value as :root,
+     see the comment there. */
+  --basketball-orange: hsl(16, 100%, 43%);
+  --basketball-orange-hover: hsl(16, 100%, 38%);
 }
 
 @layer base {

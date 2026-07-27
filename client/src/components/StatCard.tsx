@@ -43,7 +43,7 @@ export default function StatCard({ label, value, icon, color, trend }: StatCardP
         </div>
         {trend && (
           <div className="mt-4 flex items-center text-sm">
-            <span className="text-green-600 font-medium">{trend.value}</span>
+            <span className="text-green-700 dark:text-green-500 font-medium">{trend.value}</span>
             <span className="text-gray-500 dark:text-gray-400 ml-2">{trend.label}</span>
           </div>
         )}

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
+import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { insertExerciseSchema } from "@shared/schema";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
@@ -28,6 +29,11 @@ interface ExerciseFormProps {
 
 export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseFormProps) {
   const isEditing = !!exercise;
+  const restoreFocus = useDialogFocusReturn(isOpen);
+  const handleOpenChange = (open: boolean) => {
+    if (!open) restoreFocus();
+    onClose();
+  };
 
   const form = useForm<ExerciseFormData>({
     resolver: zodResolver(exerciseFormSchema),
@@ -47,7 +53,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
     id: exercise?.id,
     successMessage: isEditing ? "Exercise updated successfully" : "Exercise created successfully",
     errorMessage: isEditing ? "Failed to update exercise" : "Failed to create exercise",
-    onSuccess: onClose,
+    onSuccess: () => handleOpenChange(false),
   });
 
   const onSubmit = (data: ExerciseFormData) => {
@@ -55,7 +61,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
@@ -103,20 +109,20 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {EXERCISE_CATEGORIES.map(category => (
-                            <SelectItem key={category} value={category}>
-                              {category.charAt(0).toUpperCase() + category.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                      </FormControl>
+                      <SelectContent>
+                        {EXERCISE_CATEGORIES.map(category => (
+                          <SelectItem key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -128,20 +134,20 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Difficulty</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select difficulty" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {DIFFICULTY_LEVELS.map(difficulty => (
-                            <SelectItem key={difficulty} value={difficulty}>
-                              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
+                      </FormControl>
+                      <SelectContent>
+                        {DIFFICULTY_LEVELS.map(difficulty => (
+                          <SelectItem key={difficulty} value={difficulty}>
+                            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -208,7 +214,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
+                onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>

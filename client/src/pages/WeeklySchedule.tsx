@@ -293,17 +293,26 @@ export default function WeeklySchedule() {
                 <CardContent className="p-3 space-y-2">
                   {daySessions.length === 0 ? (
                     <div className="text-center py-8">
-                      <i className="fas fa-calendar-plus text-gray-300 dark:text-gray-600 text-2xl mb-2"></i>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">No sessions</p>
+                      <i className="fas fa-calendar-plus text-gray-300 dark:text-gray-600 text-2xl mb-2" aria-hidden="true"></i>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">No sessions</p>
                     </div>
                   ) : (
                     daySessions.map((session) => (
-                      <div 
+                      <div
                         key={session.id}
-                        className={`rounded-lg p-3 cursor-pointer transition-all duration-200 hover:scale-105 border-2 ${
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${session.name}, ${session.time}, ${session.duration} minutes. Open attendance.`}
+                        className={`rounded-lg p-3 cursor-pointer transition-all duration-200 hover:scale-105 border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                           STATUS_COLORS[session.status as keyof typeof STATUS_COLORS] || STATUS_COLORS.scheduled
                         }`}
                         onClick={() => openAttendanceModal(session)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            openAttendanceModal(session);
+                          }
+                        }}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <Badge variant="outline" className="text-xs">

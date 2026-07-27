@@ -1,0 +1,130 @@
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { login } from "./helpers";
+
+// axe's default ruleset (WCAG 2.0/2.1 A+AA, best-practices) — includes
+// color-contrast, so this also covers the "revisión de contraste de color
+// real" leg of Fase 6 without a separate tool.
+async function scan(page: import("@playwright/test").Page) {
+  return new AxeBuilder({ page }).analyze();
+}
+
+function summarize(violations: Awaited<ReturnType<typeof scan>>["violations"]) {
+  return violations.map(v => ({
+    id: v.id,
+    impact: v.impact,
+    help: v.help,
+    nodes: v.nodes.map(n => n.target.join(" ")),
+  }));
+}
+
+test.describe("accessibility (axe)", () => {
+  test("login page", async ({ page }) => {
+    await page.goto("/");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("dashboard", async ({ page }) => {
+    await login(page);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("dashboard — AI recommendations modal open", async ({ page }) => {
+    await login(page);
+    await page.click('button:has-text("View AI Recommendations")');
+    await page.waitForSelector("text=AI Training Recommendations");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training sessions", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training sessions — create session modal open", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training sessions — delete confirm dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Delete"]').first().click();
+    await page.waitForSelector("text=Delete training session?");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library — create exercise form open", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.click('button:has-text("Add Exercise")');
+    await page.waitForSelector("text=Create New Exercise");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("players", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("players — create player form open", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.click('button:has-text("Añadir Jugador")');
+    await page.waitForSelector("text=Añadir Nuevo Jugador");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule — attendance modal open", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    const sessionCard = page.locator("div.cursor-pointer.rounded-lg").first();
+    if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
+    await sessionCard.click();
+    await page.waitForSelector("text=/Attendance - /");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("dark mode — dashboard", async ({ page }) => {
+    await login(page);
+    await page.click('button[aria-label="Cambiar a modo oscuro"]');
+    await page.waitForTimeout(200);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+});

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import type { TrainingSession, Player, Attendance } from "@shared/schema";
 
 const ATTENDANCE_STATUS = {
@@ -40,8 +41,14 @@ export default function AttendanceModal({
     return Math.round((presentCount / attendance.length) * 100);
   };
 
+  const restoreFocus = useDialogFocusReturn(open);
+  const handleOpenChange = (next: boolean) => {
+    if (!next) restoreFocus();
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
@@ -139,7 +146,7 @@ export default function AttendanceModal({
 
         <div className="mt-6 pt-4 border-t">
           <Button
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             className="w-full"
             variant="outline"
           >
