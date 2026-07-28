@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
@@ -105,6 +105,9 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
           <DialogTitle className="text-xl font-display uppercase tracking-tight">
             {isEditing ? "Edit Training Session" : "Create Training Session"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Set the session's name, date, time and duration, and choose which exercises to include.
+          </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>

@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,6 +63,9 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-tight">Añadir Nuevo Jugador</DialogTitle>
+          <DialogDescription className="sr-only">
+            Ingresá el nombre, la posición y si el jugador está activo.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

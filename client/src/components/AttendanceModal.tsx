@@ -1,5 +1,5 @@
 import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, XCircle, Clock3, Info } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +81,9 @@ export default function AttendanceModal({
             <ClipboardList className="w-5 h-5 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
             Attendance - {session?.name}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Mark each active player's attendance status for this training session.
+          </DialogDescription>
           <div className="text-sm text-muted-foreground mt-2">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />{session?.date}</span>

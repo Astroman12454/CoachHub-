@@ -1,5 +1,5 @@
 import { Bot, Shield, Target, Activity } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 
@@ -30,6 +30,9 @@ export default function AIRecommendationsModal({
             <Bot className="w-5 h-5 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
             AI Training Recommendations
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            AI-generated training focus areas based on recent team performance data.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

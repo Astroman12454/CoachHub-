@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -65,6 +65,9 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-tight">{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Set the exercise's name, category, difficulty, duration and description.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
