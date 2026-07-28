@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { UserPlus, Users, CheckCircle2, Target, PieChart } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
 import StatCard from "@/components/StatCard";
@@ -136,35 +137,35 @@ export default function Players() {
             className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
             onClick={() => setIsCreateModalOpen(true)}
           >
-            <i className="fas fa-user-plus mr-2"></i>
+            <UserPlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
             Añadir Jugador
           </Button>
         </div>
 
         {/* Player Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <StatCard
             label="Total Jugadores"
             value={players.length}
-            icon="fas fa-users"
-            color="blue"
+            icon={Users}
+            color="court"
           />
           <StatCard
             label="Jugadores Activos"
             value={players.filter(p => p.isActive === 1).length}
-            icon="fas fa-check-circle"
-            color="green"
+            icon={CheckCircle2}
+            color="success"
           />
           <StatCard
             label="Posiciones"
             value={Object.keys(playersByPosition).length}
-            icon="fas fa-basketball-ball"
-            color="purple"
+            icon={Target}
+            color="violet"
           />
           <StatCard
             label="Tasa de Actividad"
             value={`${Math.round((players.filter(p => p.isActive === 1).length / players.length) * 100)}%`}
-            icon="fas fa-chart-pie"
+            icon={PieChart}
             color="orange"
           />
         </div>
@@ -172,7 +173,7 @@ export default function Players() {
         {/* Players List */}
         {filteredPlayers.length === 0 ? (
           <EmptyState
-            icon="fas fa-users"
+            icon={Users}
             title="No se encontraron jugadores"
             description={
               searchQuery || filterActive !== "all"
@@ -181,7 +182,7 @@ export default function Players() {
             }
             action={!searchQuery && filterActive === "all" ? {
               label: "Añadir Primer Jugador",
-              icon: "fas fa-user-plus",
+              icon: UserPlus,
               onClick: () => setIsCreateModalOpen(true),
             } : undefined}
           />
@@ -200,19 +201,19 @@ export default function Players() {
                     {positionPlayers.map((player) => (
                       <div
                         key={player.id}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        className="border border-border rounded-lg p-4 hover:border-basketball-orange hover:shadow-sm transition-all"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium text-gray-900 dark:text-gray-100">{player.name}</h3>
+                          <h3 className="font-display font-semibold uppercase tracking-tight text-foreground">{player.name}</h3>
                           <Badge
                             variant={player.isActive === 1 ? "default" : "secondary"}
-                            className={player.isActive === 1 ? "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300" : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"}
+                            className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
                           >
                             {player.isActive === 1 ? "Activo" : "Inactivo"}
                           </Badge>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{player.position}</p>
+                          <p className="text-sm text-muted-foreground">{player.position}</p>
                           <Button
                             variant="outline"
                             size="sm"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Menu, Search, X, Plus, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SessionModal from "./SessionModal";
@@ -12,9 +13,9 @@ interface TopBarProps {
   searchPlaceholder?: string;
 }
 
-export default function TopBar({ 
-  title, 
-  subtitle, 
+export default function TopBar({
+  title,
+  subtitle,
   showNewSessionButton = false,
   onSearch,
   searchPlaceholder = "Search..."
@@ -36,49 +37,41 @@ export default function TopBar({
 
   return (
     <>
-      <header className="bg-gradient-to-r from-white to-orange-50 dark:from-gray-900 dark:to-gray-900 border-b-2 border-orange-200 dark:border-orange-900/40 px-4 py-3 lg:px-6 lg:py-4 relative overflow-hidden shadow-lg">
-        <div className="absolute top-0 right-0 w-32 h-32 basketball-orange opacity-5 rounded-full -translate-y-16 translate-x-16"></div>
-        <div className="absolute bottom-0 left-0 w-20 h-20 basketball-orange opacity-10 rounded-full translate-y-10 -translate-x-10"></div>
-
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between relative z-10">
-          <div className="bounce-in flex items-center gap-3">
+      <header className="bg-card border-b border-border px-4 py-4 lg:px-7 lg:py-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex items-center gap-3">
             <button
               onClick={openMobile}
-              className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-xl flex items-center justify-center shadow-lg"
+              className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
               aria-label="Open navigation menu"
             >
-              <i className="fas fa-bars text-white" aria-hidden="true"></i>
+              <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
             </button>
             <div>
-              <div className="flex items-center space-x-3 mb-1">
-                <div className="hidden lg:flex w-10 h-10 basketball-orange rounded-xl items-center justify-center shadow-lg">
-                  <i className="fas fa-basketball-ball text-white"></i>
-                </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h2>
-              </div>
-              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 lg:ml-[52px]">{subtitle}</p>
+              <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">{title}</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 lg:space-x-4">
+          <div className="flex items-center gap-3">
             {onSearch && (
-              <div className="relative slide-up flex-1 lg:flex-none">
+              <div className="relative flex-1 lg:flex-none">
                 <Input
                   type="text"
                   placeholder={searchPlaceholder}
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className={`pl-12 py-2.5 lg:py-3 w-full lg:w-64 border-2 border-orange-200 dark:border-orange-900/40 rounded-xl focus:border-basketball-orange transition-all duration-300 shadow-sm hover:shadow-md ${searchQuery ? "pr-9" : "pr-4"}`}
+                  className={`pl-10 w-full lg:w-64 ${searchQuery ? "pr-9" : "pr-4"}`}
                 />
-                <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-basketball-orange"></i>
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={clearSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     aria-label="Clear search"
                   >
-                    <i className="fas fa-times text-xs" aria-hidden="true"></i>
+                    <X className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -86,27 +79,29 @@ export default function TopBar({
             {showNewSessionButton && (
               <Button
                 onClick={() => setIsModalOpen(true)}
-                className="basketball-orange basketball-orange-hover text-white px-4 lg:px-6 py-2.5 lg:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
+                className="basketball-orange basketball-orange-hover text-white whitespace-nowrap"
               >
-                <i className="fas fa-plus mr-2"></i>
+                <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
                 <span className="hidden sm:inline">New Session</span>
                 <span className="sm:hidden">New</span>
               </Button>
             )}
 
-            <div className="hidden lg:flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <i className="fas fa-bell text-white text-sm"></i>
-              </div>
-            </div>
+            <button
+              type="button"
+              className="hidden lg:flex w-10 h-10 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
+              aria-label="Notifications"
+            >
+              <Bell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
+            </button>
           </div>
         </div>
       </header>
-      
+
       {isModalOpen && (
-        <SessionModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
+        <SessionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
         />
       )}
     </>

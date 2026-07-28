@@ -1,3 +1,4 @@
+import { CalendarCheck, Users, Dumbbell, TrendingUp } from "lucide-react";
 import StatCard from "@/components/StatCard";
 
 export interface DashboardStats {
@@ -13,33 +14,33 @@ interface DashboardStatsGridProps {
 
 export default function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <StatCard
         label="Total Sessions"
         value={stats?.totalSessions || 0}
-        icon="fas fa-calendar-check"
-        color="blue"
+        icon={CalendarCheck}
+        color="orange"
         trend={{ value: "+12%", label: "from last month" }}
       />
       <StatCard
         label="Active Players"
         value={stats?.activePlayersCount || 0}
-        icon="fas fa-users"
-        color="orange"
+        icon={Users}
+        color="court"
         trend={{ value: "+2", label: "new this week" }}
       />
       <StatCard
         label="Exercise Library"
         value={stats?.totalExercises || 0}
-        icon="fas fa-dumbbell"
-        color="purple"
+        icon={Dumbbell}
+        color="violet"
         trend={{ value: "+8", label: "added this week" }}
       />
       <StatCard
         label="Avg Attendance"
         value={`${stats?.avgAttendance || 0}%`}
-        icon="fas fa-chart-line"
-        color="green"
+        icon={TrendingUp}
+        color="success"
         trend={{ value: "+5%", label: "improvement" }}
       />
     </div>

@@ -5,6 +5,10 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Karla", "system-ui", "sans-serif"],
+        display: ["Oswald", "Arial Narrow", "Helvetica Neue Condensed", "sans-serif"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -44,6 +48,24 @@ export default {
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
+        court: {
+          DEFAULT: "var(--court)",
+          tint: "var(--court-tint)",
+        },
+        success: {
+          DEFAULT: "var(--success)",
+          tint: "var(--success-tint)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          tint: "var(--info-tint)",
+        },
+        rail: {
+          DEFAULT: "var(--rail)",
+          foreground: "var(--rail-foreground)",
+          muted: "var(--rail-muted)",
+          border: "var(--rail-border)",
+        },
       },
     },
   },

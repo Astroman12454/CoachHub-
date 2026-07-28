@@ -11,7 +11,7 @@ interface RecentExercisesCardProps {
 
 export default function RecentExercisesCard({ exercises, onExerciseClick, onBrowseLibrary }: RecentExercisesCardProps) {
   return (
-    <Card className="mt-8">
+    <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Exercises</CardTitle>
         <Button
@@ -24,9 +24,9 @@ export default function RecentExercisesCard({ exercises, onExerciseClick, onBrow
       </CardHeader>
       <CardContent>
         {exercises.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">No exercises in library</p>
+          <p className="text-muted-foreground text-center py-8">No exercises in library</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {exercises.map((exercise) => (
               <ExerciseCard
                 key={exercise.id}

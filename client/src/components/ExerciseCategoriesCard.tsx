@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_SOLID_COLORS, CATEGORY_ICONS } from "@/lib/types";
 
 interface ExerciseCategoriesCardProps {
@@ -12,28 +12,26 @@ export default function ExerciseCategoriesCard({ exercisesByCategory, onCategory
       <CardHeader>
         <CardTitle>Exercise Categories</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <div className="px-2 pb-2">
         {Object.entries(exercisesByCategory).map(([category, count]) => {
           const solidColorClass = CATEGORY_SOLID_COLORS[category as keyof typeof CATEGORY_SOLID_COLORS];
-          const iconClass = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
+          const CategoryIcon = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
 
           return (
-            <div
+            <button
+              type="button"
               key={category}
-              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-left"
               onClick={() => onCategoryClick(category)}
             >
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 ${solidColorClass} rounded-lg flex items-center justify-center`}>
-                  <i className={`${iconClass} text-white text-sm`}></i>
-                </div>
-                <span className="font-medium capitalize">{category}</span>
-              </div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">{count} exercises</span>
-            </div>
+              <span className={`w-2 h-2 rounded-full ${solidColorClass} flex-shrink-0`} aria-hidden="true" />
+              <CategoryIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              <span className="font-medium capitalize flex-1">{category}</span>
+              <span className="font-display font-semibold text-muted-foreground tabular-nums">{count}</span>
+            </button>
           );
         })}
-      </CardContent>
+      </div>
     </Card>
   );
 }

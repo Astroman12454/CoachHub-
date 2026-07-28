@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -101,7 +102,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
+          <DialogTitle className="text-xl font-display uppercase tracking-tight">
             {isEditing ? "Edit Training Session" : "Create Training Session"}
           </DialogTitle>
         </DialogHeader>
@@ -193,8 +194,8 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
             {/* Exercise Selection */}
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Add Exercises</h3>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Add Exercises</h3>
+              <div className="border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-4 mb-4">
                   <Select value={exerciseCategory} onValueChange={setExerciseCategory}>
                     <SelectTrigger className="w-48" aria-label="Filter by category">
@@ -210,11 +211,11 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 {/* Selected Exercises */}
                 {selectedExercises.length > 0 && (
                   <div className="mb-4">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Selected Exercises:</h4>
+                    <h4 className="font-medium text-foreground mb-2">Selected Exercises:</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedExercises.map(exercise => (
                         <Badge
@@ -226,17 +227,17 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                           <button
                             type="button"
                             onClick={() => removeExercise(exercise.id)}
-                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="text-muted-foreground hover:text-foreground"
                             aria-label={`Remove ${exercise.name}`}
                           >
-                            <i className="fas fa-times text-xs" aria-hidden="true"></i>
+                            <X className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
                           </button>
                         </Badge>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {/* Available Exercises */}
                 <div
                   className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto"
@@ -247,7 +248,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                   {filteredExercises.map(exercise => (
                     <div
                       key={exercise.id}
-                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+                      className="border border-border rounded-lg p-3 hover:border-basketball-orange hover:shadow-sm transition-all cursor-pointer"
                       onClick={() => addExercise(exercise)}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -257,10 +258,10 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                         >
                           {exercise.category}
                         </Badge>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{exercise.duration} min</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">{exercise.duration} min</span>
                       </div>
-                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">{exercise.name}</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{exercise.description}</p>
+                      <h4 className="font-medium text-foreground mb-1">{exercise.name}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{exercise.description}</p>
                     </div>
                   ))}
                 </div>
@@ -268,7 +269,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>

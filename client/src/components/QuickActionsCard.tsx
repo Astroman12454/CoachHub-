@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Dumbbell, UserPlus, CalendarRange } from "lucide-react";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface QuickActionsCardProps {
@@ -12,39 +13,39 @@ export default function QuickActionsCard({ onCreateSession, onNavigate }: QuickA
       <CardHeader>
         <CardTitle>Quick Actions</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <div className="px-4 pb-4 space-y-2">
         <Button
-          className="w-full basketball-orange basketball-orange-hover text-white"
+          className="w-full basketball-orange basketball-orange-hover text-white justify-start"
           onClick={onCreateSession}
         >
-          <i className="fas fa-plus mr-2"></i>
+          <Plus className="w-4 h-4 mr-2" strokeWidth={2} aria-hidden="true" />
           Create Training Session
         </Button>
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full justify-start"
           onClick={() => onNavigate('/exercise-library')}
         >
-          <i className="fas fa-dumbbell mr-2"></i>
+          <Dumbbell className="w-4 h-4 mr-2" strokeWidth={1.75} aria-hidden="true" />
           Add New Exercise
         </Button>
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full justify-start"
           onClick={() => onNavigate('/players')}
         >
-          <i className="fas fa-user-plus mr-2"></i>
+          <UserPlus className="w-4 h-4 mr-2" strokeWidth={1.75} aria-hidden="true" />
           Add Player
         </Button>
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full justify-start"
           onClick={() => onNavigate('/weekly-schedule')}
         >
-          <i className="fas fa-calendar-week mr-2"></i>
+          <CalendarRange className="w-4 h-4 mr-2" strokeWidth={1.75} aria-hidden="true" />
           Weekly Schedule
         </Button>
-      </CardContent>
+      </div>
     </Card>
   );
 }

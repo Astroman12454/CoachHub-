@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { Pencil, Trash2, Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
-import { CATEGORY_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
+import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -13,18 +14,19 @@ interface ExerciseCardProps {
 export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: ExerciseCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
-  const categoryIconClass = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
+  const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
+  const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
   const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
 
   return (
     <div
-      className="basketball-card border-2 border-orange-100 dark:border-orange-900/30 rounded-xl p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-1 hover:border-basketball-orange group"
+      className="bg-card border border-border rounded-lg p-5 hover:border-basketball-orange hover:shadow-md transition-all duration-200 cursor-pointer group"
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2 mb-4">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className={`w-10 h-10 flex-shrink-0 ${categoryColorClass} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all duration-300`}>
-            <i className={`${categoryIconClass} text-white`}></i>
+          <div className={`w-9 h-9 flex-shrink-0 ${categorySolidClass} rounded-md flex items-center justify-center`}>
+            <CategoryIcon className="w-4 h-4 text-white" strokeWidth={2} />
           </div>
           <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 dark:border-orange-900/40 dark:text-orange-300 dark:bg-orange-950/40">
             {exercise.category}
@@ -38,31 +40,31 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
           // Always visible on mobile/tablet (no hover to reveal them on
           // touch); fades in on hover only once there's room to spare on
           // desktop.
-          <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300">
+          <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
             {onEdit && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="w-10 h-10 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center justify-center"
+                className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
                 aria-label={`Edit ${exercise.name}`}
               >
-                <i className="fas fa-edit text-gray-600 dark:text-gray-300 text-xs" aria-hidden="true"></i>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
               </button>
             )}
             {onDelete && (
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="w-10 h-10 bg-white dark:bg-gray-800 shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
+                className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
                 aria-label={`Delete ${exercise.name}`}
               >
-                <i className="fas fa-trash text-red-600 text-xs" aria-hidden="true"></i>
+                <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
               </button>
             )}
           </div>
         ) : (
-          <div className="w-6 h-6 flex-shrink-0 bg-[hsl(16,100%,60%,0.2)] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-            <i className="fas fa-arrow-right text-basketball-orange text-xs"></i>
+          <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
           </div>
         )}
       </div>
@@ -72,32 +74,22 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
           src={exercise.imageUrl}
           alt={exercise.name}
           onError={() => setImageFailed(true)}
-          className="w-full h-32 object-cover rounded-xl mb-4 group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-32 object-cover rounded-md mb-4"
         />
       ) : (
-        <div className={`w-full h-32 ${categoryColorClass} rounded-xl mb-4 flex items-center justify-center`}>
-          <i className={`${categoryIconClass} text-3xl opacity-50`}></i>
+        <div className={`w-full h-32 ${categoryColorClass} rounded-md mb-4 flex items-center justify-center`}>
+          <CategoryIcon className="w-9 h-9 opacity-40" strokeWidth={1.5} />
         </div>
       )}
-      
-      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 group-hover:text-basketball-orange transition-colors duration-300">
+
+      <h3 className="font-display font-semibold uppercase tracking-tight text-foreground mb-2 group-hover:text-basketball-orange transition-colors duration-200">
         {exercise.name}
       </h3>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{exercise.description}</p>
+      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{exercise.description}</p>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-1">
-            <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-              <i className="fas fa-clock text-orange-600 text-xs"></i>
-            </div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">{exercise.duration} min</span>
-          </div>
-        </div>
-        
-        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center opacity-80 group-hover:opacity-100 transition-all duration-300">
-          <i className="fas fa-basketball-ball text-white text-xs"></i>
-        </div>
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+        <span className="text-xs font-medium">{exercise.duration} min</span>
       </div>
     </div>
   );

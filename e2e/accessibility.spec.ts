@@ -112,7 +112,7 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/weekly-schedule");
     await page.waitForLoadState("networkidle");
-    const sessionCard = page.locator("div.cursor-pointer.rounded-lg").first();
+    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");

@@ -64,7 +64,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -210,7 +210,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
               )}
             />
 
-            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button
                 type="button"
                 variant="outline"

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { Plus, Dumbbell } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
 import ExerciseForm from "@/components/ExerciseForm";
@@ -121,7 +122,7 @@ export default function ExerciseLibrary() {
             className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
             onClick={() => setIsCreateFormOpen(true)}
           >
-            <i className="fas fa-plus mr-2"></i>
+            <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
             Add Exercise
           </Button>
         </div>
@@ -129,7 +130,7 @@ export default function ExerciseLibrary() {
         {/* Exercise Grid */}
         {filteredExercises.length === 0 ? (
           <EmptyState
-            icon="fas fa-dumbbell"
+            icon={Dumbbell}
             title="No Exercises Found"
             description={
               searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
@@ -138,12 +139,12 @@ export default function ExerciseLibrary() {
             }
             action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" ? {
               label: "Add First Exercise",
-              icon: "fas fa-plus",
+              icon: Plus,
               onClick: () => setIsCreateFormOpen(true),
             } : undefined}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredExercises.map((exercise) => (
               <ExerciseCard
                 key={exercise.id}

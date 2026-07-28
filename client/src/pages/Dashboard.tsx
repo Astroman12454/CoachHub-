@@ -70,7 +70,7 @@ export default function Dashboard() {
           showNewSessionButton={true}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-32" />
             ))}
@@ -91,7 +91,7 @@ export default function Dashboard() {
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         <DashboardStatsGrid stats={stats} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2">
             <UpcomingSessionsCard
               sessions={upcomingSessions}
@@ -100,7 +100,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             <QuickActionsCard
               onCreateSession={() => setIsSessionModalOpen(true)}
               onNavigate={navigateToPage}

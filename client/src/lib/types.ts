@@ -1,3 +1,5 @@
+import { Target, Hand, Shield, ArrowLeftRight, Activity } from "lucide-react";
+
 export const EXERCISE_CATEGORIES = [
   'shooting',
   'dribbling', 
@@ -35,11 +37,11 @@ export const CATEGORY_SOLID_COLORS = {
 } as const;
 
 export const CATEGORY_ICONS = {
-  shooting: 'fas fa-basketball-ball',
-  dribbling: 'fas fa-hand-paper',
-  defense: 'fas fa-shield-alt', 
-  passing: 'fas fa-exchange-alt',
-  conditioning: 'fas fa-running'
+  shooting: Target,
+  dribbling: Hand,
+  defense: Shield,
+  passing: ArrowLeftRight,
+  conditioning: Activity,
 } as const;
 
 export const DIFFICULTY_COLORS = {

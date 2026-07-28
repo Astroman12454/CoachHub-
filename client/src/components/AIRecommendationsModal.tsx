@@ -1,3 +1,4 @@
+import { Bot, Shield, Target, Activity } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
@@ -25,27 +26,27 @@ export default function AIRecommendationsModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <i className="fas fa-robot text-basketball-orange"></i>
+          <DialogTitle className="flex items-center gap-2 font-display uppercase tracking-tight">
+            <Bot className="w-5 h-5 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
             AI Training Recommendations
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 p-4 rounded-lg border border-orange-200 dark:border-orange-800/40">
-            <h3 className="font-semibold text-orange-800 dark:text-orange-300 mb-2">Performance Analysis</h3>
-            <p className="text-sm text-orange-700 dark:text-orange-400">Based on recent training data and player performance metrics.</p>
+          <div className="basketball-orange-deep text-white p-4 rounded-lg">
+            <h3 className="font-semibold mb-1">Performance Analysis</h3>
+            <p className="text-sm text-white/90">Based on recent training data and player performance metrics.</p>
           </div>
 
           <div className="space-y-3">
-            <div className="border rounded-lg p-4">
+            <div className="border border-border rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-red-100 dark:bg-red-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-shield-alt text-red-600 text-sm"></i>
+                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-red-50 dark:bg-red-950/40 flex-shrink-0">
+                  <Shield className="w-4 h-4 text-red-600" strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Focus on Defensive Positioning</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Your team allowed 15% more points in the paint during the last three games. Consider adding more defensive sliding drills.</p>
+                  <h3 className="font-medium text-foreground">Focus on Defensive Positioning</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Your team allowed 15% more points in the paint during the last three games. Consider adding more defensive sliding drills.</p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -58,14 +59,14 @@ export default function AIRecommendationsModal({
               </div>
             </div>
 
-            <div className="border rounded-lg p-4">
+            <div className="border border-border rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-basketball-ball text-blue-600 text-sm"></i>
+                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-blue-50 dark:bg-blue-950/40 flex-shrink-0">
+                  <Target className="w-4 h-4 text-blue-600" strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Improve Free Throw Shooting</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Current team average: 68% (Target: 75%). Schedule more shooting practice sessions.</p>
+                  <h3 className="font-medium text-foreground">Improve Free Throw Shooting</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Current team average: 68% (Target: 75%). Schedule more shooting practice sessions.</p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -78,14 +79,14 @@ export default function AIRecommendationsModal({
               </div>
             </div>
 
-            <div className="border rounded-lg p-4">
+            <div className="border border-border rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-950/40 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-running text-green-600 text-sm"></i>
+                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-success-tint flex-shrink-0">
+                  <Activity className="w-4 h-4 text-success" strokeWidth={1.75} aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Increase Conditioning Work</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Player fatigue was noticeable in the 4th quarter. Add more endurance training.</p>
+                  <h3 className="font-medium text-foreground">Increase Conditioning Work</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Player fatigue was noticeable in the 4th quarter. Add more endurance training.</p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -99,7 +100,7 @@ export default function AIRecommendationsModal({
             </div>
           </div>
 
-          <div className="flex gap-2 pt-4 border-t">
+          <div className="flex gap-2 pt-4 border-t border-border">
             <Button
               variant="outline"
               className="flex-1"

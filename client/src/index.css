@@ -2,66 +2,147 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(16, 100%, 43%);
-  --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
-  --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(16, 90%, 54%);
-  --radius: 0.5rem;
+/* Self-hosted (no external font requests): Oswald for numbers/headings —
+   condensed, high-contrast, reads like a scoreboard — and Karla for UI
+   text/body copy. Picked deliberately over the system font stack that
+   shipped with zero typographic identity. */
+@font-face {
+  font-family: "Oswald";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/oswald-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Oswald";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/oswald-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Karla";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/karla-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Karla";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/karla-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Karla";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/karla-700.woff2") format("woff2");
+}
 
-  /* Basketball theme colors. Darkened from the original hsl(16,100%,60%)
-     to hsl(16,100%,43%) so white text on this background clears WCAG AA
-     (4.5:1) — the original only measured ~2.9:1. */
-  --basketball-orange: hsl(16, 100%, 43%);
-  --basketball-orange-hover: hsl(16, 100%, 38%);
-  --court-brown: hsl(25, 65%, 25%);
-  --court-green: hsl(120, 61%, 34%);
-  --basketball-red: hsl(0, 84%, 60%);
-  --basketball-blue: hsl(214, 95%, 62%);
-  --basketball-green: hsl(142, 76%, 36%);
+:root {
+  /* "Stat sheet" palette: warm paper instead of stock white, ink instead
+     of pure black, the same brand orange as before (kept — it's real and
+     already WCAG-checked) used as a deliberate accent rather than a
+     surface color. */
+  --background: hsl(48, 20%, 96%);
+  --foreground: hsl(30, 15%, 8%);
+  --muted: hsl(45, 16%, 91%);
+  --muted-foreground: hsl(30, 8%, 40%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(30, 15%, 8%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(30, 15%, 8%);
+  --border: hsl(40, 20%, 87%);
+  --input: hsl(40, 20%, 87%);
+  --primary: hsl(16, 100%, 40%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(45, 16%, 91%);
+  --secondary-foreground: hsl(30, 15%, 8%);
+  --accent: hsl(45, 16%, 91%);
+  --accent-foreground: hsl(30, 15%, 8%);
+  --destructive: hsl(5, 74%, 42%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(16, 90%, 54%);
+  --radius: 0.4rem;
+
+  /* 40% (not the original 43%) so white text clears WCAG AA with real
+     margin (5.1:1) instead of sitting right at the 4.5:1 line — a razor's
+     edge that axe-core caught flip-flopping on sub-pixel rendering. */
+  --basketball-orange: hsl(16, 100%, 40%);
+  --basketball-orange-hover: hsl(16, 100%, 34%);
+  --basketball-orange-deep: hsl(16, 100%, 34%);
+  /* Same value as --basketball-orange in light mode — text sitting on a
+     light page/card background needs the same dark, saturated orange
+     that works as a button fill. Dark mode's copy of this diverges (see
+     .dark below): text needs a *brighter* orange against near-black,
+     while a button fill needs to stay dark enough for white text. */
+  --basketball-orange-accent: hsl(16, 100%, 40%);
+
+  /* Secondary accents, used sparingly: court (hardwood), success (court
+     green), info (scoreboard violet) — for stat highlights, not surfaces. */
+  --court: hsl(28, 46%, 40%);
+  --court-tint: hsl(30, 45%, 92%);
+  --success: hsl(150, 39%, 30%);
+  --success-tint: hsl(150, 35%, 92%);
+  --info: hsl(258, 35%, 51%);
+  --info-tint: hsl(258, 40%, 95%);
+
+  /* The sidebar is a fixed dark "scoreboard rail", independent of the
+     light/dark theme toggle — see Sidebar.tsx. */
+  --rail: hsl(30, 15%, 7%);
+  --rail-foreground: hsl(45, 25%, 94%);
+  --rail-muted: hsl(35, 12%, 60%);
+  --rail-border: hsl(30, 12%, 15%);
 }
 
 .dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(16, 100%, 43%);
+  --background: hsl(25, 12%, 6%);
+  --foreground: hsl(45, 25%, 94%);
+  --muted: hsl(25, 10%, 13%);
+  --muted-foreground: hsl(35, 10%, 64%);
+  --popover: hsl(25, 12%, 8%);
+  --popover-foreground: hsl(45, 25%, 94%);
+  --card: hsl(25, 12%, 8%);
+  --card-foreground: hsl(45, 25%, 94%);
+  --border: hsl(25, 10%, 16%);
+  --input: hsl(25, 10%, 16%);
+  --primary: hsl(16, 100%, 40%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(25, 10%, 15%);
+  --secondary-foreground: hsl(45, 25%, 94%);
+  --accent: hsl(25, 10%, 15%);
+  --accent-foreground: hsl(45, 25%, 94%);
+  --destructive: hsl(5, 62%, 42%);
+  --destructive-foreground: hsl(45, 25%, 94%);
   --ring: hsl(16, 90%, 60%);
-  --radius: 0.5rem;
+  --radius: 0.4rem;
 
-  /* Basketball theme colors for dark mode — same darkened value as :root,
-     see the comment there. */
-  --basketball-orange: hsl(16, 100%, 43%);
-  --basketball-orange-hover: hsl(16, 100%, 38%);
+  /* Same 40% as :root, not a brighter dark-mode-only shade — a lighter
+     fill looked nicer against near-black but dropped white-text contrast
+     to 3.2:1. One brand orange that works with white text everywhere. */
+  --basketball-orange: hsl(16, 100%, 40%);
+  --basketball-orange-hover: hsl(16, 100%, 34%);
+  --basketball-orange-deep: hsl(16, 100%, 34%);
+  /* Text needs the opposite adjustment from the button fill above: the
+     same 40% orange used as text on a near-black card only measures
+     3.6:1. Brighter here is safe because this token is never paired with
+     white text on top of it. */
+  --basketball-orange-accent: hsl(16, 100%, 60%);
+
+  --court: hsl(30, 45%, 65%);
+  --court-tint: hsl(30, 30%, 14%);
+  --success: hsl(150, 45%, 62%);
+  --success-tint: hsl(150, 30%, 12%);
+  --info: hsl(258, 55%, 76%);
+  --info-tint: hsl(258, 30%, 15%);
+
+  --rail: hsl(28, 15%, 4%);
+  --rail-foreground: hsl(45, 25%, 94%);
+  --rail-muted: hsl(35, 10%, 55%);
+  --rail-border: hsl(28, 12%, 12%);
 }
 
 @layer base {
@@ -110,111 +191,53 @@
   .basketball-orange {
     background-color: var(--basketball-orange);
   }
-  
+
   .basketball-orange-hover:hover {
     background-color: var(--basketball-orange-hover);
   }
-  
+
+  /* Darker still, for large text-bearing surfaces (AICoachBanner) that
+     need real headroom above the 4.5:1 minimum, not the default's ~5:1. */
+  .basketball-orange-deep {
+    background-color: var(--basketball-orange-deep);
+  }
+
   .text-basketball-orange {
-    color: var(--basketball-orange);
+    color: var(--basketball-orange-accent);
   }
-  
+
   .border-basketball-orange {
-    border-color: var(--basketball-orange);
+    border-color: var(--basketball-orange-accent);
   }
-  
+
   .ring-basketball-orange {
-    --tw-ring-color: var(--basketball-orange);
+    --tw-ring-color: var(--basketball-orange-accent);
   }
 
-  /* Basketball animations and patterns */
-  .basketball-pattern {
-    background-image: 
-      linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
-      linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.1) 75%),
-      linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.1) 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  .font-display {
+    font-family: "Oswald", "Arial Narrow", "Helvetica Neue Condensed", sans-serif;
   }
 
-  .bounce-in {
-    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* Quick, direct entrance — replaces the old overshoot bounce/slide-up
+     animations, which read as decoration rather than feedback. */
+  .fade-in {
+    animation: fadeIn 0.25s ease-out both;
   }
 
-  @keyframes bounceIn {
-    0% {
-      transform: scale(0.3);
-      opacity: 0;
-    }
-    50% {
-      transform: scale(1.05);
-    }
-    70% {
-      transform: scale(0.9);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  .slide-up {
-    animation: slideUp 0.5s ease-out;
-  }
-
-  @keyframes slideUp {
+  @keyframes fadeIn {
     from {
-      transform: translateY(20px);
       opacity: 0;
+      transform: translateY(4px);
     }
     to {
+      opacity: 1;
       transform: translateY(0);
-      opacity: 1;
     }
   }
 
-  .basketball-card {
-    background: linear-gradient(135deg, rgba(237, 109, 49, 0.05) 0%, rgba(237, 109, 49, 0.02) 100%);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .basketball-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent 30%, rgba(237, 109, 49, 0.1) 50%, transparent 70%);
-    transform: rotate(45deg);
-    transition: all 0.6s;
-    opacity: 0;
-  }
-
-  .basketball-card:hover::before {
-    opacity: 1;
-    transform: rotate(45deg) translate(30%, 30%);
-  }
-
-  .pulse-orange {
-    animation: pulseOrange 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulseOrange {
-    0%, 100% {
-      opacity: 1;
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in {
+      animation-duration: 0.001ms;
     }
-    50% {
-      opacity: 0.7;
-    }
-  }
-
-  .court-bg {
-    background: linear-gradient(135deg, 
-      hsl(var(--court-brown)) 0%, 
-      hsl(25, 55%, 30%) 50%, 
-      hsl(var(--court-brown)) 100%);
   }
 }

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import AttendanceModal from "@/components/AttendanceModal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import StatCard from "@/components/StatCard";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,11 +22,13 @@ const DAYS_OF_WEEK = [
   { short: "Sun", full: "Sunday" }
 ];
 
+// Left-border accent + neutral card background — a status color that reads
+// as a marker on a stat sheet rather than a full pastel-filled block.
 const STATUS_COLORS = {
-  scheduled: "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-800/40 dark:text-blue-300",
-  in_progress: "bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/40 dark:border-orange-800/40 dark:text-orange-300",
-  completed: "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800/40 dark:text-green-300",
-  cancelled: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200"
+  scheduled: "border-l-blue-500",
+  in_progress: "border-l-basketball-orange",
+  completed: "border-l-success",
+  cancelled: "border-l-border"
 };
 
 export default function WeeklySchedule() {
@@ -163,8 +167,8 @@ export default function WeeklySchedule() {
   if (sessionsLoading) {
     return (
       <div className="flex flex-col h-full">
-        <TopBar 
-          title="Weekly Schedule" 
+        <TopBar
+          title="Weekly Schedule"
           subtitle="Plan your week and manage attendance"
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -176,24 +180,24 @@ export default function WeeklySchedule() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar 
-        title="Weekly Schedule" 
+      <TopBar
+        title="Weekly Schedule"
         subtitle="Plan your training week and track attendance"
       />
-      
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
         {/* Header with Week Navigation */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-4">
           <div className="col-span-2 text-center sm:col-span-1 sm:order-2">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h2 className="font-display font-bold uppercase tracking-tight text-xl sm:text-2xl text-foreground">
               {weekDates[0].toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
               {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Training Schedule Overview</p>
+            <p className="text-muted-foreground mt-0.5 text-sm">Training Schedule Overview</p>
           </div>
 
           <Button variant="outline" onClick={() => navigateWeek('prev')} className="flex items-center justify-center gap-2 sm:order-1">
-            <i className="fas fa-chevron-left"></i>
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
             <span className="sm:hidden">Previous</span>
             <span className="hidden sm:inline">Previous Week</span>
           </Button>
@@ -201,67 +205,16 @@ export default function WeeklySchedule() {
           <Button variant="outline" onClick={() => navigateWeek('next')} className="flex items-center justify-center gap-2 sm:order-3">
             <span className="sm:hidden">Next</span>
             <span className="hidden sm:inline">Next Week</span>
-            <i className="fas fa-chevron-right"></i>
+            <ChevronRight className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
         </div>
 
         {/* Weekly Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 border-blue-200 dark:border-blue-800/40">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-600 dark:text-blue-400 text-sm font-medium">Total Sessions</p>
-                  <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{weekStats.total}</p>
-                </div>
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-calendar-alt text-white"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/30 border-green-200 dark:border-green-800/40">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-600 dark:text-green-400 text-sm font-medium">Completed</p>
-                  <p className="text-2xl font-bold text-green-800 dark:text-green-300">{weekStats.completed}</p>
-                </div>
-                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-check-circle text-white"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 border-orange-200 dark:border-orange-800/40">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-600 dark:text-orange-400 text-sm font-medium">Upcoming</p>
-                  <p className="text-2xl font-bold text-orange-800 dark:text-orange-300">{weekStats.scheduled}</p>
-                </div>
-                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-clock text-white"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/30 border-purple-200 dark:border-purple-800/40">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-600 dark:text-purple-400 text-sm font-medium">Attendance</p>
-                  <p className="text-2xl font-bold text-purple-800 dark:text-purple-300">{weekStats.totalAttendance}</p>
-                </div>
-                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <i className="fas fa-users text-white"></i>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard label="Total Sessions" value={weekStats.total} icon={CalendarDays} color="orange" />
+          <StatCard label="Completed" value={weekStats.completed} icon={CheckCircle2} color="success" />
+          <StatCard label="Upcoming" value={weekStats.scheduled} icon={Clock} color="court" />
+          <StatCard label="Attendance" value={weekStats.totalAttendance} icon={Users} color="violet" />
         </div>
 
         {/* Weekly Calendar */}
@@ -272,17 +225,15 @@ export default function WeeklySchedule() {
             const isToday = date.toDateString() === new Date().toDateString();
 
             return (
-              <Card 
-                key={index} 
-                className={`min-h-48 transition-all duration-200 hover:shadow-lg ${
-                  isToday ? 'ring-2 ring-basketball-orange shadow-lg' : ''
-                }`}
+              <Card
+                key={index}
+                className={isToday ? 'ring-2 ring-basketball-orange' : ''}
               >
-                <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800">
+                <CardHeader className="pb-3 border-b border-border">
                   <div className="text-center">
-                    <div className="font-bold text-lg text-gray-800 dark:text-gray-200">{dayInfo.short}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{dayInfo.full}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="font-display font-bold uppercase text-base text-foreground">{dayInfo.short}</div>
+                    <div className="text-xs text-muted-foreground">{dayInfo.full}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
                       {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                     {isToday && (
@@ -290,11 +241,11 @@ export default function WeeklySchedule() {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent className="p-3 space-y-2">
+                <div className="p-2.5 space-y-2">
                   {daySessions.length === 0 ? (
                     <div className="text-center py-8">
-                      <i className="fas fa-calendar-plus text-gray-300 dark:text-gray-600 text-2xl mb-2" aria-hidden="true"></i>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">No sessions</p>
+                      <CalendarPlus className="w-5 h-5 text-muted-foreground/50 mx-auto mb-2" strokeWidth={1.5} aria-hidden="true" />
+                      <p className="text-xs text-muted-foreground">No sessions</p>
                     </div>
                   ) : (
                     daySessions.map((session) => (
@@ -303,7 +254,7 @@ export default function WeeklySchedule() {
                         role="button"
                         tabIndex={0}
                         aria-label={`${session.name}, ${session.time}, ${session.duration} minutes. Open attendance.`}
-                        className={`rounded-lg p-3 cursor-pointer transition-all duration-200 hover:scale-105 border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        className={`rounded-md p-3 cursor-pointer transition-colors bg-muted/50 hover:bg-muted border-l-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                           STATUS_COLORS[session.status as keyof typeof STATUS_COLORS] || STATUS_COLORS.scheduled
                         }`}
                         onClick={() => openAttendanceModal(session)}
@@ -318,22 +269,22 @@ export default function WeeklySchedule() {
                           <Badge variant="outline" className="text-xs">
                             {session.time}
                           </Badge>
-                          <div className="text-xs font-medium">
+                          <div className="text-xs font-medium tabular-nums text-muted-foreground">
                             {session.duration}min
                           </div>
                         </div>
-                        <div className="font-semibold text-sm truncate mb-1">
+                        <div className="font-semibold text-sm truncate mb-1.5 text-foreground">
                           {session.name}
                         </div>
                         <div className="flex items-center justify-between">
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className="text-xs capitalize"
                           >
                             {session.status || 'scheduled'}
                           </Badge>
                           {session.attendanceCount !== undefined && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                            <div className="text-xs tabular-nums text-muted-foreground">
                               {session.attendanceCount}/{session.totalPlayers}
                             </div>
                           )}
@@ -341,7 +292,7 @@ export default function WeeklySchedule() {
                       </div>
                     ))
                   )}
-                </CardContent>
+                </div>
               </Card>
             );
           })}

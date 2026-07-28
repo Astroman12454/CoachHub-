@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -49,8 +50,8 @@ export default function TrainingSessions() {
   if (isLoading) {
     return (
       <div className="flex flex-col h-full">
-        <TopBar 
-          title="Training Sessions" 
+        <TopBar
+          title="Training Sessions"
           subtitle="Manage and view all your training sessions"
           showNewSessionButton={true}
           onSearch={setSearchQuery}
@@ -69,58 +70,56 @@ export default function TrainingSessions() {
 
   return (
     <div className="flex flex-col h-full">
-      <TopBar 
-        title="Training Sessions" 
+      <TopBar
+        title="Training Sessions"
         subtitle="Manage and view all your training sessions"
         showNewSessionButton={true}
         onSearch={setSearchQuery}
         searchPlaceholder="Search sessions..."
       />
-      
+
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {sortedSessions.length === 0 ? (
           <EmptyState
-            icon="fas fa-calendar-alt"
-            iconWrapperClassName="basketball-orange"
-            iconClassName="text-white"
+            icon={CalendarDays}
             title="No Training Sessions"
             description={searchQuery ? "No sessions match your search criteria." : "Get started by creating your first training session."}
             action={!searchQuery ? {
               label: "Create First Session",
-              icon: "fas fa-plus",
+              icon: Plus,
               onClick: () => setIsCreateModalOpen(true),
             } : undefined}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedSessions.map((session) => (
-              <Card key={session.id} className="hover:shadow-lg transition-shadow">
+              <Card key={session.id} className="hover:border-basketball-orange hover:shadow-sm transition-all">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                      <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1">
                         {session.name}
                       </CardTitle>
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
-                        <span>
-                          <i className="fas fa-calendar mr-1"></i>
+                      <div className="flex items-center text-sm text-muted-foreground gap-3">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                           {new Date(`${session.date}T00:00:00`).toLocaleDateString()}
                         </span>
-                        <span>
-                          <i className="fas fa-clock mr-1"></i>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                           {session.time}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        className="text-muted-foreground hover:text-foreground"
                         onClick={() => setEditingSession(session)}
                         aria-label={`Edit ${session.name}`}
                       >
-                        <i className="fas fa-edit" aria-hidden="true"></i>
+                        <Pencil className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -129,27 +128,27 @@ export default function TrainingSessions() {
                         onClick={() => setSessionToDelete(session)}
                         aria-label={`Delete ${session.name}`}
                       >
-                        <i className="fas fa-trash" aria-hidden="true"></i>
+                        <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                
-                <CardContent className="space-y-4">
+
+                <CardContent className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Duration:</span>
-                    <span className="font-medium">{session.duration} minutes</span>
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span className="font-medium tabular-nums">{session.duration} minutes</span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Attendance:</span>
-                    <span className="font-medium">
+                    <span className="text-muted-foreground">Attendance:</span>
+                    <span className="font-medium tabular-nums">
                       {session.attendanceCount}/{session.totalPlayers} players
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Attendance Rate:</span>
+                    <span className="text-muted-foreground">Attendance Rate:</span>
                     <Badge variant={
                       ((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100 >= 80
                         ? "default"
@@ -158,10 +157,10 @@ export default function TrainingSessions() {
                       {Math.round(((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100)}%
                     </Badge>
                   </div>
-                  
+
                   {session.exerciseIds && session.exerciseIds.length > 0 && (
                     <div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Exercises:</span>
+                      <span className="text-sm text-muted-foreground">Exercises:</span>
                       <div className="mt-1">
                         <Badge variant="outline" className="text-xs">
                           {session.exerciseIds.length} exercise{session.exerciseIds.length !== 1 ? 's' : ''}
@@ -169,22 +168,22 @@ export default function TrainingSessions() {
                       </div>
                     </div>
                   )}
-                  
+
                   {session.notes && (
                     <div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Notes:</span>
-                      <p className="text-sm text-gray-900 dark:text-gray-100 mt-1 line-clamp-2">{session.notes}</p>
+                      <span className="text-sm text-muted-foreground">Notes:</span>
+                      <p className="text-sm text-foreground mt-1 line-clamp-2">{session.notes}</p>
                     </div>
                   )}
-                  
-                  <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+
+                  <div className="pt-3 border-t border-border">
                     <Button
                       variant="outline"
                       className="w-full"
                       size="sm"
                       onClick={() => setEditingSession(session)}
                     >
-                      <i className="fas fa-edit mr-2"></i>
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
                       Edit Session
                     </Button>
                   </div>

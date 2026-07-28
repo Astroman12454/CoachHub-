@@ -1,3 +1,4 @@
+import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 
 export default function ThemeToggle() {
@@ -8,11 +9,11 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-all"
+      className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       title={isDark ? "Modo claro" : "Modo oscuro"}
     >
-      <i className={`fas ${isDark ? "fa-sun" : "fa-moon"} text-white text-xs`} aria-hidden="true"></i>
+      {isDark ? <Sun className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" /> : <Moon className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />}
     </button>
   );
 }

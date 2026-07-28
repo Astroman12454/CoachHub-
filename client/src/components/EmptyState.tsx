@@ -1,41 +1,38 @@
+import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
-  icon: string;
-  iconWrapperClassName?: string;
-  iconClassName?: string;
+  icon: LucideIcon;
   title: string;
   description: string;
   action?: {
     label: string;
-    icon?: string;
+    icon?: LucideIcon;
     onClick: () => void;
   };
 }
 
 export default function EmptyState({
-  icon,
-  iconWrapperClassName = "bg-gray-200 dark:bg-gray-700",
-  iconClassName = "text-gray-400 dark:text-gray-500",
+  icon: Icon,
   title,
   description,
   action,
 }: EmptyStateProps) {
   return (
-    <Card className="text-center py-12">
+    <Card className="text-center py-14">
       <CardContent>
-        <div className={`w-24 h-24 ${iconWrapperClassName} rounded-full flex items-center justify-center mx-auto mb-4`}>
-          <i className={`${icon} ${iconClassName} text-3xl`} aria-hidden="true"></i>
+        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+          <Icon className="w-6 h-6 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
         </div>
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">{description}</p>
+        <h3 className="font-display font-semibold uppercase tracking-tight text-lg text-foreground mb-1.5">{title}</h3>
+        <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-6">{description}</p>
         {action && (
           <Button
             onClick={action.onClick}
             className="basketball-orange basketball-orange-hover text-white"
           >
-            {action.icon && <i className={`${action.icon} mr-2`}></i>}
+            {action.icon && <action.icon className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />}
             {action.label}
           </Button>
         )}

@@ -1,18 +1,19 @@
-import { Card, CardContent } from "@/components/ui/card";
+import type { LucideIcon } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
-export type StatCardColor = "blue" | "orange" | "purple" | "green";
+export type StatCardColor = "orange" | "court" | "violet" | "success";
 
-const COLOR_CLASSES: Record<StatCardColor, { chipBg: string; icon: string }> = {
-  blue: { chipBg: "bg-blue-100 dark:bg-blue-950/40", icon: "text-blue-600" },
-  orange: { chipBg: "bg-orange-100 dark:bg-orange-950/40", icon: "text-orange-600" },
-  purple: { chipBg: "bg-purple-100 dark:bg-purple-950/40", icon: "text-purple-600" },
-  green: { chipBg: "bg-green-100 dark:bg-green-950/40", icon: "text-green-600" },
+const COLOR_CLASSES: Record<StatCardColor, { border: string; icon: string }> = {
+  orange: { border: "border-t-basketball-orange", icon: "text-basketball-orange" },
+  court: { border: "border-t-court", icon: "text-court" },
+  violet: { border: "border-t-info", icon: "text-info" },
+  success: { border: "border-t-success", icon: "text-success" },
 };
 
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon: string;
+  icon: LucideIcon;
   color: StatCardColor;
   trend?: {
     value: string;
@@ -26,28 +27,24 @@ interface StatCardProps {
 // chip) — deliberately left as-is rather than folding into this component,
 // since unifying both styles would need a much wider prop surface for only
 // 4 more instances.
-export default function StatCard({ label, value, icon, color, trend }: StatCardProps) {
+export default function StatCard({ label, value, icon: Icon, color, trend }: StatCardProps) {
   const colorClasses = COLOR_CLASSES[color];
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
-          </div>
-          <div className={`w-12 h-12 ${colorClasses.chipBg} rounded-lg flex items-center justify-center`}>
-            <i className={`${icon} ${colorClasses.icon} text-xl`}></i>
-          </div>
+    <Card className={`border-t-2 ${colorClasses.border}`}>
+      <div className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+          <Icon className={`w-4 h-4 ${colorClasses.icon} opacity-80`} strokeWidth={1.75} aria-hidden="true" />
         </div>
+        <p className="font-display font-bold text-4xl tabular-nums text-foreground leading-none">{value}</p>
         {trend && (
-          <div className="mt-4 flex items-center text-sm">
-            <span className="text-green-700 dark:text-green-500 font-medium">{trend.value}</span>
-            <span className="text-gray-500 dark:text-gray-400 ml-2">{trend.label}</span>
+          <div className="mt-2.5 flex items-center text-sm">
+            <span className="text-success font-medium">{trend.value}</span>
+            <span className="text-muted-foreground ml-2">{trend.label}</span>
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

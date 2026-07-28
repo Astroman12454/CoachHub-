@@ -62,7 +62,7 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Añadir Nuevo Jugador</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">Añadir Nuevo Jugador</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -129,7 +129,7 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               )}
             />
 
-            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
