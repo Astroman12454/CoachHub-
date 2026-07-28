@@ -24,7 +24,7 @@ const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 function PageLoadingFallback() {
   return (
     <div className="flex items-center justify-center h-full">
-      <div className="w-10 h-10 border-4 border-orange-200 border-t-[hsl(16,100%,60%)] rounded-full animate-spin"></div>
+      <div className="w-10 h-10 border-4 border-orange-200 border-t-[hsl(16,100%,43%)] rounded-full animate-spin"></div>
     </div>
   );
 }
@@ -66,7 +66,7 @@ function AuthGate() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-[hsl(16,100%,60%)] rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-orange-200 border-t-[hsl(16,100%,43%)] rounded-full animate-spin"></div>
       </div>
     );
   }

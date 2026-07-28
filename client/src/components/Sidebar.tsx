@@ -72,15 +72,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <div className="w-12 h-12 court-bg rounded-xl flex items-center justify-center">
             <i className="fas fa-user text-white"></i>
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-white">Coach Johnson</p>
-            <p className="text-sm text-orange-200">Lakers High School</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-white truncate">Coach Johnson</p>
+            <p className="text-sm text-orange-200 truncate">Lakers High School</p>
           </div>
           <ThemeToggle />
           <button
             type="button"
             onClick={logout}
-            className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-all"
+            className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-all"
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
           >

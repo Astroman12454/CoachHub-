@@ -115,7 +115,7 @@ export default function TrainingSessions() {
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                         onClick={() => setEditingSession(session)}
                         aria-label={`Edit ${session.name}`}
@@ -124,7 +124,7 @@ export default function TrainingSessions() {
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
                         onClick={() => setSessionToDelete(session)}
                         aria-label={`Delete ${session.name}`}

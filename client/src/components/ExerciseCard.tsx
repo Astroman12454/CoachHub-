@@ -43,7 +43,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="w-8 h-8 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center justify-center"
+                className="w-10 h-10 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center justify-center"
                 aria-label={`Edit ${exercise.name}`}
               >
                 <i className="fas fa-edit text-gray-600 dark:text-gray-300 text-xs" aria-hidden="true"></i>
@@ -53,7 +53,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="w-8 h-8 bg-white dark:bg-gray-800 shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
+                className="w-10 h-10 bg-white dark:bg-gray-800 shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
                 aria-label={`Delete ${exercise.name}`}
               >
                 <i className="fas fa-trash text-red-600 text-xs" aria-hidden="true"></i>
