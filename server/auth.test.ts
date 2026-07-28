@@ -79,3 +79,24 @@ describe("auth", () => {
     expect(protectedRes.status).toBe(401);
   });
 });
+
+describe("login rate limiting", () => {
+  // A fresh app (and therefore a fresh rate-limit counter) per describe
+  // block, so this doesn't get coupled to how many login attempts the
+  // other tests happen to make against a shared instance.
+  it("locks out further attempts after repeated failures, even with the correct passcode", async () => {
+    const app = createTestApp();
+    const agent = request.agent(app);
+
+    for (let i = 0; i < 10; i++) {
+      const res = await agent.post("/api/login").send({ passcode: "wrong" });
+      expect(res.status).toBe(401);
+    }
+
+    const lockedOut = await agent.post("/api/login").send({ passcode: PASSCODE });
+    expect(lockedOut.status).toBe(429);
+
+    const session = await agent.get("/api/session");
+    expect(session.body).toEqual({ authenticated: false });
+  });
+});

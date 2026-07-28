@@ -1,9 +1,42 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupAuth, requireAuth } from "./auth";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// A real Content-Security-Policy only makes sense in production: Vite's dev
+// server relies on inline eval'd HMR updates and a websocket connection
+// that a strict policy would block. In prod, everything the app loads
+// (scripts, styles, fonts, icons) is bundled and same-origin, so
+// default-src 'self' covers it — style-src needs 'unsafe-inline' because a
+// few components (progress bar width, etc.) use React's inline style prop.
+if (app.get("env") !== "development") {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:"],
+          fontSrc: ["'self'"],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          frameAncestors: ["'self'"],
+        },
+      },
+    }),
+  );
+} else {
+  // Skip CSP in dev, but keep the rest of helmet's headers (X-Content-Type-
+  // Options, X-Frame-Options, Referrer-Policy, etc.) — they don't interfere
+  // with Vite's dev server.
+  app.use(helmet({ contentSecurityPolicy: false }));
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

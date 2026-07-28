@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import rateLimit from "express-rate-limit";
 import type { Express, Request, Response, NextFunction } from "express";
 
 if (!process.env.APP_PASSCODE) {
@@ -27,6 +28,22 @@ declare module "express-session" {
 
 export function setupAuth(app: Express) {
   app.set("trust proxy", 1);
+
+  // The single passcode is the whole security model, so it's the one
+  // endpoint worth throttling: without this, an attacker can script
+  // unlimited guesses. Only failed attempts count against the limit, so a
+  // coach who mistypes once and then logs in correctly on the next try
+  // never gets locked out. Built here (rather than at module scope) so
+  // each Express app gets its own independent counter.
+  const loginRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { message: "Too many login attempts. Please try again later." },
+  });
+
   app.use(
     session({
       store: new SessionStore({ checkPeriod: 24 * 60 * 60 * 1000 }),
@@ -46,7 +63,7 @@ export function setupAuth(app: Express) {
     res.json({ authenticated: !!req.session.authenticated });
   });
 
-  app.post("/api/login", (req: Request, res: Response) => {
+  app.post("/api/login", loginRateLimiter, (req: Request, res: Response) => {
     const { passcode } = req.body ?? {};
 
     const isValid =
