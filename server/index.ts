@@ -11,7 +11,9 @@ const app = express();
 // that a strict policy would block. In prod, everything the app loads
 // (scripts, styles, fonts, icons) is bundled and same-origin, so
 // default-src 'self' covers it — style-src needs 'unsafe-inline' because a
-// few components (progress bar width, etc.) use React's inline style prop.
+// few components (progress bar width, etc.) use React's inline style prop,
+// and img-src needs to allow any https: origin because exercises have a
+// coach-editable imageUrl field that can point at any external photo host.
 if (app.get("env") !== "development") {
   app.use(
     helmet({
@@ -20,7 +22,7 @@ if (app.get("env") !== "development") {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:"],
+          imgSrc: ["'self'", "data:", "https:"],
           fontSrc: ["'self'"],
           connectSrc: ["'self'"],
           objectSrc: ["'none'"],
