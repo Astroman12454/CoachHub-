@@ -8,11 +8,36 @@ import { Progress } from "@/components/ui/progress";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import type { TrainingSession, Player, Attendance } from "@shared/schema";
 
+// Each status has two treatments: a light "tint" badge for the summary pill
+// under a player's name, and a solid "selected" style for whichever button
+// is currently active — distinct per status (not a uniform brand-orange for
+// every selection) so a coach can read the roster's mix of present/absent/
+// late/excused by color at a glance, the same way the pill already does.
 const ATTENDANCE_STATUS = {
-  present: { label: "Present", color: "bg-success-tint text-success border-success", icon: CheckCircle2 },
-  absent: { label: "Absent", color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40", icon: XCircle },
-  late: { label: "Late", color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/40", icon: Clock3 },
-  excused: { label: "Excused", color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40", icon: Info },
+  present: {
+    label: "Present",
+    color: "bg-success-tint text-success border-success",
+    selected: "bg-green-700 hover:bg-green-800 text-white border-green-700",
+    icon: CheckCircle2,
+  },
+  absent: {
+    label: "Absent",
+    color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40",
+    selected: "bg-red-600 hover:bg-red-700 text-white border-red-600",
+    icon: XCircle,
+  },
+  late: {
+    label: "Late",
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/40",
+    selected: "bg-amber-700 hover:bg-amber-800 text-white border-amber-700",
+    icon: Clock3,
+  },
+  excused: {
+    label: "Excused",
+    color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40",
+    selected: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
+    icon: Info,
+  },
 };
 
 interface AttendanceModalProps {
@@ -71,7 +96,7 @@ export default function AttendanceModal({
                   {getAttendanceRate()}%
                 </Badge>
               </div>
-              <Progress value={getAttendanceRate()} className="h-2" />
+              <Progress value={getAttendanceRate()} className="h-2" aria-label="Attendance rate" />
             </div>
           )}
         </DialogHeader>
@@ -107,13 +132,11 @@ export default function AttendanceModal({
                         {Object.entries(ATTENDANCE_STATUS).map(([status, config]) => (
                           <Button
                             key={status}
-                            variant={currentStatus === status ? "default" : "outline"}
+                            variant="outline"
                             size="sm"
                             onClick={() => onToggleAttendance(player.id, status)}
                             className={`flex items-center justify-center gap-1.5 ${
-                              currentStatus === status
-                                ? "basketball-orange basketball-orange-hover text-white"
-                                : ""
+                              currentStatus === status ? config.selected : ""
                             }`}
                           >
                             <config.icon className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
