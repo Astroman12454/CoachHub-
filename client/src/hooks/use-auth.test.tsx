@@ -105,7 +105,7 @@ describe("useAuth", () => {
       await result.current.login("wrong-passcode").catch(() => {});
     });
 
-    await waitFor(() => expect(result.current.loginError).toBe("Passcode incorrecto"));
+    await waitFor(() => expect(result.current.loginError).toBe("Incorrect passcode"));
     expect(result.current.isAuthenticated).toBe(false);
   });
 

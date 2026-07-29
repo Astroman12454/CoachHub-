@@ -11,11 +11,7 @@ import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { insertPlayerSchema } from "@shared/schema";
 
-const playerFormSchema = insertPlayerSchema.extend({
-  name: z.string().min(1, "El nombre del jugador es requerido"),
-});
-
-type PlayerFormData = z.infer<typeof playerFormSchema>;
+type PlayerFormData = z.infer<typeof insertPlayerSchema>;
 
 const positions = [
   "Point Guard",
@@ -38,7 +34,7 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
   };
 
   const form = useForm<PlayerFormData>({
-    resolver: zodResolver(playerFormSchema),
+    resolver: zodResolver(insertPlayerSchema),
     defaultValues: {
       name: "",
       position: "Point Guard",
@@ -48,13 +44,14 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
 
   const createPlayerMutation = useSaveMutation<PlayerFormData>({
     endpoint: "/api/players",
-    successTitle: "Éxito",
-    successMessage: "Jugador añadido exitosamente",
-    errorMessage: "Error al añadir el jugador",
+    successTitle: "Success",
+    successMessage: "Player added successfully",
+    errorMessage: "Failed to add player",
     onSuccess: () => handleOpenChange(false),
   });
 
   const onSubmit = (data: PlayerFormData) => {
+    if (createPlayerMutation.isPending) return;
     createPlayerMutation.mutate(data);
   };
 
@@ -62,9 +59,9 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">Añadir Nuevo Jugador</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">Add New Player</DialogTitle>
           <DialogDescription className="sr-only">
-            Ingresá el nombre, la posición y si el jugador está activo.
+            Enter the player's name, position, and whether they're active.
           </DialogDescription>
         </DialogHeader>
 
@@ -75,9 +72,9 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre del Jugador</FormLabel>
+                  <FormLabel>Player Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="ej. Carlos García" {...field} />
+                    <Input placeholder="e.g., Carlos García" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -89,11 +86,11 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Posición</FormLabel>
+                  <FormLabel>Position</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar posición" />
+                        <SelectValue placeholder="Select position" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -116,10 +113,10 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">
-                      Jugador Activo
+                      Active Player
                     </FormLabel>
                     <div className="text-sm text-muted-foreground">
-                      El jugador participará en entrenamientos
+                      This player will take part in training sessions
                     </div>
                   </div>
                   <FormControl>
@@ -138,14 +135,14 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
-                Cancelar
+                Cancel
               </Button>
               <Button
                 type="submit"
                 className="basketball-orange basketball-orange-hover text-white"
                 disabled={createPlayerMutation.isPending}
               >
-                {createPlayerMutation.isPending ? "Añadiendo..." : "Añadir Jugador"}
+                {createPlayerMutation.isPending ? "Adding..." : "Add Player"}
               </Button>
             </div>
           </form>

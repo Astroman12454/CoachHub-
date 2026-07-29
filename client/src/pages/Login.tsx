@@ -38,7 +38,7 @@ export default function Login() {
               autoComplete="current-password"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              placeholder="Ingresá el passcode"
+              placeholder="Enter your passcode"
               className="focus:border-basketball-orange"
             />
             {loginError && (
@@ -53,7 +53,7 @@ export default function Login() {
             disabled={isLoggingIn || !passcode}
             className="w-full basketball-orange basketball-orange-hover text-white"
           >
-            {isLoggingIn ? "Ingresando..." : "Ingresar"}
+            {isLoggingIn ? "Logging in..." : "Log In"}
           </Button>
         </form>
       </div>

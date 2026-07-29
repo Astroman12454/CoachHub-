@@ -17,12 +17,7 @@ import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import type { Exercise, TrainingSession } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
 
-const sessionFormSchema = insertTrainingSessionSchema.extend({
-  date: z.string().min(1, "Date is required"),
-  time: z.string().min(1, "Time is required"),
-});
-
-type SessionFormData = z.infer<typeof sessionFormSchema>;
+type SessionFormData = z.infer<typeof insertTrainingSessionSchema>;
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -43,14 +38,18 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     queryKey: ['/api/exercises'],
   });
 
-  const initialExerciseIds = session?.exerciseIds ?? [];
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>(() =>
-    exercises.filter(ex => initialExerciseIds.includes(ex.id.toString()))
+  // Tracked by id rather than by Exercise object so the selection doesn't
+  // depend on `/api/exercises` having already loaded when this modal opens
+  // for editing — otherwise a session's existing exercises would appear
+  // (and get saved as) empty if this is the first query to fetch them.
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>(
+    () => session?.exerciseIds ?? []
   );
+  const selectedExercises = exercises.filter(ex => selectedExerciseIds.includes(ex.id.toString()));
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
 
   const form = useForm<SessionFormData>({
-    resolver: zodResolver(sessionFormSchema),
+    resolver: zodResolver(insertTrainingSessionSchema),
     defaultValues: {
       name: session?.name ?? "",
       date: session?.date ?? "",
@@ -77,25 +76,26 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
       restoreFocus();
       onClose();
       form.reset();
-      setSelectedExercises([]);
+      setSelectedExerciseIds([]);
     },
   });
 
   const onSubmit = (data: SessionFormData) => {
+    if (saveSessionMutation.isPending) return;
     saveSessionMutation.mutate({
       ...data,
-      exerciseIds: selectedExercises.map(ex => ex.id.toString()),
+      exerciseIds: selectedExerciseIds,
     });
   };
 
   const addExercise = (exercise: Exercise) => {
-    if (!selectedExercises.find(ex => ex.id === exercise.id)) {
-      setSelectedExercises(prev => [...prev, exercise]);
-    }
+    const id = exercise.id.toString();
+    setSelectedExerciseIds(prev => prev.includes(id) ? prev : [...prev, id]);
   };
 
   const removeExercise = (exerciseId: number) => {
-    setSelectedExercises(prev => prev.filter(ex => ex.id !== exerciseId));
+    const id = exerciseId.toString();
+    setSelectedExerciseIds(prev => prev.filter(exId => exId !== id));
   };
 
   return (

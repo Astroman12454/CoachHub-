@@ -5,6 +5,7 @@ import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ export default function Players() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: players = [], isLoading } = useQuery<Player[]>({
+  const { data: players = [], isLoading, isError, refetch } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
 
@@ -49,7 +50,7 @@ export default function Players() {
       }
       toast({
         title: "Error",
-        description: "Error al actualizar el jugador",
+        description: "Failed to update player",
         variant: "destructive",
       });
     },
@@ -81,21 +82,25 @@ export default function Players() {
   // Group players by position
   const playersByPosition = useMemo(() => {
     return filteredPlayers.reduce((acc, player) => {
-      const position = player.position || "Sin Posición";
+      const position = player.position || "No Position";
       if (!acc[position]) acc[position] = [];
       acc[position].push(player);
       return acc;
     }, {} as Record<string, Player[]>);
   }, [filteredPlayers]);
 
+  const activeRate = players.length > 0
+    ? Math.round((players.filter(p => p.isActive === 1).length / players.length) * 100)
+    : 0;
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Jugadores"
-          subtitle="Gestiona los jugadores de tu equipo"
+          title="Players"
+          subtitle="Manage your team's players"
           onSearch={setSearchQuery}
-          searchPlaceholder="Buscar jugadores..."
+          searchPlaceholder="Search players..."
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -108,13 +113,29 @@ export default function Players() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="flex flex-col h-full">
+        <TopBar
+          title="Players"
+          subtitle="Manage your team's players"
+          onSearch={setSearchQuery}
+          searchPlaceholder="Search players..."
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <ErrorState onRetry={() => refetch()} />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <TopBar
-        title="Jugadores"
-        subtitle="Gestiona los jugadores de tu equipo"
+        title="Players"
+        subtitle="Manage your team's players"
         onSearch={setSearchQuery}
-        searchPlaceholder="Buscar jugadores..."
+        searchPlaceholder="Search players..."
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -122,13 +143,13 @@ export default function Players() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center">
             <Select value={filterActive} onValueChange={setFilterActive}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filtrar por estado">
-                <SelectValue placeholder="Filtrar por estado" />
+              <SelectTrigger className="w-full sm:w-48" aria-label="Filter by status">
+                <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los Jugadores</SelectItem>
-                <SelectItem value="active">Jugadores Activos</SelectItem>
-                <SelectItem value="inactive">Jugadores Inactivos</SelectItem>
+                <SelectItem value="all">All Players</SelectItem>
+                <SelectItem value="active">Active Players</SelectItem>
+                <SelectItem value="inactive">Inactive Players</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -138,33 +159,33 @@ export default function Players() {
             onClick={() => setIsCreateModalOpen(true)}
           >
             <UserPlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            Añadir Jugador
+            Add Player
           </Button>
         </div>
 
         {/* Player Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <StatCard
-            label="Total Jugadores"
+            label="Total Players"
             value={players.length}
             icon={Users}
             color="court"
           />
           <StatCard
-            label="Jugadores Activos"
+            label="Active Players"
             value={players.filter(p => p.isActive === 1).length}
             icon={CheckCircle2}
             color="success"
           />
           <StatCard
-            label="Posiciones"
+            label="Positions"
             value={Object.keys(playersByPosition).length}
             icon={Target}
             color="violet"
           />
           <StatCard
-            label="Tasa de Actividad"
-            value={`${Math.round((players.filter(p => p.isActive === 1).length / players.length) * 100)}%`}
+            label="Active Rate"
+            value={`${activeRate}%`}
             icon={PieChart}
             color="orange"
           />
@@ -174,14 +195,14 @@ export default function Players() {
         {filteredPlayers.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="No se encontraron jugadores"
+            title="No Players Found"
             description={
               searchQuery || filterActive !== "all"
-                ? "No hay jugadores que coincidan con los filtros actuales."
-                : "Comienza añadiendo tu primer jugador al equipo."
+                ? "No players match your current filters."
+                : "Get started by adding your first player to the team."
             }
             action={!searchQuery && filterActive === "all" ? {
-              label: "Añadir Primer Jugador",
+              label: "Add First Player",
               icon: UserPlus,
               onClick: () => setIsCreateModalOpen(true),
             } : undefined}
@@ -193,7 +214,7 @@ export default function Players() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{position}</span>
-                    <Badge variant="secondary">{positionPlayers.length} jugadores</Badge>
+                    <Badge variant="secondary">{positionPlayers.length} player{positionPlayers.length !== 1 ? 's' : ''}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -209,7 +230,7 @@ export default function Players() {
                             variant={player.isActive === 1 ? "default" : "secondary"}
                             className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
                           >
-                            {player.isActive === 1 ? "Activo" : "Inactivo"}
+                            {player.isActive === 1 ? "Active" : "Inactive"}
                           </Badge>
                         </div>
                         <div className="flex items-center justify-between">
@@ -221,7 +242,7 @@ export default function Players() {
                             disabled={updatePlayerMutation.isPending}
                             className="text-xs"
                           >
-                            {player.isActive === 1 ? "Desactivar" : "Activar"}
+                            {player.isActive === 1 ? "Deactivate" : "Activate"}
                           </Button>
                         </div>
                       </div>

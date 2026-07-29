@@ -15,10 +15,6 @@ interface StatCardProps {
   value: string | number;
   icon: LucideIcon;
   color: StatCardColor;
-  trend?: {
-    value: string;
-    label: string;
-  };
 }
 
 // Covers the neutral-card + colored-icon-chip stat tile shared by the
@@ -27,7 +23,7 @@ interface StatCardProps {
 // chip) — deliberately left as-is rather than folding into this component,
 // since unifying both styles would need a much wider prop surface for only
 // 4 more instances.
-export default function StatCard({ label, value, icon: Icon, color, trend }: StatCardProps) {
+export default function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
   const colorClasses = COLOR_CLASSES[color];
 
   return (
@@ -38,12 +34,6 @@ export default function StatCard({ label, value, icon: Icon, color, trend }: Sta
           <Icon className={`w-4 h-4 ${colorClasses.icon} opacity-80`} strokeWidth={1.75} aria-hidden="true" />
         </div>
         <p className="font-display font-bold text-4xl tabular-nums text-foreground leading-none">{value}</p>
-        {trend && (
-          <div className="mt-2.5 flex items-center text-sm">
-            <span className="text-success font-medium">{trend.value}</span>
-            <span className="text-muted-foreground ml-2">{trend.label}</span>
-          </div>
-        )}
       </div>
     </Card>
   );

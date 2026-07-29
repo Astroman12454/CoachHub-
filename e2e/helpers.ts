@@ -7,6 +7,6 @@ export const TEST_PASSCODE = "test1234";
 export async function login(page: Page) {
   await page.goto("/");
   await page.fill("#passcode", TEST_PASSCODE);
-  await page.click('button:has-text("Ingresar")');
+  await page.click('button:has-text("Log In")');
   await page.waitForURL(/\/(dashboard)?$/);
 }

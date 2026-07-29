@@ -6,7 +6,7 @@ import { useDeleteWithUndo } from "./use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
 
 // undoDelete isn't part of the hook's public return value — the only way a
-// real user triggers it is by clicking "Deshacer" on the toast. useToast is
+// real user triggers it is by clicking "Undo" on the toast. useToast is
 // a module-level singleton store, so a second hook instance sees the same
 // toasts array and lets us click that action the same way the UI does.
 function grabLatestToastUndo(): () => void {

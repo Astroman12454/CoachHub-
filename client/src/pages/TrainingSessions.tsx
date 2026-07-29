@@ -5,6 +5,7 @@ import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ export default function TrainingSessions() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
 
-  const { data: sessions = [], isLoading } = useQuery<TrainingSession[]>({
+  const { data: sessions = [], isLoading, isError, refetch } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions'],
   });
 
@@ -63,6 +64,23 @@ export default function TrainingSessions() {
               <Skeleton key={i} className="h-64" />
             ))}
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col h-full">
+        <TopBar
+          title="Training Sessions"
+          subtitle="Manage and view all your training sessions"
+          showNewSessionButton={true}
+          onSearch={setSearchQuery}
+          searchPlaceholder="Search sessions..."
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <ErrorState onRetry={() => refetch()} />
         </main>
       </div>
     );
@@ -149,13 +167,17 @@ export default function TrainingSessions() {
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Attendance Rate:</span>
-                    <Badge variant={
-                      ((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100 >= 80
-                        ? "default"
-                        : "secondary"
-                    }>
-                      {Math.round(((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100)}%
-                    </Badge>
+                    {session.status === 'scheduled' || session.status === 'cancelled' ? (
+                      <span className="text-xs text-muted-foreground">Not yet taken</span>
+                    ) : (
+                      <Badge variant={
+                        ((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100 >= 80
+                          ? "default"
+                          : "secondary"
+                      }>
+                        {Math.round(((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100)}%
+                      </Badge>
+                    )}
                   </div>
 
                   {session.exerciseIds && session.exerciseIds.length > 0 && (

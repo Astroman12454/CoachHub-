@@ -11,7 +11,7 @@ interface UseDeleteWithUndoOptions {
   undoWindowMs?: number;
 }
 
-// Hides the item immediately and shows a toast with an "Undo" action instead
+// Hides the item immediately and shows a toast with an Undo action instead
 // of deleting right away; the DELETE request only fires once the undo window
 // expires, so a misclick (or a change of mind) never needs a server round trip.
 export function useDeleteWithUndo({
@@ -67,8 +67,8 @@ export function useDeleteWithUndo({
     toast({
       description,
       action: (
-        <ToastAction altText="Deshacer" onClick={() => undoDelete(id)}>
-          Deshacer
+        <ToastAction altText="Undo" onClick={() => undoDelete(id)}>
+          Undo
         </ToastAction>
       ),
     });

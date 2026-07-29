@@ -1,19 +1,7 @@
 import { Target, Hand, Shield, ArrowLeftRight, Activity } from "lucide-react";
+import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@shared/schema";
 
-export const EXERCISE_CATEGORIES = [
-  'shooting',
-  'dribbling', 
-  'defense',
-  'passing',
-  'conditioning'
-] as const;
-
-export const DIFFICULTY_LEVELS = [
-  'easy',
-  'medium',
-  'hard'
-] as const;
-
+export { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS };
 export type ExerciseCategory = typeof EXERCISE_CATEGORIES[number];
 export type DifficultyLevel = typeof DIFFICULTY_LEVELS[number];
 

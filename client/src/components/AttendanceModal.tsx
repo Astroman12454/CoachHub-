@@ -48,6 +48,10 @@ interface AttendanceModalProps {
   attendance: Attendance[];
   isLoading: boolean;
   onToggleAttendance: (playerId: number, status: string) => void;
+  /** Player whose attendance mutation is currently in flight, if any — its
+   * status buttons are disabled so a second tap before the optimistic
+   * update lands can't create a duplicate attendance record. */
+  pendingPlayerId?: number;
 }
 
 export default function AttendanceModal({
@@ -58,6 +62,7 @@ export default function AttendanceModal({
   attendance,
   isLoading,
   onToggleAttendance,
+  pendingPlayerId,
 }: AttendanceModalProps) {
   const getPlayerAttendance = (playerId: number) => attendance.find(a => a.playerId === playerId);
 
@@ -137,6 +142,7 @@ export default function AttendanceModal({
                             key={status}
                             variant="outline"
                             size="sm"
+                            disabled={pendingPlayerId === player.id}
                             onClick={() => onToggleAttendance(player.id, status)}
                             className={`flex items-center justify-center gap-1.5 ${
                               currentStatus === status ? config.selected : ""

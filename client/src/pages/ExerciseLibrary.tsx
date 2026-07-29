@@ -7,6 +7,7 @@ import ExerciseCard from "@/components/ExerciseCard";
 import ExerciseForm from "@/components/ExerciseForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +26,7 @@ export default function ExerciseLibrary() {
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
 
-  const { data: exercises = [], isLoading } = useQuery<Exercise[]>({
+  const { data: exercises = [], isLoading, isError, refetch } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
   });
 
@@ -71,6 +72,22 @@ export default function ExerciseLibrary() {
               <Skeleton key={i} className="h-80" />
             ))}
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col h-full">
+        <TopBar
+          title="Exercise Library"
+          subtitle="Browse and manage your basketball training exercises"
+          onSearch={setSearchQuery}
+          searchPlaceholder="Search exercises..."
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <ErrorState onRetry={() => refetch()} />
         </main>
       </div>
     );

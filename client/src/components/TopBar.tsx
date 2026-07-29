@@ -42,7 +42,7 @@ export default function TopBar({
           <div className="flex items-center gap-3">
             <button
               onClick={openMobile}
-              className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
+              className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
               aria-label="Open navigation menu"
             >
               <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />

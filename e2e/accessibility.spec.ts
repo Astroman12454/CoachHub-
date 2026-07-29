@@ -94,8 +94,8 @@ test.describe("accessibility (axe)", () => {
   test("players — create player form open", async ({ page }) => {
     await login(page);
     await page.goto("/players");
-    await page.click('button:has-text("Añadir Jugador")');
-    await page.waitForSelector("text=Añadir Nuevo Jugador");
+    await page.click('button:has-text("Add Player")');
+    await page.waitForSelector("text=Add New Player");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -122,7 +122,7 @@ test.describe("accessibility (axe)", () => {
 
   test("dark mode — dashboard", async ({ page }) => {
     await login(page);
-    await page.click('button[aria-label="Cambiar a modo oscuro"]');
+    await page.click('button[aria-label="Switch to dark mode"]');
     await page.waitForTimeout(200);
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);

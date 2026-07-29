@@ -8,6 +8,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorState from "@/components/ErrorState";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { TrainingSession, Player, Attendance } from "@shared/schema";
@@ -54,7 +55,7 @@ export default function WeeklySchedule() {
   const startDate = weekDates[0].toISOString().split('T')[0];
   const endDate = weekDates[6].toISOString().split('T')[0];
 
-  const { data: sessions = [], isLoading: sessionsLoading } = useQuery<TrainingSession[]>({
+  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions', startDate, endDate],
     queryFn: async () => {
       const response = await fetch(`/api/training-sessions?startDate=${startDate}&endDate=${endDate}`);
@@ -173,6 +174,20 @@ export default function WeeklySchedule() {
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    );
+  }
+
+  if (sessionsError) {
+    return (
+      <div className="flex flex-col h-full">
+        <TopBar
+          title="Weekly Schedule"
+          subtitle="Plan your training week and track attendance"
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <ErrorState onRetry={() => refetchSessions()} />
         </main>
       </div>
     );
@@ -306,6 +321,7 @@ export default function WeeklySchedule() {
           attendance={attendance}
           isLoading={attendanceLoading}
           onToggleAttendance={handleAttendanceToggle}
+          pendingPlayerId={markAttendanceMutation.isPending ? markAttendanceMutation.variables?.playerId : undefined}
         />
       </main>
     </div>

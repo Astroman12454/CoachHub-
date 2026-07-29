@@ -68,34 +68,34 @@ export async function seedDatabase() {
     
     const sampleSessions: InsertTrainingSession[] = [
       {
-        name: "Fundamentos Ofensivos",
+        name: "Offensive Fundamentals",
         date: monday.toISOString().split('T')[0],
         time: "16:00",
         duration: 120,
         exerciseIds: ["1", "4"],
-        notes: "Enfoque en forma de tiro y movimiento de balón",
+        notes: "Focus on shooting form and ball movement",
         attendanceCount: 16,
         totalPlayers: 18,
         status: "completed"
       },
       {
-        name: "Ejercicios Defensivos",
+        name: "Defensive Drills",
         date: new Date(monday.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Wednesday
         time: "15:30",
         duration: 120,
         exerciseIds: ["3"],
-        notes: "Énfasis en defensa de equipo",
+        notes: "Emphasis on team defense",
         attendanceCount: 18,
         totalPlayers: 18,
         status: "scheduled"
       },
       {
-        name: "Práctica de Tiros Libres",
+        name: "Free Throw Practice",
         date: new Date(monday.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Friday
         time: "17:00",
         duration: 90,
         exerciseIds: ["1"],
-        notes: "Sesión enfocada en precisión",
+        notes: "Session focused on accuracy",
         attendanceCount: 0,
         totalPlayers: 18,
         status: "scheduled"

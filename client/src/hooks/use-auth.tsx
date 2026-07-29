@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await loginMutation.mutateAsync(passcode);
     },
     isLoggingIn: loginMutation.isPending,
-    loginError: loginMutation.isError ? "Passcode incorrecto" : null,
+    loginError: loginMutation.isError ? "Incorrect passcode" : null,
     logout: () => logoutMutation.mutate(),
   };
 

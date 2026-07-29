@@ -11,15 +11,9 @@ import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { insertExerciseSchema } from "@shared/schema";
 import type { Exercise } from "@shared/schema";
-import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
+import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS, type ExerciseCategory, type DifficultyLevel } from "@/lib/types";
 
-const exerciseFormSchema = insertExerciseSchema.extend({
-  name: z.string().min(1, "Exercise name is required"),
-  description: z.string().min(1, "Description is required"),
-  duration: z.number().min(1, "Duration must be at least 1 minute"),
-});
-
-type ExerciseFormData = z.infer<typeof exerciseFormSchema>;
+type ExerciseFormData = z.infer<typeof insertExerciseSchema>;
 
 interface ExerciseFormProps {
   isOpen: boolean;
@@ -36,13 +30,13 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
   };
 
   const form = useForm<ExerciseFormData>({
-    resolver: zodResolver(exerciseFormSchema),
+    resolver: zodResolver(insertExerciseSchema),
     defaultValues: {
       name: exercise?.name ?? "",
       description: exercise?.description ?? "",
-      category: exercise?.category ?? "shooting",
+      category: (exercise?.category as ExerciseCategory) ?? "shooting",
       duration: exercise?.duration ?? 15,
-      difficulty: exercise?.difficulty ?? "medium",
+      difficulty: (exercise?.difficulty as DifficultyLevel) ?? "medium",
       instructions: exercise?.instructions ?? "",
       imageUrl: exercise?.imageUrl ?? "",
     },
@@ -57,6 +51,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
   });
 
   const onSubmit = (data: ExerciseFormData) => {
+    if (saveExerciseMutation.isPending) return;
     saveExerciseMutation.mutate(data);
   };
 

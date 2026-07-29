@@ -70,8 +70,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           type="button"
           onClick={logout}
           className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
-          aria-label="Cerrar sesión"
-          title="Cerrar sesión"
+          aria-label="Log out"
+          title="Log out"
         >
           <LogOut className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
         </button>

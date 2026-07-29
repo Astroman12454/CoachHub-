@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorState from "@/components/ErrorState";
 import DashboardStatsGrid, { type DashboardStats } from "@/components/DashboardStatsGrid";
 import UpcomingSessionsCard from "@/components/UpcomingSessionsCard";
 import QuickActionsCard from "@/components/QuickActionsCard";
@@ -18,15 +19,15 @@ export default function Dashboard() {
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ['/api/stats'],
   });
 
-  const { data: sessions = [], isLoading: sessionsLoading } = useQuery<TrainingSession[]>({
+  const { data: sessions = [], isLoading: sessionsLoading, isError: sessionsError, refetch: refetchSessions } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions'],
   });
 
-  const { data: exercises = [], isLoading: exercisesLoading } = useQuery<Exercise[]>({
+  const { data: exercises = [], isLoading: exercisesLoading, isError: exercisesError, refetch: refetchExercises } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
   });
 
@@ -75,6 +76,21 @@ export default function Dashboard() {
               <Skeleton key={i} className="h-32" />
             ))}
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (statsError || sessionsError || exercisesError) {
+    return (
+      <div className="flex flex-col h-full">
+        <TopBar
+          title="Dashboard"
+          subtitle="Welcome back! Here's what's happening with your team."
+          showNewSessionButton={true}
+        />
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <ErrorState onRetry={() => { refetchStats(); refetchSessions(); refetchExercises(); }} />
         </main>
       </div>
     );

@@ -42,21 +42,52 @@ export const players = pgTable("players", {
   isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
 });
 
+export const EXERCISE_CATEGORIES = [
+  "shooting",
+  "dribbling",
+  "defense",
+  "passing",
+  "conditioning",
+] as const;
+
+export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
+
+export const ATTENDANCE_STATUSES = ["present", "absent", "late", "excused"] as const;
+
+// These `.extend()` calls are the single source of truth for validation on
+// both sides of the wire: the server parses requests with these same
+// schemas (server/routes.ts), so a stricter rule here closes gaps that a
+// client-only check can't (a direct API call bypassing the UI, for example).
 export const insertExerciseSchema = createInsertSchema(exercises).omit({
   id: true,
+}).extend({
+  name: z.string().min(1, "Exercise name is required"),
+  description: z.string().min(1, "Description is required"),
+  category: z.enum(EXERCISE_CATEGORIES),
+  duration: z.number().int().min(1, "Duration must be at least 1 minute"),
+  difficulty: z.enum(DIFFICULTY_LEVELS),
 });
 
 export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).omit({
   id: true,
+}).extend({
+  name: z.string().min(1, "Session name is required"),
+  date: z.string().min(1, "Date is required"),
+  time: z.string().min(1, "Time is required"),
+  duration: z.number().int().min(1, "Duration must be at least 1 minute"),
 });
 
 export const insertPlayerSchema = createInsertSchema(players).omit({
   id: true,
+}).extend({
+  name: z.string().min(1, "Player name is required"),
 });
 
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({
   id: true,
   markedAt: true,
+}).extend({
+  status: z.enum(ATTENDANCE_STATUSES),
 });
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;

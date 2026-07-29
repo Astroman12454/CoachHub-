@@ -20,28 +20,24 @@ export default function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
         value={stats?.totalSessions || 0}
         icon={CalendarCheck}
         color="orange"
-        trend={{ value: "+12%", label: "from last month" }}
       />
       <StatCard
         label="Active Players"
         value={stats?.activePlayersCount || 0}
         icon={Users}
         color="court"
-        trend={{ value: "+2", label: "new this week" }}
       />
       <StatCard
         label="Exercise Library"
         value={stats?.totalExercises || 0}
         icon={Dumbbell}
         color="violet"
-        trend={{ value: "+8", label: "added this week" }}
       />
       <StatCard
         label="Avg Attendance"
         value={`${stats?.avgAttendance || 0}%`}
         icon={TrendingUp}
         color="success"
-        trend={{ value: "+5%", label: "improvement" }}
       />
     </div>
   );
