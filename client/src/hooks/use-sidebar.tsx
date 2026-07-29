@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from "react";
 
 interface SidebarContextValue {
   isMobileOpen: boolean;
@@ -10,15 +10,16 @@ const SidebarContext = createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const openMobile = useCallback(() => setIsMobileOpen(true), []);
+  const closeMobile = useCallback(() => setIsMobileOpen(false), []);
+
+  const value = useMemo(
+    () => ({ isMobileOpen, openMobile, closeMobile }),
+    [isMobileOpen, openMobile, closeMobile]
+  );
 
   return (
-    <SidebarContext.Provider
-      value={{
-        isMobileOpen,
-        openMobile: () => setIsMobileOpen(true),
-        closeMobile: () => setIsMobileOpen(false),
-      }}
-    >
+    <SidebarContext.Provider value={value}>
       {children}
     </SidebarContext.Provider>
   );

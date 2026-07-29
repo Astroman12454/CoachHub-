@@ -12,6 +12,7 @@ import ExerciseCategoriesCard from "@/components/ExerciseCategoriesCard";
 import AICoachBanner from "@/components/AICoachBanner";
 import AIRecommendationsModal from "@/components/AIRecommendationsModal";
 import RecentExercisesCard from "@/components/RecentExercisesCard";
+import { computeInsights } from "@/lib/insights";
 import type { Exercise, TrainingSession } from "@shared/schema";
 
 export default function Dashboard() {
@@ -44,6 +45,8 @@ export default function Dashboard() {
       return acc;
     }, {} as Record<string, number>);
   }, [exercises]);
+
+  const insights = useMemo(() => computeInsights(sessions, exercises), [sessions, exercises]);
 
   // Navigation functions
   const navigateToPage = (path: string) => {
@@ -125,7 +128,7 @@ export default function Dashboard() {
               exercisesByCategory={exercisesByCategory}
               onCategoryClick={handleCategoryClick}
             />
-            <AICoachBanner onOpenRecommendations={() => setIsAIModalOpen(true)} />
+            <AICoachBanner insights={insights} onOpenRecommendations={() => setIsAIModalOpen(true)} />
           </div>
         </div>
 
@@ -145,6 +148,7 @@ export default function Dashboard() {
         <AIRecommendationsModal
           open={isAIModalOpen}
           onOpenChange={setIsAIModalOpen}
+          insights={insights}
           onViewCategory={(category) => {
             setIsAIModalOpen(false);
             handleCategoryClick(category);

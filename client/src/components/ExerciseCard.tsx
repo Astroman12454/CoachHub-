@@ -73,6 +73,8 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
         <img
           src={exercise.imageUrl}
           alt={exercise.name}
+          loading="lazy"
+          decoding="async"
           onError={() => setImageFailed(true)}
           className="w-full h-32 object-cover rounded-md mb-4"
         />

@@ -1,11 +1,15 @@
-import { Bot, Shield, Target, TrendingUp } from "lucide-react";
+import { Bot, TrendingUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { CoachInsight } from "@/lib/insights";
 
 interface AICoachBannerProps {
+  insights: CoachInsight[];
   onOpenRecommendations: () => void;
 }
 
-export default function AICoachBanner({ onOpenRecommendations }: AICoachBannerProps) {
+export default function AICoachBanner({ insights, onOpenRecommendations }: AICoachBannerProps) {
+  const preview = insights.slice(0, 2);
+
   return (
     <div className="basketball-orange-deep rounded-lg text-white p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -18,25 +22,27 @@ export default function AICoachBanner({ onOpenRecommendations }: AICoachBannerPr
         </div>
       </div>
 
-      <p className="text-white/90 text-sm mb-4">Based on your team's recent performance data:</p>
-
-      <div className="space-y-2">
-        <div className="bg-white/10 rounded-md p-3 border border-white/15">
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-            <p className="text-sm font-semibold">Defense Positioning</p>
+      {preview.length > 0 ? (
+        <>
+          <p className="text-white/90 text-sm mb-4">Based on your team's actual training data:</p>
+          <div className="space-y-2">
+            {preview.map((insight) => (
+              <div key={insight.id} className="bg-white/10 rounded-md p-3 border border-white/15">
+                <div className="flex items-center gap-2 mb-1">
+                  <insight.icon className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  <p className="text-sm font-semibold">{insight.title}</p>
+                </div>
+                <p className="text-xs text-white/90">{insight.description}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-white/90">15% more points allowed in paint</p>
+        </>
+      ) : (
+        <div className="bg-white/10 rounded-md p-3 border border-white/15 mb-4 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <p className="text-sm text-white/90">Add exercises and complete a few sessions to unlock insights.</p>
         </div>
-
-        <div className="bg-white/10 rounded-md p-3 border border-white/15">
-          <div className="flex items-center gap-2 mb-1">
-            <Target className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-            <p className="text-sm font-semibold">Free Throw Practice</p>
-          </div>
-          <p className="text-xs text-white/90">Current: 68% → Target: 75%</p>
-        </div>
-      </div>
+      )}
 
       <Button
         className="mt-4 w-full bg-white text-basketball-orange hover:bg-orange-50"

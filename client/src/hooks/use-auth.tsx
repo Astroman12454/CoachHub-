@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, SESSION_QUERY_KEY } from "@/lib/queryClient";
 
@@ -45,7 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const value: AuthContextValue = {
+  // Memoized so consumers only re-render when a value they actually read
+  // changes, instead of on every render of AuthProvider (e.g. any query
+  // invalidation anywhere in the app, since it sits near the tree root).
+  const value = useMemo<AuthContextValue>(() => ({
     isAuthenticated: !!data?.authenticated,
     isLoading,
     login: async (passcode: string) => {
@@ -54,7 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoggingIn: loginMutation.isPending,
     loginError: loginMutation.isError ? "Incorrect passcode" : null,
     logout: () => logoutMutation.mutate(),
-  };
+  }), [
+    data?.authenticated,
+    isLoading,
+    loginMutation.isPending,
+    loginMutation.isError,
+    loginMutation.mutateAsync,
+    logoutMutation.mutate,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
