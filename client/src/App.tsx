@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Login from "@/pages/Login";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
+import Support from "@/pages/Support";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/Sidebar";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -87,12 +88,14 @@ function App() {
           <AuthProvider>
             <TooltipProvider>
               <Toaster />
-              {/* Privacy/Terms must be reachable with no session at all — app
-                  store reviewers and logged-out users both need them — so
-                  they're matched here, ahead of AuthGate's login/loading gate. */}
+              {/* Privacy/Terms/Support must be reachable with no session at
+                  all — app store reviewers and logged-out users both need
+                  them — so they're matched here, ahead of AuthGate's
+                  login/loading gate. */}
               <Switch>
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/terms" component={Terms} />
+                <Route path="/support" component={Support} />
                 <Route component={AuthGate} />
               </Switch>
             </TooltipProvider>

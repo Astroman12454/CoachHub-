@@ -136,6 +136,13 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("support page", async ({ page }) => {
+    await page.goto("/support");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("billing success page", async ({ page }) => {
     await login(page);
     await page.goto("/billing/success");

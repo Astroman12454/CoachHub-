@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.coachhub.app',
   appName: 'Coach Hub',
   webDir: 'dist/public',
-  backgroundColor: '#DB3A00',
+  backgroundColor: '#CC3600',
 
   // TODO once the backend is deployed (e.g. to Render via render.yaml):
   // uncomment this block and set `url` to that deployment's HTTPS address.

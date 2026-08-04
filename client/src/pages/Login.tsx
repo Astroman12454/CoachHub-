@@ -115,6 +115,10 @@ export default function Login() {
         <Link href="/terms" className="hover:underline">
           Terms of Use
         </Link>
+        {" · "}
+        <Link href="/support" className="hover:underline">
+          Support
+        </Link>
       </p>
     </main>
   );
