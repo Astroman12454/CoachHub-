@@ -122,6 +122,20 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("privacy policy page", async ({ page }) => {
+    await page.goto("/privacy");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("terms of use page", async ({ page }) => {
+    await page.goto("/terms");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("billing success page", async ({ page }) => {
     await login(page);
     await page.goto("/billing/success");

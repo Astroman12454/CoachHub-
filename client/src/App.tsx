@@ -6,6 +6,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Login from "@/pages/Login";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/Sidebar";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -85,7 +87,14 @@ function App() {
           <AuthProvider>
             <TooltipProvider>
               <Toaster />
-              <AuthGate />
+              {/* Privacy/Terms must be reachable with no session at all — app
+                  store reviewers and logged-out users both need them — so
+                  they're matched here, ahead of AuthGate's login/loading gate. */}
+              <Switch>
+                <Route path="/privacy" component={Privacy} />
+                <Route path="/terms" component={Terms} />
+                <Route component={AuthGate} />
+              </Switch>
             </TooltipProvider>
           </AuthProvider>
         </QueryClientProvider>

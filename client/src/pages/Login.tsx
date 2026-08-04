@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-rail p-4">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-rail p-4">
       <div className="w-full max-w-sm bg-card rounded-lg shadow-2xl p-8 fade-in">
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 basketball-orange rounded-lg flex items-center justify-center mb-4">
@@ -90,7 +91,31 @@ export default function Login() {
             {mode === "login" ? "Create an account" : "Log in"}
           </button>
         </p>
+
+        {mode === "signup" && (
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            By creating an account you agree to our{" "}
+            <Link href="/terms" className="text-basketball-orange hover:underline">
+              Terms of Use
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-basketball-orange hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        )}
       </div>
+
+      <p className="text-center text-xs text-muted-foreground mt-4">
+        <Link href="/privacy" className="hover:underline">
+          Privacy Policy
+        </Link>
+        {" · "}
+        <Link href="/terms" className="hover:underline">
+          Terms of Use
+        </Link>
+      </p>
     </main>
   );
 }
