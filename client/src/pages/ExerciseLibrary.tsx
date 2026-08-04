@@ -12,12 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 
 export default function ExerciseLibrary() {
   const search = useSearch();
   const initialCategory = new URLSearchParams(search).get("category") ?? "all";
+  const { account } = useAuth();
+  const { toast } = useToast();
+  const canEditExercises = account?.plan === "paid";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
@@ -40,6 +45,17 @@ export default function ExerciseLibrary() {
       requestDelete(exerciseToDelete.id, `"${exerciseToDelete.name}" deleted.`);
       setExerciseToDelete(null);
     }
+  };
+
+  const handleAddExerciseClick = () => {
+    if (!canEditExercises) {
+      toast({
+        title: "Free plan",
+        description: "Upgrade to a paid plan to create custom exercises.",
+      });
+      return;
+    }
+    setIsCreateFormOpen(true);
   };
 
   // Filter exercises; exercises mid-undo-window are hidden immediately
@@ -137,7 +153,7 @@ export default function ExerciseLibrary() {
 
           <Button
             className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
-            onClick={() => setIsCreateFormOpen(true)}
+            onClick={handleAddExerciseClick}
           >
             <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
             Add Exercise
@@ -157,7 +173,7 @@ export default function ExerciseLibrary() {
             action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" ? {
               label: "Add First Exercise",
               icon: Plus,
-              onClick: () => setIsCreateFormOpen(true),
+              onClick: handleAddExerciseClick,
             } : undefined}
           />
         ) : (
@@ -166,8 +182,8 @@ export default function ExerciseLibrary() {
               <ExerciseCard
                 key={exercise.id}
                 exercise={exercise}
-                onEdit={() => setEditingExercise(exercise)}
-                onDelete={() => setExerciseToDelete(exercise)}
+                onEdit={canEditExercises ? () => setEditingExercise(exercise) : undefined}
+                onDelete={canEditExercises ? () => setExerciseToDelete(exercise) : undefined}
               />
             ))}
           </div>

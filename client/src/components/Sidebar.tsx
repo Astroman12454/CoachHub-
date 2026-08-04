@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, User, LogOut } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, LogOut, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import ThemeToggle from "@/components/ThemeToggle";
 import BrandMark from "@/components/BrandMark";
+import NewTeamDialog from "@/components/NewTeamDialog";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -15,9 +19,54 @@ const navigation = [
   { name: "Players", href: "/players", icon: Users },
 ];
 
+const NEW_TEAM_VALUE = "__new__";
+
+function TeamSwitcher() {
+  const { teams, currentTeamId, switchTeam } = useAuth();
+  const [isNewTeamOpen, setIsNewTeamOpen] = useState(false);
+
+  const handleChange = (value: string) => {
+    if (value === NEW_TEAM_VALUE) {
+      setIsNewTeamOpen(true);
+      return;
+    }
+    switchTeam(parseInt(value));
+  };
+
+  return (
+    <div className="px-3 pt-3">
+      <Select value={currentTeamId?.toString() ?? ""} onValueChange={handleChange}>
+        <SelectTrigger
+          className="bg-white/5 border-rail-border text-rail-foreground hover:bg-white/10 focus:ring-basketball-orange"
+          aria-label="Switch team"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <ChevronsUpDown className="w-3.5 h-3.5 flex-shrink-0 text-rail-muted" strokeWidth={1.75} aria-hidden="true" />
+            <SelectValue placeholder="Select team" />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          {teams.map((team) => (
+            <SelectItem key={team.id} value={team.id.toString()}>
+              {team.name}
+            </SelectItem>
+          ))}
+          <SelectItem value={NEW_TEAM_VALUE}>
+            <span className="flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+              New Team
+            </span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+      <NewTeamDialog open={isNewTeamOpen} onOpenChange={setIsNewTeamOpen} />
+    </div>
+  );
+}
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
-  const { logout } = useAuth();
+  const { account, logout } = useAuth();
 
   return (
     // Fixed dark "scoreboard rail" regardless of the app's light/dark
@@ -33,6 +82,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <p className="text-xs text-rail-muted truncate">Basketball Training</p>
         </div>
       </div>
+
+      <TeamSwitcher />
 
       <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navigation.map((item) => {
@@ -58,12 +109,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="p-4 border-t border-rail-border flex items-center gap-3">
-        <div className="w-9 h-9 flex-shrink-0 rounded-md bg-white/10 flex items-center justify-center">
-          <User className="w-4 h-4 text-rail-foreground" strokeWidth={1.75} />
-        </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">Coach Johnson</p>
-          <p className="text-xs text-rail-muted truncate">Lakers High School</p>
+          <p className="font-medium text-sm truncate">{account?.email}</p>
+          <Badge variant="secondary" className="mt-1 text-[10px] uppercase tracking-wide">
+            {account?.plan === "paid" ? "Paid Plan" : "Free Plan"}
+          </Badge>
         </div>
         <ThemeToggle />
         <button

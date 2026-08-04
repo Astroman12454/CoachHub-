@@ -32,6 +32,23 @@ export async function apiRequest(
   return res;
 }
 
+// apiRequest throws `Error("<status>: <raw body>")`; the raw body is
+// usually `{"message":"..."}` from our own API. Pulls that message back out
+// so callers (e.g. useSaveMutation's error toast) can show the server's
+// actual reason — a plan-limit message, a validation error — instead of a
+// generic fallback string.
+export function extractErrorMessage(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart === -1) return null;
+  try {
+    const parsed = JSON.parse(error.message.slice(jsonStart));
+    return typeof parsed?.message === "string" ? parsed.message : null;
+  } catch {
+    return null;
+  }
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

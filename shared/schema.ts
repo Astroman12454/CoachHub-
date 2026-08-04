@@ -2,8 +2,31 @@ import { pgTable, text, serial, integer, timestamp, json } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const PLANS = ["free", "paid"] as const;
+
+// Free plan: 1 team, up to 15 players, read-only exercise library.
+// Paid plan: unlimited teams/players, can create/edit exercises, full history.
+export const FREE_PLAN_PLAYER_LIMIT = 15;
+export const FREE_PLAN_TEAM_LIMIT = 1;
+
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  plan: text("plan").notNull().default("free"), // 'free' | 'paid'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const exercises = pgTable("exercises", {
   id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(), // shooting, dribbling, defense, passing, conditioning
@@ -15,6 +38,7 @@ export const exercises = pgTable("exercises", {
 
 export const trainingSessions = pgTable("training_sessions", {
   id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   date: text("date").notNull(),
   time: text("time").notNull(),
@@ -37,6 +61,7 @@ export const attendance = pgTable("attendance", {
 
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   position: text("position"),
   isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
@@ -54,12 +79,36 @@ export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
 
 export const ATTENDANCE_STATUSES = ["present", "absent", "late", "excused"] as const;
 
+export const insertAccountSchema = createInsertSchema(accounts).omit({
+  id: true,
+  createdAt: true,
+  passwordHash: true,
+  plan: true,
+}).extend({
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const insertTeamSchema = createInsertSchema(teams).omit({
+  id: true,
+  accountId: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Team name is required"),
+});
+
 // These `.extend()` calls are the single source of truth for validation on
 // both sides of the wire: the server parses requests with these same
 // schemas (server/routes.ts), so a stricter rule here closes gaps that a
 // client-only check can't (a direct API call bypassing the UI, for example).
 export const insertExerciseSchema = createInsertSchema(exercises).omit({
   id: true,
+  accountId: true,
 }).extend({
   name: z.string().min(1, "Exercise name is required"),
   description: z.string().min(1, "Description is required"),
@@ -70,6 +119,7 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
 
 export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).omit({
   id: true,
+  teamId: true,
 }).extend({
   name: z.string().min(1, "Session name is required"),
   date: z.string().min(1, "Date is required"),
@@ -79,6 +129,7 @@ export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).
 
 export const insertPlayerSchema = createInsertSchema(players).omit({
   id: true,
+  teamId: true,
 }).extend({
   name: z.string().min(1, "Player name is required"),
 });
@@ -89,6 +140,12 @@ export const insertAttendanceSchema = createInsertSchema(attendance).omit({
 }).extend({
   status: z.enum(ATTENDANCE_STATUSES),
 });
+
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type Exercise = typeof exercises.$inferSelect;

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface UseSaveMutationOptions {
@@ -53,8 +53,8 @@ export function useSaveMutation<TData>({
       toast({ title: successTitle, description: successMessage });
       onSuccess?.();
     },
-    onError: () => {
-      toast({ title: errorTitle, description: errorMessage, variant: "destructive" });
+    onError: (error) => {
+      toast({ title: errorTitle, description: extractErrorMessage(error) ?? errorMessage, variant: "destructive" });
     },
   });
 }

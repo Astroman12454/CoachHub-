@@ -1,9 +1,13 @@
-import { 
-  exercises, 
-  trainingSessions, 
+import {
+  accounts,
+  teams,
+  exercises,
+  trainingSessions,
   players,
   attendance,
-  type Exercise, 
+  type Account,
+  type Team,
+  type Exercise,
   type InsertExercise,
   type TrainingSession,
   type InsertTrainingSession,
@@ -13,61 +17,122 @@ import {
   type InsertAttendance
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // Exercise methods
-  getAllExercises(): Promise<Exercise[]>;
-  getExerciseById(id: number): Promise<Exercise | undefined>;
-  getExercisesByCategory(category: string): Promise<Exercise[]>;
-  createExercise(exercise: InsertExercise): Promise<Exercise>;
-  updateExercise(id: number, exercise: Partial<InsertExercise>): Promise<Exercise | undefined>;
-  deleteExercise(id: number): Promise<boolean>;
+  // Account methods
+  createAccount(email: string, passwordHash: string): Promise<Account>;
+  getAccountByEmail(email: string): Promise<Account | undefined>;
+  getAccountById(id: number): Promise<Account | undefined>;
 
-  // Training Session methods
-  getAllTrainingSessions(): Promise<TrainingSession[]>;
-  getTrainingSessionById(id: number): Promise<TrainingSession | undefined>;
-  getTrainingSessionsByDateRange(startDate: string, endDate: string): Promise<TrainingSession[]>;
-  createTrainingSession(session: InsertTrainingSession): Promise<TrainingSession>;
-  updateTrainingSession(id: number, session: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
-  deleteTrainingSession(id: number): Promise<boolean>;
+  // Team methods
+  createTeam(accountId: number, name: string): Promise<Team>;
+  getTeamsByAccount(accountId: number): Promise<Team[]>;
+  getTeamById(id: number, accountId: number): Promise<Team | undefined>;
 
-  // Player methods
-  getAllPlayers(): Promise<Player[]>;
-  getPlayerById(id: number): Promise<Player | undefined>;
-  createPlayer(player: InsertPlayer): Promise<Player>;
-  updatePlayer(id: number, player: Partial<InsertPlayer>): Promise<Player | undefined>;
-  deletePlayer(id: number): Promise<boolean>;
-  getActivePlayersCount(): Promise<number>;
+  // Exercise methods (scoped by account — shared across that account's teams)
+  getAllExercises(accountId: number): Promise<Exercise[]>;
+  getExerciseById(id: number, accountId: number): Promise<Exercise | undefined>;
+  getExercisesByCategory(accountId: number, category: string): Promise<Exercise[]>;
+  createExercise(accountId: number, exercise: InsertExercise): Promise<Exercise>;
+  updateExercise(id: number, accountId: number, exercise: Partial<InsertExercise>): Promise<Exercise | undefined>;
+  deleteExercise(id: number, accountId: number): Promise<boolean>;
 
-  // Attendance methods
+  // Training Session methods (scoped by team)
+  getAllTrainingSessions(teamId: number): Promise<TrainingSession[]>;
+  getTrainingSessionById(id: number, teamId: number): Promise<TrainingSession | undefined>;
+  getTrainingSessionsByDateRange(teamId: number, startDate: string, endDate: string): Promise<TrainingSession[]>;
+  createTrainingSession(teamId: number, session: InsertTrainingSession): Promise<TrainingSession>;
+  updateTrainingSession(id: number, teamId: number, session: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
+  deleteTrainingSession(id: number, teamId: number): Promise<boolean>;
+
+  // Player methods (scoped by team)
+  getAllPlayers(teamId: number): Promise<Player[]>;
+  getPlayerById(id: number, teamId: number): Promise<Player | undefined>;
+  createPlayer(teamId: number, player: InsertPlayer): Promise<Player>;
+  updatePlayer(id: number, teamId: number, player: Partial<InsertPlayer>): Promise<Player | undefined>;
+  deletePlayer(id: number, teamId: number): Promise<boolean>;
+  getActivePlayersCount(teamId: number): Promise<number>;
+  getPlayerCount(teamId: number): Promise<number>;
+
+  // Attendance methods — callers verify session/player ownership first
+  // (via getTrainingSessionById/getPlayerById above) since attendance rows
+  // don't carry teamId directly.
   getAttendanceBySession(sessionId: number): Promise<Attendance[]>;
   getAttendanceByPlayer(playerId: number): Promise<Attendance[]>;
+  getAttendanceById(id: number): Promise<Attendance | undefined>;
   markAttendance(attendance: InsertAttendance): Promise<Attendance>;
   updateAttendance(id: number, attendance: Partial<InsertAttendance>): Promise<Attendance | undefined>;
   getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // Exercise methods
-  async getAllExercises(): Promise<Exercise[]> {
-    return await db.select().from(exercises);
+  // Account methods
+  async createAccount(email: string, passwordHash: string): Promise<Account> {
+    const [account] = await db
+      .insert(accounts)
+      .values({ email, passwordHash })
+      .returning();
+    return account;
   }
 
-  async getExerciseById(id: number): Promise<Exercise | undefined> {
-    const [exercise] = await db.select().from(exercises).where(eq(exercises.id, id));
+  async getAccountByEmail(email: string): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.email, email));
+    return account || undefined;
+  }
+
+  async getAccountById(id: number): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, id));
+    return account || undefined;
+  }
+
+  // Team methods
+  async createTeam(accountId: number, name: string): Promise<Team> {
+    const [team] = await db
+      .insert(teams)
+      .values({ accountId, name })
+      .returning();
+    return team;
+  }
+
+  async getTeamsByAccount(accountId: number): Promise<Team[]> {
+    return await db.select().from(teams).where(eq(teams.accountId, accountId));
+  }
+
+  async getTeamById(id: number, accountId: number): Promise<Team | undefined> {
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(and(eq(teams.id, id), eq(teams.accountId, accountId)));
+    return team || undefined;
+  }
+
+  // Exercise methods
+  async getAllExercises(accountId: number): Promise<Exercise[]> {
+    return await db.select().from(exercises).where(eq(exercises.accountId, accountId));
+  }
+
+  async getExerciseById(id: number, accountId: number): Promise<Exercise | undefined> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)));
     return exercise || undefined;
   }
 
-  async getExercisesByCategory(category: string): Promise<Exercise[]> {
-    return await db.select().from(exercises).where(eq(exercises.category, category));
+  async getExercisesByCategory(accountId: number, category: string): Promise<Exercise[]> {
+    return await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.accountId, accountId), eq(exercises.category, category)));
   }
 
-  async createExercise(insertExercise: InsertExercise): Promise<Exercise> {
+  async createExercise(accountId: number, insertExercise: InsertExercise): Promise<Exercise> {
     const [exercise] = await db
       .insert(exercises)
       .values({
         ...insertExercise,
+        accountId,
         instructions: insertExercise.instructions || null,
         imageUrl: insertExercise.imageUrl || null
       })
@@ -75,42 +140,51 @@ export class DatabaseStorage implements IStorage {
     return exercise;
   }
 
-  async updateExercise(id: number, updateData: Partial<InsertExercise>): Promise<Exercise | undefined> {
+  async updateExercise(id: number, accountId: number, updateData: Partial<InsertExercise>): Promise<Exercise | undefined> {
     const [exercise] = await db
       .update(exercises)
       .set(updateData)
-      .where(eq(exercises.id, id))
+      .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)))
       .returning();
     return exercise || undefined;
   }
 
-  async deleteExercise(id: number): Promise<boolean> {
-    const result = await db.delete(exercises).where(eq(exercises.id, id));
+  async deleteExercise(id: number, accountId: number): Promise<boolean> {
+    const result = await db
+      .delete(exercises)
+      .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Training Session methods
-  async getAllTrainingSessions(): Promise<TrainingSession[]> {
-    return await db.select().from(trainingSessions);
+  async getAllTrainingSessions(teamId: number): Promise<TrainingSession[]> {
+    return await db.select().from(trainingSessions).where(eq(trainingSessions.teamId, teamId));
   }
 
-  async getTrainingSessionsByDateRange(startDate: string, endDate: string): Promise<TrainingSession[]> {
+  async getTrainingSessionsByDateRange(teamId: number, startDate: string, endDate: string): Promise<TrainingSession[]> {
     return await db.select().from(trainingSessions)
       .where(
-        sql`${trainingSessions.date} >= ${startDate} AND ${trainingSessions.date} <= ${endDate}`
+        and(
+          eq(trainingSessions.teamId, teamId),
+          sql`${trainingSessions.date} >= ${startDate} AND ${trainingSessions.date} <= ${endDate}`
+        )
       );
   }
 
-  async getTrainingSessionById(id: number): Promise<TrainingSession | undefined> {
-    const [session] = await db.select().from(trainingSessions).where(eq(trainingSessions.id, id));
+  async getTrainingSessionById(id: number, teamId: number): Promise<TrainingSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(trainingSessions)
+      .where(and(eq(trainingSessions.id, id), eq(trainingSessions.teamId, teamId)));
     return session || undefined;
   }
 
-  async createTrainingSession(insertSession: InsertTrainingSession): Promise<TrainingSession> {
+  async createTrainingSession(teamId: number, insertSession: InsertTrainingSession): Promise<TrainingSession> {
     const [session] = await db
       .insert(trainingSessions)
       .values({
         ...insertSession,
+        teamId,
         exerciseIds: insertSession.exerciseIds || null,
         notes: insertSession.notes || null,
         attendanceCount: insertSession.attendanceCount || null,
@@ -121,35 +195,41 @@ export class DatabaseStorage implements IStorage {
     return session;
   }
 
-  async updateTrainingSession(id: number, updateData: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
+  async updateTrainingSession(id: number, teamId: number, updateData: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined> {
     const [session] = await db
       .update(trainingSessions)
       .set(updateData)
-      .where(eq(trainingSessions.id, id))
+      .where(and(eq(trainingSessions.id, id), eq(trainingSessions.teamId, teamId)))
       .returning();
     return session || undefined;
   }
 
-  async deleteTrainingSession(id: number): Promise<boolean> {
-    const result = await db.delete(trainingSessions).where(eq(trainingSessions.id, id));
+  async deleteTrainingSession(id: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .delete(trainingSessions)
+      .where(and(eq(trainingSessions.id, id), eq(trainingSessions.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Player methods
-  async getAllPlayers(): Promise<Player[]> {
-    return await db.select().from(players);
+  async getAllPlayers(teamId: number): Promise<Player[]> {
+    return await db.select().from(players).where(eq(players.teamId, teamId));
   }
 
-  async getPlayerById(id: number): Promise<Player | undefined> {
-    const [player] = await db.select().from(players).where(eq(players.id, id));
+  async getPlayerById(id: number, teamId: number): Promise<Player | undefined> {
+    const [player] = await db
+      .select()
+      .from(players)
+      .where(and(eq(players.id, id), eq(players.teamId, teamId)));
     return player || undefined;
   }
 
-  async createPlayer(insertPlayer: InsertPlayer): Promise<Player> {
+  async createPlayer(teamId: number, insertPlayer: InsertPlayer): Promise<Player> {
     const [player] = await db
       .insert(players)
       .values({
         ...insertPlayer,
+        teamId,
         position: insertPlayer.position || null,
         isActive: insertPlayer.isActive || null
       })
@@ -157,23 +237,33 @@ export class DatabaseStorage implements IStorage {
     return player;
   }
 
-  async updatePlayer(id: number, updateData: Partial<InsertPlayer>): Promise<Player | undefined> {
+  async updatePlayer(id: number, teamId: number, updateData: Partial<InsertPlayer>): Promise<Player | undefined> {
     const [player] = await db
       .update(players)
       .set(updateData)
-      .where(eq(players.id, id))
+      .where(and(eq(players.id, id), eq(players.teamId, teamId)))
       .returning();
     return player || undefined;
   }
 
-  async deletePlayer(id: number): Promise<boolean> {
-    const result = await db.delete(players).where(eq(players.id, id));
+  async deletePlayer(id: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .delete(players)
+      .where(and(eq(players.id, id), eq(players.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getActivePlayersCount(): Promise<number> {
-    const activePlayers = await db.select().from(players).where(eq(players.isActive, 1));
+  async getActivePlayersCount(teamId: number): Promise<number> {
+    const activePlayers = await db
+      .select()
+      .from(players)
+      .where(and(eq(players.teamId, teamId), eq(players.isActive, 1)));
     return activePlayers.length;
+  }
+
+  async getPlayerCount(teamId: number): Promise<number> {
+    const teamPlayers = await db.select().from(players).where(eq(players.teamId, teamId));
+    return teamPlayers.length;
   }
 
   // Attendance methods
@@ -183,6 +273,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAttendanceByPlayer(playerId: number): Promise<Attendance[]> {
     return await db.select().from(attendance).where(eq(attendance.playerId, playerId));
+  }
+
+  async getAttendanceById(id: number): Promise<Attendance | undefined> {
+    const [record] = await db.select().from(attendance).where(eq(attendance.id, id));
+    return record || undefined;
   }
 
   async markAttendance(insertAttendance: InsertAttendance): Promise<Attendance> {
@@ -212,11 +307,14 @@ export class DatabaseStorage implements IStorage {
   // the quick-glance badges on the dashboard and schedule) in sync with the
   // actual attendance records, since those are the source of truth.
   private async syncSessionAttendanceCount(sessionId: number): Promise<void> {
+    const [session] = await db.select().from(trainingSessions).where(eq(trainingSessions.id, sessionId));
+    if (!session) return;
+
     const sessionAttendance = await this.getAttendanceBySession(sessionId);
     const presentCount = sessionAttendance.filter(
       (a) => a.status === "present" || a.status === "late",
     ).length;
-    const totalPlayers = await this.getActivePlayersCount();
+    const totalPlayers = await this.getActivePlayersCount(session.teamId);
 
     await db
       .update(trainingSessions)
@@ -230,7 +328,7 @@ export class DatabaseStorage implements IStorage {
     const present = playerAttendance.filter(a => a.status === 'present' || a.status === 'late').length;
     const absent = total - present;
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-    
+
     return { total, present, absent, rate };
   }
 }

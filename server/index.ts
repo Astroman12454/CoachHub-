@@ -42,8 +42,9 @@ if (app.get("env") !== "development") {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Registers /api/login, /api/logout and /api/session (unprotected); every
-// other /api/* route registered below requireAuth needs a valid session.
+// Registers /api/signup, /api/login, /api/logout and /api/session
+// (unprotected, though /api/session/team checks the session itself);
+// every other /api/* route registered below requireAuth needs a valid session.
 setupAuth(app);
 app.use("/api", requireAuth);
 
@@ -78,10 +79,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Seed the database on startup
-  const { seedDatabase } = await import("./seed");
-  await seedDatabase();
-  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -58,7 +58,7 @@ describe("useAuth", () => {
     expect(result.current.isAuthenticated).toBe(false);
   });
 
-  it("login() flips isAuthenticated to true on a correct passcode", async () => {
+  it("login() flips isAuthenticated to true on correct credentials", async () => {
     // Stateful, like the real server: /api/session reflects whatever the
     // last login/logout call set, since queryClient.clear() in the auth
     // mutations can trigger a refetch of /api/session after the mutation.
@@ -79,7 +79,7 @@ describe("useAuth", () => {
     expect(result.current.isAuthenticated).toBe(false);
 
     await act(async () => {
-      await result.current.login("correct-passcode");
+      await result.current.login("coach@example.com", "correct-password");
     });
 
     await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
@@ -89,10 +89,10 @@ describe("useAuth", () => {
     );
   });
 
-  it("surfaces loginError when the passcode is rejected, without authenticating", async () => {
+  it("surfaces loginError when credentials are rejected, without authenticating", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url === "/api/session") return Promise.resolve(jsonResponse({ authenticated: false }));
-      if (url === "/api/login") return Promise.resolve(jsonResponse({ message: "Incorrect passcode" }, 401));
+      if (url === "/api/login") return Promise.resolve(jsonResponse({ message: "Incorrect email or password" }, 401));
       throw new Error(`Unexpected fetch to ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -102,10 +102,10 @@ describe("useAuth", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
-      await result.current.login("wrong-passcode").catch(() => {});
+      await result.current.login("coach@example.com", "wrong-password").catch(() => {});
     });
 
-    await waitFor(() => expect(result.current.loginError).toBe("Incorrect passcode"));
+    await waitFor(() => expect(result.current.loginError).toBe("Incorrect email or password"));
     expect(result.current.isAuthenticated).toBe(false);
   });
 

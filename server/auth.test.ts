@@ -1,12 +1,17 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll } from "vitest";
+import { randomUUID } from "crypto";
 import express from "express";
 import request from "supertest";
 import { setupAuth, requireAuth } from "./auth";
 
-// APP_PASSCODE is injected via vitest.config.ts's test.env before this file
-// (and therefore ./auth, which reads it at import time) ever runs.
-const PASSCODE = "test-passcode-12345";
+// Real signup/login now write to the DB (accounts, teams, seeded exercises),
+// so every test uses its own randomized email — no shared fixture account,
+// no collisions with anything created manually in the same dev database.
+function uniqueEmail() {
+  return `test-${randomUUID()}@example.com`;
+}
+const PASSWORD = "correct-password-123";
 
 function createTestApp() {
   const app = express();
@@ -35,40 +40,65 @@ describe("auth", () => {
     expect(res.status).toBe(401);
   });
 
-  it("rejects an incorrect passcode with 401 and does not grant a session", async () => {
-    const agent = request.agent(app);
+  it("rejects signup with an invalid email", async () => {
+    const res = await request(app).post("/api/signup").send({ email: "not-an-email", password: PASSWORD });
+    expect(res.status).toBe(400);
+  });
 
-    const login = await agent.post("/api/login").send({ passcode: "wrong-passcode" });
+  it("rejects signup with a too-short password", async () => {
+    const res = await request(app).post("/api/signup").send({ email: uniqueEmail(), password: "short" });
+    expect(res.status).toBe(400);
+  });
+
+  it("signup creates an account with a default team, grants a session, and unlocks protected routes", async () => {
+    const agent = request.agent(app);
+    const email = uniqueEmail();
+
+    const signup = await agent.post("/api/signup").send({ email, password: PASSWORD });
+    expect(signup.status).toBe(201);
+    expect(signup.body.authenticated).toBe(true);
+    expect(signup.body.account).toMatchObject({ email, plan: "free" });
+    expect(signup.body.teams).toHaveLength(1);
+    expect(signup.body.currentTeamId).toBe(signup.body.teams[0].id);
+
+    const protectedRes = await agent.get("/api/protected");
+    expect(protectedRes.status).toBe(200);
+  });
+
+  it("rejects signup with an email that's already registered", async () => {
+    const email = uniqueEmail();
+    await request(app).post("/api/signup").send({ email, password: PASSWORD });
+
+    const dupe = await request(app).post("/api/signup").send({ email, password: PASSWORD });
+    expect(dupe.status).toBe(409);
+  });
+
+  it("rejects login with an incorrect password and does not grant a session", async () => {
+    const email = uniqueEmail();
+    await request(app).post("/api/signup").send({ email, password: PASSWORD });
+
+    const agent = request.agent(app);
+    const login = await agent.post("/api/login").send({ email, password: "wrong-password" });
     expect(login.status).toBe(401);
 
     const protectedRes = await agent.get("/api/protected");
     expect(protectedRes.status).toBe(401);
   });
 
-  it("rejects a missing/non-string passcode with 401 instead of throwing", async () => {
-    const agent = request.agent(app);
-    const login = await agent.post("/api/login").send({});
-    expect(login.status).toBe(401);
+  it("rejects login for an email that was never registered", async () => {
+    const res = await request(app).post("/api/login").send({ email: uniqueEmail(), password: PASSWORD });
+    expect(res.status).toBe(401);
   });
 
-  it("accepts the correct passcode, grants a session, and unlocks protected routes", async () => {
-    const agent = request.agent(app);
+  it("logs in with correct credentials and logout destroys the session", async () => {
+    const email = uniqueEmail();
+    await request(app).post("/api/signup").send({ email, password: PASSWORD });
 
-    const login = await agent.post("/api/login").send({ passcode: PASSCODE });
+    const agent = request.agent(app);
+    const login = await agent.post("/api/login").send({ email, password: PASSWORD });
     expect(login.status).toBe(200);
-    expect(login.body).toEqual({ authenticated: true });
+    expect(login.body.account).toMatchObject({ email });
 
-    const session = await agent.get("/api/session");
-    expect(session.body).toEqual({ authenticated: true });
-
-    const protectedRes = await agent.get("/api/protected");
-    expect(protectedRes.status).toBe(200);
-    expect(protectedRes.body).toEqual({ ok: true });
-  });
-
-  it("logout destroys the session so protected routes are blocked again", async () => {
-    const agent = request.agent(app);
-    await agent.post("/api/login").send({ passcode: PASSCODE });
     await agent.get("/api/protected").expect(200);
 
     const logout = await agent.post("/api/logout");
@@ -80,23 +110,22 @@ describe("auth", () => {
   });
 });
 
-describe("login rate limiting", () => {
+describe("auth rate limiting", () => {
   // A fresh app (and therefore a fresh rate-limit counter) per describe
-  // block, so this doesn't get coupled to how many login attempts the
-  // other tests happen to make against a shared instance.
-  it("locks out further attempts after repeated failures, even with the correct passcode", async () => {
+  // block, so this doesn't get coupled to how many attempts the other
+  // tests happen to make against a shared instance.
+  it("locks out further login attempts after repeated failures, even with the correct password", async () => {
     const app = createTestApp();
-    const agent = request.agent(app);
+    const email = uniqueEmail();
+    await request(app).post("/api/signup").send({ email, password: PASSWORD });
 
+    const agent = request.agent(app);
     for (let i = 0; i < 10; i++) {
-      const res = await agent.post("/api/login").send({ passcode: "wrong" });
+      const res = await agent.post("/api/login").send({ email, password: "wrong" });
       expect(res.status).toBe(401);
     }
 
-    const lockedOut = await agent.post("/api/login").send({ passcode: PASSCODE });
+    const lockedOut = await agent.post("/api/login").send({ email, password: PASSWORD });
     expect(lockedOut.status).toBe(429);
-
-    const session = await agent.get("/api/session");
-    expect(session.body).toEqual({ authenticated: false });
   });
 });

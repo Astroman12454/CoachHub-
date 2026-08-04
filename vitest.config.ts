@@ -17,9 +17,13 @@ export default defineConfig({
     // from Vitest's own discovery alongside its usual defaults.
     exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
     env: {
-      // Read at import time by server/auth.ts; needed for server/*.test.ts
-      // even though those files run in a node environment, not jsdom.
+      // Read at import time by server/auth.ts / server/db.ts; needed for
+      // server/*.test.ts even though those files run in a node environment,
+      // not jsdom. Points at the same local dev Postgres instance — auth
+      // tests use randomized emails per run so they don't collide with
+      // anything created manually.
       APP_PASSCODE: "test-passcode-12345",
+      DATABASE_URL: "postgresql://coachhub:cf2dbcfd1c2ad8f7baac861529545a93@localhost:5432/coachhub",
     },
   },
 });

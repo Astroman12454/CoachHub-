@@ -5,13 +5,19 @@ import { Input } from "@/components/ui/input";
 import BrandMark from "@/components/BrandMark";
 
 export default function Login() {
-  const { login, isLoggingIn, loginError } = useAuth();
-  const [passcode, setPasscode] = useState("");
+  const { login, isLoggingIn, loginError, signup, isSigningUp, signupError } = useAuth();
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const isPending = isLoggingIn || isSigningUp;
+  const error = mode === "login" ? loginError : signupError;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    login(passcode).catch(() => {
-      // Error state is already surfaced reactively via loginError.
+    const action = mode === "login" ? login(email, password) : signup(email, password);
+    action.catch(() => {
+      // Error state is already surfaced reactively via loginError/signupError.
     });
   };
 
@@ -28,34 +34,62 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="passcode" className="block text-sm font-medium text-foreground mb-2">
-              Passcode
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+              Email
             </label>
             <Input
-              id="passcode"
-              type="password"
+              id="email"
+              type="email"
               autoFocus
-              autoComplete="current-password"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              placeholder="Enter your passcode"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
               className="focus:border-basketball-orange"
             />
-            {loginError && (
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
+              className="focus:border-basketball-orange"
+            />
+            {error && (
               <p className="text-sm text-red-600 mt-2" role="alert">
-                {loginError}
+                {error}
               </p>
             )}
           </div>
 
           <Button
             type="submit"
-            disabled={isLoggingIn || !passcode}
+            disabled={isPending || !email || !password}
             className="w-full basketball-orange basketball-orange-hover text-white"
           >
-            {isLoggingIn ? "Logging in..." : "Log In"}
+            {isPending
+              ? (mode === "login" ? "Logging in..." : "Creating account...")
+              : (mode === "login" ? "Log In" : "Create Account")}
           </Button>
         </form>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          {mode === "login" ? "New to Coach Hub?" : "Already have an account?"}{" "}
+          <button
+            type="button"
+            onClick={() => setMode(mode === "login" ? "signup" : "login")}
+            className="text-basketball-orange font-medium hover:underline"
+          >
+            {mode === "login" ? "Create an account" : "Log in"}
+          </button>
+        </p>
       </div>
     </main>
   );
