@@ -24,6 +24,9 @@ export interface IStorage {
   createAccount(email: string, passwordHash: string): Promise<Account>;
   getAccountByEmail(email: string): Promise<Account | undefined>;
   getAccountById(id: number): Promise<Account | undefined>;
+  getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined>;
+  setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void>;
+  setAccountSubscription(id: number, plan: "free" | "paid", stripeSubscriptionId: string | null): Promise<void>;
 
   // Team methods
   createTeam(accountId: number, name: string): Promise<Team>;
@@ -84,6 +87,19 @@ export class DatabaseStorage implements IStorage {
   async getAccountById(id: number): Promise<Account | undefined> {
     const [account] = await db.select().from(accounts).where(eq(accounts.id, id));
     return account || undefined;
+  }
+
+  async getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.stripeCustomerId, stripeCustomerId));
+    return account || undefined;
+  }
+
+  async setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void> {
+    await db.update(accounts).set({ stripeCustomerId }).where(eq(accounts.id, id));
+  }
+
+  async setAccountSubscription(id: number, plan: "free" | "paid", stripeSubscriptionId: string | null): Promise<void> {
+    await db.update(accounts).set({ plan, stripeSubscriptionId }).where(eq(accounts.id, id));
   }
 
   // Team methods

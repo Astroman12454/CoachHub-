@@ -6,8 +6,9 @@ configurado; esto es lo que falta y en qué orden conviene hacerlo.
 ## 1. Desplegar el backend (bloqueante, hacer primero)
 
 La app nativa carga el sitio real por HTTPS (`server.url` en
-`capacitor.config.ts`), no una copia offline — así el login por passcode y
-las cookies de sesión funcionan igual que en el navegador, sin tocar CORS.
+`capacitor.config.ts`), no una copia offline — así el login (cuenta propia
+por coach) y las cookies de sesión funcionan igual que en el navegador, sin
+tocar CORS.
 
 1. Desplegar con `render.yaml` (o donde prefieras) y confirmar que
    `https://tu-app...` responde bien desde afuera.
@@ -57,11 +58,18 @@ npx @capacitor/assets generate --iconBackgroundColor '#DB3A00' --splashBackgroun
 - **Capturas de pantalla**: tamaños específicos por dispositivo en cada
   tienda (Play: al menos 2; App Store: por tamaño de iPhone/iPad que
   soportes).
-- **Modelo de login**: hoy es un passcode único compartido por todo el
-  equipo (pensado para un solo coach/equipo). Sirve para publicar así,
-  pero si en algún momento la idea es que la usen varios equipos sin
-  compartir passcode, eso es un cambio de arquitectura aparte — no hace
-  falta para esta primera publicación.
+- **Cobros y App Store (importante, no lo pases por alto)**: Apple exige
+  usar su propio In-App Purchase (StoreKit) para desbloquear funciones
+  *dentro* de la app de iOS — no un checkout externo como el de Stripe.
+  Publicar la app de iOS con el botón "Upgrade" (que hoy manda a Stripe
+  Checkout) visible adentro puede terminar en rechazo por la guideline
+  3.1.1. Antes de mandar la versión de iOS a revisión, hay que ocultar el
+  flujo de upgrade cuando la app corre embebida en Capacitor (se puede
+  detectar con `Capacitor.isNativePlatform()`) y avisarle al coach que
+  actualice su plan desde el navegador. Google Play es más permisivo con
+  links externos según la región, pero conviene revisar su política de
+  facturación también antes de publicar ahí. Web y Android vía navegador
+  no tienen este problema — Stripe funciona normal.
 
 ## Referencia rápida
 

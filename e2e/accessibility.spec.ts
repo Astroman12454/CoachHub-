@@ -21,12 +21,14 @@ function summarize(violations: Awaited<ReturnType<typeof scan>>["violations"]) {
 test.describe("accessibility (axe)", () => {
   test("login page", async ({ page }) => {
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
 
   test("dashboard", async ({ page }) => {
     await login(page);
+    await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -116,6 +118,22 @@ test.describe("accessibility (axe)", () => {
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("billing success page", async ({ page }) => {
+    await login(page);
+    await page.goto("/billing/success");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("billing cancel page", async ({ page }) => {
+    await login(page);
+    await page.goto("/billing/cancel");
+    await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });

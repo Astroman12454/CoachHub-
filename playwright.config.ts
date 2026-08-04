@@ -5,9 +5,11 @@ export default defineConfig({
   fullyParallel: true,
   retries: 0,
   reporter: "list",
+  globalSetup: "./e2e/global-setup.ts",
   use: {
     baseURL: "http://localhost:5000",
     trace: "retain-on-failure",
+    storageState: "e2e/.auth/state.json",
   },
   projects: [
     {

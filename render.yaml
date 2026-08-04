@@ -17,5 +17,13 @@ services:
         fromDatabase:
           name: coach-hub-db
           property: connectionString
-      - key: APP_PASSCODE
+      - key: SESSION_SECRET
+        sync: false
+      # Billing (Stripe) — optional. Leave unset and the app runs fine on
+      # the free plan only; see server/scripts/setup-stripe.ts.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
         sync: false

@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { startCheckout } from "@/lib/billing";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 
@@ -52,6 +54,11 @@ export default function ExerciseLibrary() {
       toast({
         title: "Free plan",
         description: "Upgrade to a paid plan to create custom exercises.",
+        action: (
+          <ToastAction altText="Upgrade" onClick={() => startCheckout()}>
+            Upgrade
+          </ToastAction>
+        ),
       });
       return;
     }

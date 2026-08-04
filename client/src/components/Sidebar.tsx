@@ -7,6 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { startCheckout, openBillingPortal } from "@/lib/billing";
+import { extractErrorMessage } from "@/lib/queryClient";
 import ThemeToggle from "@/components/ThemeToggle";
 import BrandMark from "@/components/BrandMark";
 import NewTeamDialog from "@/components/NewTeamDialog";
@@ -67,6 +70,23 @@ function TeamSwitcher() {
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
   const { account, logout } = useAuth();
+  const { toast } = useToast();
+  const [isBillingPending, setIsBillingPending] = useState(false);
+
+  const handlePlanClick = async () => {
+    if (isBillingPending) return;
+    setIsBillingPending(true);
+    try {
+      await (account?.plan === "paid" ? openBillingPortal() : startCheckout());
+    } catch (error) {
+      toast({
+        title: "Billing",
+        description: extractErrorMessage(error) ?? "Couldn't open billing right now.",
+        variant: "destructive",
+      });
+      setIsBillingPending(false);
+    }
+  };
 
   return (
     // Fixed dark "scoreboard rail" regardless of the app's light/dark
@@ -111,9 +131,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="p-4 border-t border-rail-border flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm truncate">{account?.email}</p>
-          <Badge variant="secondary" className="mt-1 text-[10px] uppercase tracking-wide">
-            {account?.plan === "paid" ? "Paid Plan" : "Free Plan"}
-          </Badge>
+          <button
+            type="button"
+            onClick={handlePlanClick}
+            disabled={isBillingPending}
+            className="mt-1 disabled:opacity-60"
+            title={account?.plan === "paid" ? "Manage billing" : "Upgrade to paid"}
+          >
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide cursor-pointer hover:bg-white/20">
+              {account?.plan === "paid" ? "Paid Plan" : "Free Plan · Upgrade"}
+            </Badge>
+          </button>
         </div>
         <ThemeToggle />
         <button

@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { requireTeam } from "./auth";
+import { registerBillingRoutes } from "./billing";
 import {
   insertExerciseSchema,
   insertTrainingSessionSchema,
@@ -28,6 +29,8 @@ function parseId(req: Request, res: Response, param = "id"): number | null {
 // data by guessing/passing a different id. requireTeam (server/auth.ts)
 // guarantees both are present before these run.
 export async function registerRoutes(app: Express): Promise<Server> {
+  registerBillingRoutes(app);
+
   // Team routes
   app.get("/api/teams", async (req, res) => {
     try {

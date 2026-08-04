@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupAuth, requireAuth } from "./auth";
+import { setupStripeWebhook } from "./billing";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -38,6 +39,11 @@ if (app.get("env") !== "development") {
   // with Vite's dev server.
   app.use(helmet({ contentSecurityPolicy: false }));
 }
+
+// Registered before express.json(): Stripe signs the raw request body, and
+// a global JSON parser would have already consumed/reshaped it by the time
+// a route handler saw it, breaking signature verification.
+setupStripeWebhook(app);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

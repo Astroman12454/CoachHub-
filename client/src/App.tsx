@@ -20,6 +20,7 @@ const TrainingSessions = lazy(() => import("@/pages/TrainingSessions"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const Players = lazy(() => import("@/pages/Players"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
+const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 
 function PageLoadingFallback() {
   return (
@@ -55,6 +56,8 @@ function Router() {
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />
+      <Route path="/billing/success" component={() => <Layout><BillingStatus status="success" /></Layout>} />
+      <Route path="/billing/cancel" component={() => <Layout><BillingStatus status="cancel" /></Layout>} />
       <Route component={NotFound} />
     </Switch>
   );
