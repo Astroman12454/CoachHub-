@@ -3,9 +3,10 @@ import { useLocation, useParams } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   MousePointer2, Circle, X as XIcon, CircleDot as BallIcon, ArrowRight, MoveRight,
-  Waves, Shield, Type, Eraser, Plus, Play as PlayIcon, Pause, Trash2, Menu,
+  Waves, Shield, Type, Eraser, Plus, Play as PlayIcon, Pause, Trash2, Menu, FileDown, Loader2,
 } from "lucide-react";
 import BasketballCourt from "@/components/BasketballCourt";
+import { exportPlayPdf } from "@/lib/exportPlayPdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +15,8 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
-import { straightPath, wavyPath, screenCap, DRAWING_COLORS } from "@/lib/playDrawing";
+import { straightPath, DRAWING_COLORS } from "@/lib/playDrawing";
+import PlayStepMarks from "@/components/PlayStepMarks";
 import { PLAY_CATEGORIES, COURT_TYPES } from "@shared/schema";
 import type { Token, Drawing, Play as PlayType } from "@shared/schema";
 
@@ -26,7 +28,6 @@ interface EditorStep {
 type Tool = "select" | "offense" | "defense" | "ball" | "move" | "pass" | "dribble" | "screen" | "text" | "erase";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const TOKEN_RADIUS = 3.2;
 const HIT_RADIUS = 4.2;
 
 function distanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
@@ -72,6 +73,7 @@ export default function PlayEditor() {
   const [tool, setTool] = useState<Tool>("select");
   const [color, setColor] = useState<string>(DRAWING_COLORS[0]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [stepToDelete, setStepToDelete] = useState<number | null>(null);
   const [textDraft, setTextDraft] = useState<{ x: number; y: number; value: string } | null>(null);
 
@@ -352,6 +354,21 @@ export default function PlayEditor() {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      await exportPlayPdf(
+        { name: name.trim() || "Untitled Play", category, courtType, notes },
+        steps,
+      );
+    } catch (error) {
+      toast({ title: "Couldn't export PDF", description: "Try again.", variant: "destructive" });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const displayTokens = playbackTokens ?? currentStep.tokens;
   const displayDrawings = isPlaying ? [] : currentStep.drawings;
 
@@ -407,6 +424,17 @@ export default function PlayEditor() {
             </SelectContent>
           </Select>
           <div className="flex-1" />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={isExportingPdf || steps.length === 0}
+          >
+            {isExportingPdf
+              ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
+              : <FileDown className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />}
+            {isExportingPdf ? "Exporting…" : "Export PDF"}
+          </Button>
           <Button type="button" variant="outline" onClick={() => setLocation("/playbook")}>
             Cancel
           </Button>
@@ -486,42 +514,6 @@ export default function PlayEditor() {
                 </marker>
               </defs>
 
-              {displayDrawings.map((d) => {
-                const [rp1, rp2] = d.points;
-                const p1 = { x: rp1.x, y: toViewBoxY(rp1.y) };
-                const p2 = rp2 ? { x: rp2.x, y: toViewBoxY(rp2.y) } : undefined;
-                const stroke = d.color ?? DRAWING_COLORS[0];
-                if (d.tool === "text") {
-                  return (
-                    <text key={d.id} x={p1.x} y={p1.y} fontSize="4" fill={stroke} className="select-none">
-                      {d.text}
-                    </text>
-                  );
-                }
-                if (!p2) return null;
-                if (d.tool === "screen") {
-                  const cap = screenCap(p1.x, p1.y, p2.x, p2.y);
-                  return (
-                    <g key={d.id} stroke={stroke} strokeWidth="0.7" fill="none">
-                      <path d={straightPath(p1.x, p1.y, p2.x, p2.y)} />
-                      <line x1={cap.x1} y1={cap.y1} x2={cap.x2} y2={cap.y2} />
-                    </g>
-                  );
-                }
-                const d_ = d.tool === "dribble" ? wavyPath(p1.x, p1.y, p2.x, p2.y) : straightPath(p1.x, p1.y, p2.x, p2.y);
-                return (
-                  <path
-                    key={d.id}
-                    d={d_}
-                    stroke={stroke}
-                    strokeWidth="0.7"
-                    fill="none"
-                    strokeDasharray={d.tool === "pass" ? "2.5,2" : undefined}
-                    markerEnd="url(#play-arrowhead)"
-                  />
-                );
-              })}
-
               {drawStart.current && drawPreview && (
                 <path
                   d={straightPath(drawStart.current.x, toViewBoxY(drawStart.current.y), drawPreview.x, toViewBoxY(drawPreview.y))}
@@ -532,35 +524,7 @@ export default function PlayEditor() {
                 />
               )}
 
-              {displayTokens.map((t) => (
-                <g key={t.id} transform={`translate(${t.x}, ${toViewBoxY(t.y)})`}>
-                  {t.type === "ball" ? (
-                    <circle r={TOKEN_RADIUS * 0.6} fill="#fff" stroke="#000" strokeWidth="0.4" />
-                  ) : (
-                    <>
-                      {/* Fixed black/white scheme (not theme colors) so
-                          tokens read clearly against the court's fixed
-                          orange background regardless of app theme. */}
-                      <circle
-                        r={TOKEN_RADIUS}
-                        fill={t.type === "offense" ? "#000" : "#fff"}
-                        stroke="#000"
-                        strokeWidth="0.5"
-                      />
-                      <text
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="3.2"
-                        fontWeight="700"
-                        fill={t.type === "offense" ? "#fff" : "#000"}
-                        className="select-none"
-                      >
-                        {t.label}
-                      </text>
-                    </>
-                  )}
-                </g>
-              ))}
+              <PlayStepMarks tokens={displayTokens} drawings={displayDrawings} toViewBoxY={toViewBoxY} />
             </svg>
 
             {textDraft && (

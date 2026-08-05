@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays, BellRing } from "lucide-react";
+import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays, BellRing, FileDown, Loader2 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -13,18 +13,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
-import type { TrainingSession } from "@shared/schema";
+import { exportSessionPlanPdf } from "@/lib/exportSessionPdf";
+import type { Exercise, Play, TrainingSession } from "@shared/schema";
 
 export default function TrainingSessions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
+  const [exportingSessionId, setExportingSessionId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const { data: sessions = [], isLoading, isError, refetch } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions'],
   });
+  // Only needed to resolve exercise/play names into the PDF export — the
+  // cards themselves just show counts, so these aren't fetched otherwise.
+  const { data: exercises = [] } = useQuery<Exercise[]>({ queryKey: ["/api/exercises"] });
+  const { data: plays = [] } = useQuery<Play[]>({ queryKey: ["/api/plays"] });
+
+  const handleExportPdf = async (session: TrainingSession) => {
+    setExportingSessionId(session.id);
+    try {
+      await exportSessionPlanPdf(session, exercises, plays);
+    } catch (error) {
+      toast({ title: "Couldn't export PDF", description: "Try again.", variant: "destructive" });
+    } finally {
+      setExportingSessionId(null);
+    }
+  };
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/training-sessions",
@@ -168,6 +185,19 @@ export default function TrainingSessions() {
                           <BellRing className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => handleExportPdf(session)}
+                        disabled={exportingSessionId === session.id}
+                        aria-label={`Export ${session.name} as PDF`}
+                        title="Export as PDF"
+                      >
+                        {exportingSessionId === session.id
+                          ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                          : <FileDown className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
