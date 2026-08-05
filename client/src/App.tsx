@@ -21,6 +21,8 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TrainingSessions = lazy(() => import("@/pages/TrainingSessions"));
 const Games = lazy(() => import("@/pages/Games"));
+const Playbook = lazy(() => import("@/pages/Playbook"));
+const PlayEditor = lazy(() => import("@/pages/PlayEditor"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const Players = lazy(() => import("@/pages/Players"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
@@ -58,6 +60,8 @@ function Router() {
       <Route path="/dashboard" component={() => <Layout><Dashboard /></Layout>} />
       <Route path="/training-sessions" component={() => <Layout><TrainingSessions /></Layout>} />
       <Route path="/games" component={() => <Layout><Games /></Layout>} />
+      <Route path="/playbook" component={() => <Layout><Playbook /></Layout>} />
+      <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />

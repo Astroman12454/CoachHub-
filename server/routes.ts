@@ -15,8 +15,10 @@ import {
   insertAttendanceSchema,
   insertTeamSchema,
   createGameWithStatsSchema,
+  createPlaySchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
+  FREE_PLAN_PLAY_LIMIT,
 } from "@shared/schema";
 
 const ACCEPTED_BOX_SCORE_TYPES = new Set([
@@ -578,6 +580,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(summary);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch player stats" });
+    }
+  });
+
+  // Play (playbook) routes — scoped by the session's current team.
+  app.get("/api/plays", requireTeam, async (req, res) => {
+    try {
+      const teamPlays = await storage.getAllPlays(req.session.currentTeamId!);
+      res.json(teamPlays);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch plays" });
+    }
+  });
+
+  app.get("/api/plays/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const teamId = req.session.currentTeamId!;
+      const play = await storage.getPlayById(id, teamId);
+      if (!play) {
+        return res.status(404).json({ message: "Play not found" });
+      }
+      const steps = await storage.getPlaySteps(id);
+      res.json({ ...play, steps });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch play" });
+    }
+  });
+
+  app.post("/api/plays", requireTeam, async (req, res) => {
+    try {
+      const teamId = req.session.currentTeamId!;
+      const account = await storage.getAccountById(req.session.accountId!);
+      if (account?.plan === "free") {
+        const currentCount = await storage.getPlayCount(teamId);
+        if (currentCount >= FREE_PLAN_PLAY_LIMIT) {
+          return res.status(403).json({
+            message: `Free plan is limited to ${FREE_PLAN_PLAY_LIMIT} saved plays. Upgrade to save more.`,
+          });
+        }
+      }
+
+      const data = createPlaySchema.parse(req.body);
+      const play = await storage.createPlayWithSteps(teamId, data);
+      res.status(201).json(play);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid play data" });
+    }
+  });
+
+  app.put("/api/plays/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const data = createPlaySchema.parse(req.body);
+      const play = await storage.updatePlayWithSteps(id, req.session.currentTeamId!, data);
+      if (!play) {
+        return res.status(404).json({ message: "Play not found" });
+      }
+      res.json(play);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid play data" });
+    }
+  });
+
+  app.delete("/api/plays/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const deleted = await storage.deletePlay(id, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Play not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete play" });
     }
   });
 

@@ -4,10 +4,12 @@ import { z } from "zod";
 
 export const PLANS = ["free", "paid"] as const;
 
-// Free plan: 1 team, up to 15 players, read-only exercise library.
-// Paid plan: unlimited teams/players, can create/edit exercises, full history.
+// Free plan: 1 team, up to 15 players, read-only exercise library, up to 3
+// saved plays. Paid plan: unlimited teams/players/plays, can create/edit
+// exercises, full history.
 export const FREE_PLAN_PLAYER_LIMIT = 15;
 export const FREE_PLAN_TEAM_LIMIT = 1;
+export const FREE_PLAN_PLAY_LIMIT = 3;
 
 export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
@@ -92,6 +94,51 @@ export const gameStats = pgTable("game_stats", {
   blocks: integer("blocks").default(0),
   turnovers: integer("turnovers").default(0),
   fouls: integer("fouls").default(0),
+});
+
+export const PLAY_CATEGORIES = ["offense", "defense", "inbound", "special"] as const;
+export const COURT_TYPES = ["full", "half"] as const;
+export const TOKEN_TYPES = ["offense", "defense", "ball"] as const;
+export const DRAWING_TOOLS = ["move", "pass", "dribble", "screen", "text"] as const;
+
+// Each step is a full board snapshot (every token's position, plus the
+// drawings — arrows/annotations — for that step's transition). Animating a
+// play just tweens token x/y between consecutive steps and shows that
+// step's drawings; nothing more clever than that.
+export const tokenSchema = z.object({
+  id: z.string(),
+  type: z.enum(TOKEN_TYPES),
+  label: z.string().max(4),
+  x: z.number().min(0).max(100), // percent of court width, so it scales with any container size
+  y: z.number().min(0).max(100),
+});
+
+export const drawingSchema = z.object({
+  id: z.string(),
+  tool: z.enum(DRAWING_TOOLS),
+  points: z.array(z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) })).min(1),
+  text: z.string().max(60).optional(),
+  color: z.string().max(20).optional(),
+});
+
+export type Token = z.infer<typeof tokenSchema>;
+export type Drawing = z.infer<typeof drawingSchema>;
+
+export const plays = pgTable("plays", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // offense | defense | inbound | special
+  courtType: text("court_type").notNull().default("half"), // full | half
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const playSteps = pgTable("play_steps", {
+  id: serial("id").primaryKey(),
+  playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
+  stepIndex: integer("step_index").notNull(),
+  tokens: json("tokens").notNull().$type<Token[]>(),
+  drawings: json("drawings").notNull().$type<Drawing[]>(),
 });
 
 export const EXERCISE_CATEGORIES = [
@@ -200,6 +247,22 @@ export const createGameWithStatsSchema = insertGameSchema.extend({
   stats: z.array(gameStatLineSchema).default([]),
 });
 
+export const playStepDataSchema = z.object({
+  tokens: z.array(tokenSchema).max(30),
+  drawings: z.array(drawingSchema).max(60),
+});
+export type PlayStepData = z.infer<typeof playStepDataSchema>;
+
+// Same one-shot-transaction shape as createGameWithStatsSchema: the play's
+// metadata plus every step, saved (or fully replaced, on edit) together.
+export const createPlaySchema = z.object({
+  name: z.string().min(1, "Play name is required"),
+  category: z.enum(PLAY_CATEGORIES),
+  courtType: z.enum(COURT_TYPES),
+  steps: z.array(playStepDataSchema).min(1, "A play needs at least one step"),
+});
+export type CreatePlay = z.infer<typeof createPlaySchema>;
+
 export type Account = typeof accounts.$inferSelect;
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
 
@@ -223,6 +286,9 @@ export type Game = typeof games.$inferSelect;
 
 export type GameStat = typeof gameStats.$inferSelect;
 export type CreateGameWithStats = z.infer<typeof createGameWithStatsSchema>;
+
+export type Play = typeof plays.$inferSelect;
+export type PlayStep = typeof playSteps.$inferSelect;
 
 // Season totals for one player, aggregated across every game they have a
 // stat line in — computed in Postgres (see getPlayerGameStatsSummary), not

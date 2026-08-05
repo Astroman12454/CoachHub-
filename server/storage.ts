@@ -7,6 +7,8 @@ import {
   attendance,
   games,
   gameStats,
+  plays,
+  playSteps,
   type Account,
   type Team,
   type Exercise,
@@ -20,10 +22,13 @@ import {
   type Game,
   type GameStat,
   type CreateGameWithStats,
-  type PlayerGameStatsSummary
+  type PlayerGameStatsSummary,
+  type Play,
+  type PlayStep,
+  type CreatePlay
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, sum, countDistinct } from "drizzle-orm";
+import { eq, and, sql, sum, countDistinct, asc } from "drizzle-orm";
 
 export interface IStorage {
   // Account methods
@@ -81,6 +86,15 @@ export interface IStorage {
   createGameWithStats(teamId: number, data: CreateGameWithStats): Promise<Game>;
   deleteGame(id: number, teamId: number): Promise<boolean>;
   getPlayerGameStatsSummary(teamId: number): Promise<PlayerGameStatsSummary[]>;
+
+  // Play (playbook) methods, scoped by team
+  getAllPlays(teamId: number): Promise<Play[]>;
+  getPlayById(id: number, teamId: number): Promise<Play | undefined>;
+  getPlaySteps(playId: number): Promise<PlayStep[]>;
+  getPlayCount(teamId: number): Promise<number>;
+  createPlayWithSteps(teamId: number, data: CreatePlay): Promise<Play>;
+  updatePlayWithSteps(id: number, teamId: number, data: CreatePlay): Promise<Play | undefined>;
+  deletePlay(id: number, teamId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -446,6 +460,85 @@ export class DatabaseStorage implements IStorage {
       turnovers: Number(r.turnovers ?? 0),
       fouls: Number(r.fouls ?? 0),
     }));
+  }
+
+  // Play (playbook) methods
+  async getAllPlays(teamId: number): Promise<Play[]> {
+    return await db.select().from(plays).where(eq(plays.teamId, teamId));
+  }
+
+  async getPlayById(id: number, teamId: number): Promise<Play | undefined> {
+    const [play] = await db
+      .select()
+      .from(plays)
+      .where(and(eq(plays.id, id), eq(plays.teamId, teamId)));
+    return play || undefined;
+  }
+
+  async getPlaySteps(playId: number): Promise<PlayStep[]> {
+    return await db
+      .select()
+      .from(playSteps)
+      .where(eq(playSteps.playId, playId))
+      .orderBy(asc(playSteps.stepIndex));
+  }
+
+  async getPlayCount(teamId: number): Promise<number> {
+    const teamPlays = await db.select().from(plays).where(eq(plays.teamId, teamId));
+    return teamPlays.length;
+  }
+
+  async createPlayWithSteps(teamId: number, data: CreatePlay): Promise<Play> {
+    return await db.transaction(async (tx) => {
+      const [play] = await tx
+        .insert(plays)
+        .values({ teamId, name: data.name, category: data.category, courtType: data.courtType })
+        .returning();
+
+      await tx.insert(playSteps).values(
+        data.steps.map((step, stepIndex) => ({
+          playId: play.id,
+          stepIndex,
+          tokens: step.tokens,
+          drawings: step.drawings,
+        })),
+      );
+
+      return play;
+    });
+  }
+
+  // Editing a play replaces its whole step sequence rather than trying to
+  // diff individual steps — much simpler, and the client always sends the
+  // full sequence anyway (see PlayEditor).
+  async updatePlayWithSteps(id: number, teamId: number, data: CreatePlay): Promise<Play | undefined> {
+    return await db.transaction(async (tx) => {
+      const [play] = await tx
+        .update(plays)
+        .set({ name: data.name, category: data.category, courtType: data.courtType })
+        .where(and(eq(plays.id, id), eq(plays.teamId, teamId)))
+        .returning();
+      if (!play) return undefined;
+
+      await tx.delete(playSteps).where(eq(playSteps.playId, id));
+      await tx.insert(playSteps).values(
+        data.steps.map((step, stepIndex) => ({
+          playId: id,
+          stepIndex,
+          tokens: step.tokens,
+          drawings: step.drawings,
+        })),
+      );
+
+      return play;
+    });
+  }
+
+  async deletePlay(id: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .delete(plays)
+      .where(and(eq(plays.id, id), eq(plays.teamId, teamId)));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

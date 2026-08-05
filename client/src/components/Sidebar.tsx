@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, LogOut, ChevronsUpDown, Plus } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +19,7 @@ const navigation = [
   { name: "Weekly Schedule", href: "/weekly-schedule", icon: CalendarRange },
   { name: "Training Sessions", href: "/training-sessions", icon: CalendarDays },
   { name: "Games", href: "/games", icon: Trophy },
+  { name: "Playbook", href: "/playbook", icon: PencilRuler },
   { name: "Exercise Library", href: "/exercise-library", icon: Dumbbell },
   { name: "Players", href: "/players", icon: Users },
 ];
@@ -108,7 +109,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navigation.map((item) => {
-          const isActive = location === item.href || (location === "/" && item.href === "/dashboard");
+          const isActive = location === item.href
+            || (location === "/" && item.href === "/dashboard")
+            || (item.href === "/playbook" && location.startsWith("/playbook/"));
           const Icon = item.icon;
 
           return (

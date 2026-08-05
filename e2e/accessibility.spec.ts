@@ -171,6 +171,22 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("playbook", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("playbook — new play editor", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook/new");
+    await page.waitForSelector('input[aria-label="Play name"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("privacy policy page", async ({ page }) => {
     await page.goto("/privacy");
     await page.waitForLoadState("networkidle");
