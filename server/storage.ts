@@ -9,6 +9,7 @@ import {
   gameStats,
   plays,
   playSteps,
+  pushSubscriptions,
   type Account,
   type Team,
   type Exercise,
@@ -100,6 +101,16 @@ export interface IStorage {
   createPlayWithSteps(teamId: number, data: CreatePlay): Promise<Play>;
   updatePlayWithSteps(id: number, teamId: number, data: CreatePlay): Promise<Play | undefined>;
   deletePlay(id: number, teamId: number): Promise<boolean>;
+
+  // Push subscription methods — scoped by player (portal visitors, not
+  // accounts) since these back the player/parent portal's notifications.
+  getPlayerIdByPortalToken(token: string): Promise<number | undefined>;
+  savePushSubscription(playerId: number, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void>;
+  deletePushSubscription(playerId: number, endpoint: string): Promise<void>;
+  deletePushSubscriptionsByEndpoint(endpoint: string): Promise<void>;
+  getPushSubscriptionsForTeam(
+    teamId: number,
+  ): Promise<{ endpoint: string; p256dh: string; auth: string; portalToken: string | null }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -618,6 +629,52 @@ export class DatabaseStorage implements IStorage {
       .delete(plays)
       .where(and(eq(plays.id, id), eq(plays.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getPlayerIdByPortalToken(token: string): Promise<number | undefined> {
+    const [player] = await db.select({ id: players.id }).from(players).where(eq(players.portalToken, token));
+    return player?.id;
+  }
+
+  async savePushSubscription(
+    playerId: number,
+    sub: { endpoint: string; p256dh: string; auth: string },
+  ): Promise<void> {
+    const existing = await db
+      .select()
+      .from(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.playerId, playerId), eq(pushSubscriptions.endpoint, sub.endpoint)));
+    if (existing.length > 0) return;
+    await db.insert(pushSubscriptions).values({ playerId, ...sub });
+  }
+
+  async deletePushSubscription(playerId: number, endpoint: string): Promise<void> {
+    await db
+      .delete(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.playerId, playerId), eq(pushSubscriptions.endpoint, endpoint)));
+  }
+
+  // Called when a push service reports an endpoint as permanently gone
+  // (404/410) — removes it for every player it was subscribed under, not
+  // just the one that triggered the send, since the endpoint itself (the
+  // device) is what's gone.
+  async deletePushSubscriptionsByEndpoint(endpoint: string): Promise<void> {
+    await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async getPushSubscriptionsForTeam(
+    teamId: number,
+  ): Promise<{ endpoint: string; p256dh: string; auth: string; portalToken: string | null }[]> {
+    return await db
+      .select({
+        endpoint: pushSubscriptions.endpoint,
+        p256dh: pushSubscriptions.p256dh,
+        auth: pushSubscriptions.auth,
+        portalToken: players.portalToken,
+      })
+      .from(pushSubscriptions)
+      .innerJoin(players, eq(pushSubscriptions.playerId, players.id))
+      .where(eq(players.teamId, teamId));
   }
 }
 

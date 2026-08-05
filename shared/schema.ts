@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, json, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -74,6 +74,31 @@ export const players = pgTable("players", {
   // needing an account. Null until the coach first generates a link.
   portalToken: text("portal_token").unique(),
 });
+
+// A browser's Web Push subscription, scoped to one player's portal (not an
+// account — portal visitors never sign in). One physical device can end up
+// subscribed for more than one player (e.g. a parent with two kids on the
+// team visiting both portals), hence player+endpoint rather than endpoint
+// alone as the natural key.
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  playerEndpointUnique: unique().on(table.playerId, table.endpoint),
+}));
+
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+});
+export type PushSubscriptionInput = z.infer<typeof pushSubscriptionSchema>;
 
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
@@ -295,6 +320,8 @@ export type CreateGameWithStats = z.infer<typeof createGameWithStatsSchema>;
 
 export type Play = typeof plays.$inferSelect;
 export type PlayStep = typeof playSteps.$inferSelect;
+
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 
 // Season totals for one player, aggregated across every game they have a
 // stat line in — computed in Postgres (see getPlayerGameStatsSummary), not

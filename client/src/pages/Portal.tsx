@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
+import PortalNotificationsToggle from "@/components/PortalNotificationsToggle";
 import type { PortalData } from "@shared/schema";
+
+type PortalResponse = PortalData & { vapidPublicKey: string | null };
 
 const ATTENDANCE_BADGE: Record<string, string> = {
   present: "bg-success-tint text-success border-success",
@@ -28,7 +31,7 @@ function formatDate(date: string): string {
 // from this page.
 export default function Portal() {
   const { token } = useParams<{ token: string }>();
-  const { data, isLoading, isError, refetch } = useQuery<PortalData>({
+  const { data, isLoading, isError, refetch } = useQuery<PortalResponse>({
     queryKey: [`/api/portal/${token}`],
     retry: false,
   });
@@ -71,14 +74,17 @@ export default function Portal() {
   return (
     <main className="min-h-screen bg-background p-4 lg:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
-        <header>
-          <p className="text-sm text-muted-foreground">{data.team.name}</p>
-          <h1 className="font-display font-bold uppercase tracking-tight text-3xl text-foreground leading-tight">
-            {data.player.name}
-          </h1>
-          {data.player.position && (
-            <Badge variant="secondary" className="mt-1">{data.player.position}</Badge>
-          )}
+        <header className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm text-muted-foreground">{data.team.name}</p>
+            <h1 className="font-display font-bold uppercase tracking-tight text-3xl text-foreground leading-tight">
+              {data.player.name}
+            </h1>
+            {data.player.position && (
+              <Badge variant="secondary" className="mt-1">{data.player.position}</Badge>
+            )}
+          </div>
+          <PortalNotificationsToggle token={token} vapidPublicKey={data.vapidPublicKey} />
         </header>
 
         {data.stats && (

@@ -30,6 +30,12 @@ export default defineConfig({
         // Only precache the built app shell; API responses stay live (never
         // cached) so attendance/session data is never served stale offline.
         navigateFallbackDenylist: [/^\/api\//],
+        // Runs push-sw.js (a plain, unbundled file copied verbatim from
+        // client/public — see that file) inside the generated service
+        // worker's own scope via a literal importScripts() call, so it can
+        // add its own push/notificationclick listeners alongside Workbox's
+        // precaching without switching this plugin off generateSW mode.
+        importScripts: ["push-sw.js"],
       },
     }),
     ...(process.env.NODE_ENV !== "production" &&

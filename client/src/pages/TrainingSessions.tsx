@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays, BellRing } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import type { TrainingSession } from "@shared/schema";
 
 export default function TrainingSessions() {
@@ -18,6 +20,7 @@ export default function TrainingSessions() {
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
+  const { toast } = useToast();
 
   const { data: sessions = [], isLoading, isError, refetch } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions'],
@@ -26,6 +29,28 @@ export default function TrainingSessions() {
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/training-sessions",
     errorMessage: "Failed to delete training session",
+  });
+
+  const notifyMutation = useMutation({
+    mutationFn: async (sessionId: number) => {
+      const res = await apiRequest("POST", `/api/training-sessions/${sessionId}/notify`);
+      return (await res.json()) as { sent: number };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.sent > 0 ? "Reminder sent" : "No one to notify yet",
+        description: data.sent > 0
+          ? `Notified ${data.sent} player${data.sent === 1 ? "" : "s"} subscribed to their portal.`
+          : "No players have enabled notifications on their portal link yet.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't send reminder",
+        description: extractErrorMessage(error) ?? "Try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Filter by search query, then sort by date (most recent first); sessions
@@ -130,6 +155,19 @@ export default function TrainingSessions() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-1">
+                      {session.status !== "completed" && session.status !== "cancelled" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => notifyMutation.mutate(session.id)}
+                          disabled={notifyMutation.isPending}
+                          aria-label={`Notify players about ${session.name}`}
+                          title="Send a reminder to subscribed players"
+                        >
+                          <BellRing className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

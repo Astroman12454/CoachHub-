@@ -7,6 +7,7 @@ import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan } from "./ai-session-plan";
+import { isPushConfigured, getVapidPublicKey, sendPushNotifications } from "./push";
 import { z } from "zod";
 import {
   insertExerciseSchema,
@@ -16,6 +17,7 @@ import {
   insertTeamSchema,
   createGameWithStatsSchema,
   createPlaySchema,
+  pushSubscriptionSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
@@ -63,6 +65,43 @@ const portalRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many requests. Please try again later." },
 });
+
+// A coach broadcasting to their own roster, not an AI cost — just generous
+// enough to block an accidental click-loop rather than normal usage.
+const notifyRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many notifications sent. Please try again later." },
+});
+
+function formatNotifyDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// Pushes to every subscribed player on the team, deep-linking each one back
+// to their own portal (not a shared URL — every subscriber has a different
+// token), and prunes any subscription the push service reports as
+// permanently gone (see sendPushNotifications).
+async function notifyTeam(teamId: number, payload: { title: string; body: string }): Promise<number> {
+  const subs = await storage.getPushSubscriptionsForTeam(teamId);
+  const targets = subs.map((s) => ({
+    endpoint: s.endpoint,
+    p256dh: s.p256dh,
+    auth: s.auth,
+    url: s.portalToken ? `/portal/${s.portalToken}` : undefined,
+  }));
+  const { sent, expiredEndpoints } = await sendPushNotifications(targets, payload);
+  if (expiredEndpoints.length > 0) {
+    await Promise.all(expiredEndpoints.map((endpoint) => storage.deletePushSubscriptionsByEndpoint(endpoint)));
+  }
+  return sent;
+}
 
 // Parses a route param as a positive integer id, or responds 400 and returns
 // null so callers can bail out instead of querying the DB with NaN.
@@ -332,6 +371,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pushes a reminder to every player/parent subscribed via their portal
+  // link (see the /api/portal/:token/subscribe routes below). Free on both
+  // plans — it's a broadcast to the coach's own roster, not an AI feature.
+  app.post("/api/training-sessions/:id/notify", requireTeam, notifyRateLimiter, async (req, res) => {
+    try {
+      if (!isPushConfigured()) {
+        return res.status(503).json({ message: "Push notifications aren't configured yet." });
+      }
+      const id = parseId(req, res);
+      if (id === null) return;
+      const teamId = req.session.currentTeamId!;
+      const session = await storage.getTrainingSessionById(id, teamId);
+      if (!session) {
+        return res.status(404).json({ message: "Training session not found" });
+      }
+
+      const sent = await notifyTeam(teamId, {
+        title: `Practice: ${session.name}`,
+        body: `${formatNotifyDate(session.date)} at ${session.time}`,
+      });
+      res.json({ sent });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send notification" });
+    }
+  });
+
   // Player routes — scoped by the session's current team.
   app.get("/api/players", requireTeam, async (req, res) => {
     try {
@@ -443,9 +508,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!data) {
         return res.status(404).json({ message: "Link not found or no longer active" });
       }
-      res.json(data);
+      // null when VAPID keys aren't configured — the client hides the
+      // "enable notifications" button in that case rather than offering a
+      // subscribe flow that would just fail.
+      res.json({ ...data, vapidPublicKey: getVapidPublicKey() });
     } catch (error) {
       res.status(500).json({ message: "Failed to load portal" });
+    }
+  });
+
+  // Push subscribe/unsubscribe — same public, token-scoped shape as the GET
+  // above (covered by the same requireAuth /portal/ exemption).
+  app.post("/api/portal/:token/subscribe", portalRateLimiter, async (req, res) => {
+    try {
+      const playerId = await storage.getPlayerIdByPortalToken(req.params.token);
+      if (!playerId) {
+        return res.status(404).json({ message: "Link not found or no longer active" });
+      }
+      const parsed = pushSubscriptionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid push subscription" });
+      }
+      await storage.savePushSubscription(playerId, {
+        endpoint: parsed.data.endpoint,
+        p256dh: parsed.data.keys.p256dh,
+        auth: parsed.data.keys.auth,
+      });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save subscription" });
+    }
+  });
+
+  app.delete("/api/portal/:token/subscribe", portalRateLimiter, async (req, res) => {
+    try {
+      const playerId = await storage.getPlayerIdByPortalToken(req.params.token);
+      if (!playerId) {
+        return res.status(404).json({ message: "Link not found or no longer active" });
+      }
+      const endpoint = typeof req.body?.endpoint === "string" ? req.body.endpoint : null;
+      if (!endpoint) {
+        return res.status(400).json({ message: "Missing endpoint" });
+      }
+      await storage.deletePushSubscription(playerId, endpoint);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove subscription" });
     }
   });
 
@@ -623,6 +731,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete game" });
+    }
+  });
+
+  app.post("/api/games/:id/notify", requireTeam, notifyRateLimiter, async (req, res) => {
+    try {
+      if (!isPushConfigured()) {
+        return res.status(503).json({ message: "Push notifications aren't configured yet." });
+      }
+      const id = parseId(req, res);
+      if (id === null) return;
+      const teamId = req.session.currentTeamId!;
+      const game = await storage.getGameById(id, teamId);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+
+      const sent = await notifyTeam(teamId, {
+        title: `Game vs ${game.opponent}`,
+        body: game.location ? `${formatNotifyDate(game.date)} · ${game.location}` : formatNotifyDate(game.date),
+      });
+      res.json({ sent });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send notification" });
     }
   });
 

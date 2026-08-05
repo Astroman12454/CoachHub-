@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Calendar, MapPin, Trash2, Plus, Trophy, Menu } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Calendar, MapPin, Trash2, Plus, Trophy, Menu, BellRing } from "lucide-react";
 import GameModal from "@/components/GameModal";
 import PlayerStatsTable from "@/components/PlayerStatsTable";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -13,7 +13,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import type { Game } from "@shared/schema";
+
+// Local midnight, formatted as the same "YYYY-MM-DD" the API stores dates
+// as — so a same-day game still counts as "upcoming" until it's actually over.
+function todayISO(): string {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
 
 function resultBadge(game: Game) {
   if (game.teamScore == null || game.opponentScore == null) return null;
@@ -41,6 +50,29 @@ export default function Games() {
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/games",
     errorMessage: "Failed to delete game",
+  });
+
+  const { toast } = useToast();
+  const notifyMutation = useMutation({
+    mutationFn: async (gameId: number) => {
+      const res = await apiRequest("POST", `/api/games/${gameId}/notify`);
+      return (await res.json()) as { sent: number };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.sent > 0 ? "Reminder sent" : "No one to notify yet",
+        description: data.sent > 0
+          ? `Notified ${data.sent} player${data.sent === 1 ? "" : "s"} subscribed to their portal.`
+          : "No players have enabled notifications on their portal link yet.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Couldn't send reminder",
+        description: extractErrorMessage(error) ?? "Try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const sortedGames = useMemo(() => {
@@ -169,15 +201,30 @@ export default function Games() {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
-                      onClick={() => setGameToDelete(game)}
-                      aria-label={`Delete game vs. ${game.opponent}`}
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-                    </Button>
+                    <div className="flex items-center space-x-1">
+                      {game.date >= todayISO() && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-foreground"
+                          onClick={() => notifyMutation.mutate(game.id)}
+                          disabled={notifyMutation.isPending}
+                          aria-label={`Notify players about the game vs. ${game.opponent}`}
+                          title="Send a reminder to subscribed players"
+                        >
+                          <BellRing className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                        onClick={() => setGameToDelete(game)}
+                        aria-label={`Delete game vs. ${game.opponent}`}
+                      >
+                        <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
