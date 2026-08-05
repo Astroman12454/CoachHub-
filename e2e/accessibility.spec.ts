@@ -140,6 +140,29 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("player profile", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('[role="button"][aria-label^="View "]').first().click();
+    await page.waitForSelector("text=Rate Player");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("player profile — rate player dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('[role="button"][aria-label^="View "]').first().click();
+    await page.waitForSelector("text=Rate Player");
+    await page.click('button:has-text("Rate Player")');
+    await page.waitForSelector("text=Score each skill");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("weekly schedule", async ({ page }) => {
     await login(page);
     await page.goto("/weekly-schedule");

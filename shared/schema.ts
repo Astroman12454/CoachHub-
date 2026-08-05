@@ -100,6 +100,26 @@ export const pushSubscriptionSchema = z.object({
 });
 export type PushSubscriptionInput = z.infer<typeof pushSubscriptionSchema>;
 
+// One row per skill per evaluation — a coach rating a player submits all 5
+// categories at once (see skillRatingInputSchema below), inserted together
+// in a single multi-row statement so they share the exact same ratedAt and
+// can be grouped back into one "evaluation" by that timestamp without a
+// separate grouping id.
+export const skillRatings = pgTable("skill_ratings", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  category: text("category").notNull(), // shooting | dribbling | defense | passing | conditioning
+  rating: integer("rating").notNull(), // 1-10
+  ratedAt: timestamp("rated_at").defaultNow(),
+});
+
+export const playerNotes = pgTable("player_notes", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
@@ -178,6 +198,24 @@ export const EXERCISE_CATEGORIES = [
   "passing",
   "conditioning",
 ] as const;
+
+// Reuses the exercise library's own categories as the skill axes, so a
+// player's development profile lines up with what practices actually train.
+export const SKILL_CATEGORIES = EXERCISE_CATEGORIES;
+
+export const skillRatingInputSchema = z.object({
+  shooting: z.number().int().min(1).max(10),
+  dribbling: z.number().int().min(1).max(10),
+  defense: z.number().int().min(1).max(10),
+  passing: z.number().int().min(1).max(10),
+  conditioning: z.number().int().min(1).max(10),
+});
+export type SkillRatingInput = z.infer<typeof skillRatingInputSchema>;
+
+export const createPlayerNoteSchema = z.object({
+  content: z.string().min(1, "Note can't be empty").max(2000),
+});
+export type CreatePlayerNote = z.infer<typeof createPlayerNoteSchema>;
 
 export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
 
@@ -308,6 +346,18 @@ export type TrainingSession = typeof trainingSessions.$inferSelect;
 
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
 export type Player = typeof players.$inferSelect;
+
+export type SkillRating = typeof skillRatings.$inferSelect;
+export type PlayerNote = typeof playerNotes.$inferSelect;
+
+// A player's development profile: current standing (latest rating per
+// category, null until the coach rates them at least once), every past
+// evaluation for the trend view, and the coach's running notes.
+export interface PlayerDevelopment {
+  current: Record<string, number> | null;
+  history: { category: string; rating: number; ratedAt: string }[];
+  notes: PlayerNote[];
+}
 
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type Attendance = typeof attendance.$inferSelect;

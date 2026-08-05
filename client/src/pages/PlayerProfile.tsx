@@ -1,0 +1,295 @@
+import { useMemo, useState } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp } from "lucide-react";
+import StatCard from "@/components/StatCard";
+import SkillRadarChart from "@/components/SkillRadarChart";
+import RatePlayerDialog from "@/components/RatePlayerDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import ErrorState from "@/components/ErrorState";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/hooks/use-sidebar";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { SKILL_CATEGORIES } from "@shared/schema";
+import type { Player, PlayerDevelopment, PlayerGameStatsSummary } from "@shared/schema";
+
+const SKILL_LABELS: Record<string, string> = {
+  shooting: "Shooting",
+  dribbling: "Dribbling",
+  defense: "Defense",
+  passing: "Passing",
+  conditioning: "Conditioning",
+};
+
+// `createdAt`/`ratedAt` are typed Date in the DB schema, but arrive over the
+// wire as ISO strings once JSON-serialized — accepting both here means
+// callers don't need an awkward cast at every use site.
+function formatDateTime(value: string | Date): string {
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+// Groups the flat rating history back into per-evaluation rows (see
+// createSkillRating — all 5 categories in one submission share one ratedAt),
+// newest first, for a compact "what changed over time" table.
+function groupHistory(history: PlayerDevelopment["history"]): { ratedAt: string; ratings: Record<string, number> }[] {
+  const byTimestamp = new Map<string, Record<string, number>>();
+  for (const row of history) {
+    if (!byTimestamp.has(row.ratedAt)) byTimestamp.set(row.ratedAt, {});
+    byTimestamp.get(row.ratedAt)![row.category] = row.rating;
+  }
+  return Array.from(byTimestamp.entries())
+    .map(([ratedAt, ratings]) => ({ ratedAt, ratings }))
+    .sort((a, b) => new Date(b.ratedAt).getTime() - new Date(a.ratedAt).getTime());
+}
+
+export default function PlayerProfile() {
+  const params = useParams<{ id: string }>();
+  const playerId = parseInt(params.id, 10);
+  const [, setLocation] = useLocation();
+  const { openMobile } = useSidebar();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [isRateOpen, setIsRateOpen] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
+
+  const { data: players = [], isLoading: isLoadingPlayers } = useQuery<Player[]>({ queryKey: ["/api/players"] });
+  const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId]);
+
+  const { data: development, isLoading: isLoadingDev, isError, refetch } = useQuery<PlayerDevelopment>({
+    queryKey: [`/api/players/${playerId}/development`],
+    enabled: !isNaN(playerId),
+  });
+
+  const { data: attendanceStats } = useQuery<{ total: number; present: number; absent: number; rate: number }>({
+    queryKey: [`/api/players/${playerId}/attendance-stats`],
+    enabled: !isNaN(playerId),
+  });
+
+  const { data: allStats = [] } = useQuery<PlayerGameStatsSummary[]>({ queryKey: ["/api/players/stats"] });
+  const gameStats = useMemo(() => allStats.find((s) => s.playerId === playerId), [allStats, playerId]);
+
+  const addNoteMutation = useMutation({
+    mutationFn: async () => apiRequest("POST", `/api/players/${playerId}/notes`, { content: noteDraft.trim() }),
+    onSuccess: () => {
+      setNoteDraft("");
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
+    },
+    onError: (error) => {
+      toast({ title: "Couldn't add note", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+    },
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: number) => apiRequest("DELETE", `/api/players/${playerId}/notes/${noteId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
+    },
+    onError: (error) => {
+      toast({ title: "Couldn't delete note", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+    },
+  });
+
+  const historyGroups = useMemo(() => (development ? groupHistory(development.history) : []), [development]);
+
+  if (isLoadingPlayers || isLoadingDev) {
+    return (
+      <div className="flex flex-col h-full">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
+          <Skeleton className="h-10 w-40" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-48" />
+        </main>
+      </div>
+    );
+  }
+
+  if (isError || !player) {
+    return (
+      <div className="flex flex-col h-full">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <ErrorState
+            title="Couldn't load this player"
+            description="They may have been removed, or something went wrong loading their profile."
+            onRetry={() => refetch()}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <header className="bg-card border-b border-border px-4 py-4 lg:px-7 lg:py-5">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openMobile}
+            className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
+          </button>
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/players")} aria-label="Back to players">
+            <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">
+                {player.name}
+              </h2>
+              <Badge
+                variant={player.isActive === 1 ? "default" : "secondary"}
+                className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
+              >
+                {player.isActive === 1 ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+            {player.position && <p className="text-sm text-muted-foreground mt-0.5">{player.position}</p>}
+          </div>
+          <Button onClick={() => setIsRateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
+            <Star className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+            <span className="hidden sm:inline">Rate Player</span>
+            <span className="sm:hidden">Rate</span>
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Attendance Rate" value={`${attendanceStats?.rate ?? 0}%`} icon={CheckCircle2} color="success" />
+          <StatCard label="Games Played" value={gameStats?.gamesPlayed ?? 0} icon={TrendingUp} color="court" />
+          <StatCard label="Season Points" value={gameStats?.points ?? 0} icon={Star} color="orange" />
+          <StatCard label="Season Assists" value={gameStats?.assists ?? 0} icon={MessageSquarePlus} color="violet" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Skill Development</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SkillRadarChart ratings={development?.current ?? null} />
+              {!development?.current && (
+                <p className="text-sm text-muted-foreground text-center mt-2">
+                  No ratings yet — tap "Rate Player" to start tracking development.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Rating History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {historyGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No evaluations recorded yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-muted-foreground">
+                        <th className="pb-2 pr-3 font-medium">Date</th>
+                        {SKILL_CATEGORIES.map((cat) => (
+                          <th key={cat} className="pb-2 pr-3 font-medium text-center">{SKILL_LABELS[cat].slice(0, 3)}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historyGroups.map((row) => (
+                        <tr key={row.ratedAt} className="border-t border-border">
+                          <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">{formatDateTime(row.ratedAt)}</td>
+                          {SKILL_CATEGORIES.map((cat) => (
+                            <td key={cat} className="py-2 pr-3 text-center tabular-nums font-medium text-foreground">
+                              {row.ratings[cat] ?? "–"}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Coach Notes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Textarea
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder="Observations, goals, things to work on…"
+                aria-label="New note"
+                rows={2}
+                className="resize-none"
+              />
+              <Button
+                type="button"
+                onClick={() => addNoteMutation.mutate()}
+                disabled={!noteDraft.trim() || addNoteMutation.isPending}
+                className="sm:self-end whitespace-nowrap"
+              >
+                <MessageSquarePlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+                Add Note
+              </Button>
+            </div>
+
+            {development && development.notes.length > 0 ? (
+              <ul className="space-y-3">
+                {development.notes.map((note) => (
+                  <li key={note.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0">
+                    <div>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {note.createdAt ? formatDateTime(note.createdAt) : ""}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-red-600 flex-shrink-0"
+                      onClick={() => setNoteToDelete(note.id)}
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No notes yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+
+      <RatePlayerDialog
+        playerId={isRateOpen ? playerId : null}
+        playerName={player.name}
+        onOpenChange={(open) => setIsRateOpen(open)}
+      />
+
+      <ConfirmDialog
+        open={noteToDelete !== null}
+        onOpenChange={(open) => !open && setNoteToDelete(null)}
+        title="Delete this note?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (noteToDelete !== null) deleteNoteMutation.mutate(noteToDelete);
+          setNoteToDelete(null);
+        }}
+      />
+    </div>
+  );
+}

@@ -103,7 +103,7 @@ export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPorta
           <Button
             type="button"
             variant="ghost"
-            className="text-red-600 hover:text-red-700 dark:hover:text-red-400"
+            className="text-red-700 hover:text-red-800 dark:hover:text-red-400"
             onClick={() => player && revokeMutation.mutate(player.id)}
             disabled={!url || revokeMutation.isPending}
           >

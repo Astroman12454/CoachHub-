@@ -18,6 +18,8 @@ import {
   createGameWithStatsSchema,
   createPlaySchema,
   pushSubscriptionSchema,
+  skillRatingInputSchema,
+  createPlayerNoteSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
@@ -468,6 +470,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete player" });
+    }
+  });
+
+  // Player development — skill ratings (radar chart) and freeform coach
+  // notes, both gated on the player actually belonging to the current team
+  // before touching storage.
+  app.get("/api/players/:id/development", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const development = await storage.getPlayerDevelopment(id);
+      res.json(development);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch player development" });
+    }
+  });
+
+  app.post("/api/players/:id/skill-ratings", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const ratings = skillRatingInputSchema.parse(req.body);
+      await storage.createSkillRating(id, ratings);
+      res.status(201).json(await storage.getPlayerDevelopment(id));
+    } catch (error) {
+      res.status(400).json({ message: "Invalid skill rating data" });
+    }
+  });
+
+  app.post("/api/players/:id/notes", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const { content } = createPlayerNoteSchema.parse(req.body);
+      const note = await storage.createPlayerNote(id, content);
+      res.status(201).json(note);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid note data" });
+    }
+  });
+
+  app.delete("/api/players/:id/notes/:noteId", requireTeam, async (req, res) => {
+    try {
+      const noteId = parseId(req, res, "noteId");
+      if (noteId === null) return;
+      const deleted = await storage.deletePlayerNote(noteId, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete note" });
     }
   });
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2 } from "lucide-react";
 import TopBar from "@/components/TopBar";
@@ -17,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Player } from "@shared/schema";
 
 export default function Players() {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterActive, setFilterActive] = useState<string>("all");
@@ -226,38 +228,55 @@ export default function Players() {
                         key={player.id}
                         className="border border-border rounded-lg p-4 hover:border-basketball-orange hover:shadow-sm transition-all"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-display font-semibold uppercase tracking-tight text-foreground">{player.name}</h3>
-                          <Badge
-                            variant={player.isActive === 1 ? "default" : "secondary"}
-                            className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
-                          >
-                            {player.isActive === 1 ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-muted-foreground truncate">{player.position}</p>
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setPortalPlayer(player)}
-                              className="w-8 h-8"
-                              aria-label={`Portal link for ${player.name}`}
-                              title="Portal link"
+                        {/* Only the summary (name/badge/position) is the
+                            clickable region — the action buttons below are
+                            siblings, not children, of it, since a button
+                            can't validly contain other interactive
+                            controls (axe: nested-interactive). */}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setLocation(`/players/${player.id}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setLocation(`/players/${player.id}`);
+                            }
+                          }}
+                          className="cursor-pointer mb-2"
+                          aria-label={`View ${player.name}'s profile`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-display font-semibold uppercase tracking-tight text-foreground">{player.name}</h3>
+                            <Badge
+                              variant={player.isActive === 1 ? "default" : "secondary"}
+                              className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
                             >
-                              <Link2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => togglePlayerStatus(player)}
-                              disabled={updatePlayerMutation.isPending}
-                              className="text-xs"
-                            >
-                              {player.isActive === 1 ? "Deactivate" : "Activate"}
-                            </Button>
+                              {player.isActive === 1 ? "Active" : "Inactive"}
+                            </Badge>
                           </div>
+                          <p className="text-sm text-muted-foreground truncate">{player.position}</p>
+                        </div>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setPortalPlayer(player)}
+                            className="w-8 h-8"
+                            aria-label={`Portal link for ${player.name}`}
+                            title="Portal link"
+                          >
+                            <Link2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => togglePlayerStatus(player)}
+                            disabled={updatePlayerMutation.isPending}
+                            className="text-xs"
+                          >
+                            {player.isActive === 1 ? "Deactivate" : "Activate"}
+                          </Button>
                         </div>
                       </div>
                     ))}

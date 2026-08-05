@@ -25,6 +25,7 @@ const Playbook = lazy(() => import("@/pages/Playbook"));
 const PlayEditor = lazy(() => import("@/pages/PlayEditor"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const Players = lazy(() => import("@/pages/Players"));
+const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 const Portal = lazy(() => import("@/pages/Portal"));
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
+      <Route path="/players/:id" component={() => <Layout><PlayerProfile /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />
       <Route path="/billing/success" component={() => <Layout><BillingStatus status="success" /></Layout>} />
       <Route path="/billing/cancel" component={() => <Layout><BillingStatus status="cancel" /></Layout>} />

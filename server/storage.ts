@@ -10,6 +10,8 @@ import {
   plays,
   playSteps,
   pushSubscriptions,
+  skillRatings,
+  playerNotes,
   type Account,
   type Team,
   type Exercise,
@@ -27,7 +29,10 @@ import {
   type Play,
   type PlayStep,
   type CreatePlay,
-  type PortalData
+  type PortalData,
+  type SkillRatingInput,
+  type PlayerNote,
+  type PlayerDevelopment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -84,6 +89,14 @@ export interface IStorage {
   markAttendance(attendance: InsertAttendance): Promise<Attendance>;
   updateAttendance(id: number, attendance: Partial<InsertAttendance>): Promise<Attendance | undefined>;
   getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }>;
+
+  // Player development methods — skill ratings and freeform notes, both
+  // scoped by playerId (callers verify team ownership via getPlayerById
+  // first, same as the attendance methods above).
+  createSkillRating(playerId: number, ratings: SkillRatingInput): Promise<void>;
+  createPlayerNote(playerId: number, content: string): Promise<PlayerNote>;
+  deletePlayerNote(id: number, teamId: number): Promise<boolean>;
+  getPlayerDevelopment(playerId: number): Promise<PlayerDevelopment>;
 
   // Game methods (scoped by team)
   getAllGames(teamId: number): Promise<Game[]>;
@@ -464,6 +477,53 @@ export class DatabaseStorage implements IStorage {
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
 
     return { total, present, absent, rate };
+  }
+
+  // A rating is always all 5 categories submitted together (see
+  // skillRatingInputSchema) and inserted in one multi-row statement, so they
+  // share a single ratedAt — that shared timestamp is what groups them back
+  // into one "evaluation" for the history view, no separate id needed.
+  async createSkillRating(playerId: number, ratings: SkillRatingInput): Promise<void> {
+    const entries = Object.entries(ratings) as [string, number][];
+    await db.insert(skillRatings).values(entries.map(([category, rating]) => ({ playerId, category, rating })));
+  }
+
+  async createPlayerNote(playerId: number, content: string): Promise<PlayerNote> {
+    const [note] = await db.insert(playerNotes).values({ playerId, content }).returning();
+    return note;
+  }
+
+  async deletePlayerNote(id: number, teamId: number): Promise<boolean> {
+    const [note] = await db
+      .select({ playerId: playerNotes.playerId })
+      .from(playerNotes)
+      .where(eq(playerNotes.id, id));
+    if (!note) return false;
+    const player = await this.getPlayerById(note.playerId, teamId);
+    if (!player) return false;
+
+    const result = await db.delete(playerNotes).where(eq(playerNotes.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getPlayerDevelopment(playerId: number): Promise<PlayerDevelopment> {
+    const [ratingRows, notes] = await Promise.all([
+      db.select().from(skillRatings).where(eq(skillRatings.playerId, playerId)).orderBy(desc(skillRatings.ratedAt)),
+      db.select().from(playerNotes).where(eq(playerNotes.playerId, playerId)).orderBy(desc(playerNotes.createdAt)),
+    ]);
+
+    // Rows are newest-first, so the first time a category is seen is its
+    // latest rating — cheaper than a DISTINCT ON query for roster-sized data.
+    const current: Record<string, number> = {};
+    for (const row of ratingRows) {
+      if (!(row.category in current)) current[row.category] = row.rating;
+    }
+
+    return {
+      current: ratingRows.length > 0 ? current : null,
+      history: ratingRows.map((r) => ({ category: r.category, rating: r.rating, ratedAt: (r.ratedAt ?? new Date()).toISOString() })),
+      notes,
+    };
   }
 
   // Game methods
