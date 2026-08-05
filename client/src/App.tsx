@@ -20,6 +20,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 // shown — the rest fetch on first visit and are cached after that.
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TrainingSessions = lazy(() => import("@/pages/TrainingSessions"));
+const Games = lazy(() => import("@/pages/Games"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const Players = lazy(() => import("@/pages/Players"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/" component={() => <Layout><Dashboard /></Layout>} />
       <Route path="/dashboard" component={() => <Layout><Dashboard /></Layout>} />
       <Route path="/training-sessions" component={() => <Layout><TrainingSessions /></Layout>} />
+      <Route path="/games" component={() => <Layout><Games /></Layout>} />
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />

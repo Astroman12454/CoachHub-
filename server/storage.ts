@@ -5,6 +5,8 @@ import {
   trainingSessions,
   players,
   attendance,
+  games,
+  gameStats,
   type Account,
   type Team,
   type Exercise,
@@ -14,7 +16,10 @@ import {
   type Player,
   type InsertPlayer,
   type Attendance,
-  type InsertAttendance
+  type InsertAttendance,
+  type Game,
+  type GameStat,
+  type CreateGameWithStats
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -67,6 +72,13 @@ export interface IStorage {
   markAttendance(attendance: InsertAttendance): Promise<Attendance>;
   updateAttendance(id: number, attendance: Partial<InsertAttendance>): Promise<Attendance | undefined>;
   getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }>;
+
+  // Game methods (scoped by team)
+  getAllGames(teamId: number): Promise<Game[]>;
+  getGameById(id: number, teamId: number): Promise<Game | undefined>;
+  getGameStats(gameId: number): Promise<GameStat[]>;
+  createGameWithStats(teamId: number, data: CreateGameWithStats): Promise<Game>;
+  deleteGame(id: number, teamId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -346,6 +358,58 @@ export class DatabaseStorage implements IStorage {
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
 
     return { total, present, absent, rate };
+  }
+
+  // Game methods
+  async getAllGames(teamId: number): Promise<Game[]> {
+    return await db.select().from(games).where(eq(games.teamId, teamId));
+  }
+
+  async getGameById(id: number, teamId: number): Promise<Game | undefined> {
+    const [game] = await db
+      .select()
+      .from(games)
+      .where(and(eq(games.id, id), eq(games.teamId, teamId)));
+    return game || undefined;
+  }
+
+  async getGameStats(gameId: number): Promise<GameStat[]> {
+    return await db.select().from(gameStats).where(eq(gameStats.gameId, gameId));
+  }
+
+  // Inserts the game and its full box score together — callers must have
+  // already filtered `data.stats` down to playerIds that belong to teamId
+  // (see sanitizePlayerIds in routes.ts) since this layer trusts its input.
+  async createGameWithStats(teamId: number, data: CreateGameWithStats): Promise<Game> {
+    return await db.transaction(async (tx) => {
+      const [game] = await tx
+        .insert(games)
+        .values({
+          teamId,
+          opponent: data.opponent,
+          date: data.date,
+          location: data.location || null,
+          teamScore: data.teamScore ?? null,
+          opponentScore: data.opponentScore ?? null,
+          notes: data.notes || null,
+        })
+        .returning();
+
+      if (data.stats.length > 0) {
+        await tx.insert(gameStats).values(
+          data.stats.map((s) => ({ ...s, gameId: game.id })),
+        );
+      }
+
+      return game;
+    });
+  }
+
+  async deleteGame(id: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .delete(games)
+      .where(and(eq(games.id, id), eq(games.teamId, teamId)));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

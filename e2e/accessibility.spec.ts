@@ -122,6 +122,34 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("games", async ({ page }) => {
+    await login(page);
+    await page.goto("/games");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("games — log game modal open", async ({ page }) => {
+    await login(page);
+    await page.goto("/games");
+    await page.click('button:has-text("New Game")');
+    await page.waitForSelector("text=Log a Game");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("games — manual entry form open", async ({ page }) => {
+    await login(page);
+    await page.goto("/games");
+    await page.click('button:has-text("New Game")');
+    await page.waitForSelector("text=Log a Game");
+    await page.click("text=Enter Manually");
+    await page.waitForSelector('label:has-text("Opponent")');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("privacy policy page", async ({ page }) => {
     await page.goto("/privacy");
     await page.waitForLoadState("networkidle");

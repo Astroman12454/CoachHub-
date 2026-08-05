@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, LogOut, ChevronsUpDown, Plus } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, LogOut, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +18,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Weekly Schedule", href: "/weekly-schedule", icon: CalendarRange },
   { name: "Training Sessions", href: "/training-sessions", icon: CalendarDays },
+  { name: "Games", href: "/games", icon: Trophy },
   { name: "Exercise Library", href: "/exercise-library", icon: Dumbbell },
   { name: "Players", href: "/players", icon: Users },
 ];

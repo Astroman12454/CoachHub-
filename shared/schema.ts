@@ -69,6 +69,31 @@ export const players = pgTable("players", {
   isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
 });
 
+export const games = pgTable("games", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  opponent: text("opponent").notNull(),
+  date: text("date").notNull(),
+  location: text("location"), // 'home' | 'away'
+  teamScore: integer("team_score"),
+  opponentScore: integer("opponent_score"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const gameStats = pgTable("game_stats", {
+  id: serial("id").primaryKey(),
+  gameId: integer("game_id").notNull().references(() => games.id, { onDelete: "cascade" }),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  points: integer("points").default(0),
+  rebounds: integer("rebounds").default(0),
+  assists: integer("assists").default(0),
+  steals: integer("steals").default(0),
+  blocks: integer("blocks").default(0),
+  turnovers: integer("turnovers").default(0),
+  fouls: integer("fouls").default(0),
+});
+
 export const EXERCISE_CATEGORIES = [
   "shooting",
   "dribbling",
@@ -80,6 +105,8 @@ export const EXERCISE_CATEGORIES = [
 export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
 
 export const ATTENDANCE_STATUSES = ["present", "absent", "late", "excused"] as const;
+
+export const GAME_LOCATIONS = ["home", "away"] as const;
 
 export const insertAccountSchema = createInsertSchema(accounts).omit({
   id: true,
@@ -143,6 +170,36 @@ export const insertAttendanceSchema = createInsertSchema(attendance).omit({
   status: z.enum(ATTENDANCE_STATUSES),
 });
 
+export const insertGameSchema = createInsertSchema(games).omit({
+  id: true,
+  teamId: true,
+  createdAt: true,
+}).extend({
+  opponent: z.string().min(1, "Opponent is required"),
+  date: z.string().min(1, "Date is required"),
+  location: z.enum(GAME_LOCATIONS).nullable().optional(),
+  teamScore: z.number().int().min(0).nullable().optional(),
+  opponentScore: z.number().int().min(0).nullable().optional(),
+});
+
+const gameStatLineSchema = z.object({
+  playerId: z.number().int(),
+  points: z.number().int().min(0).default(0),
+  rebounds: z.number().int().min(0).default(0),
+  assists: z.number().int().min(0).default(0),
+  steals: z.number().int().min(0).default(0),
+  blocks: z.number().int().min(0).default(0),
+  turnovers: z.number().int().min(0).default(0),
+  fouls: z.number().int().min(0).default(0),
+});
+
+// What the client actually posts to create a game: the game itself plus the
+// full box score in one shot, so the write is one atomic transaction instead
+// of a game create followed by N stat-line creates the client has to sequence.
+export const createGameWithStatsSchema = insertGameSchema.extend({
+  stats: z.array(gameStatLineSchema).default([]),
+});
+
 export type Account = typeof accounts.$inferSelect;
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
 
@@ -160,3 +217,9 @@ export type Player = typeof players.$inferSelect;
 
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type Attendance = typeof attendance.$inferSelect;
+
+export type InsertGame = z.infer<typeof insertGameSchema>;
+export type Game = typeof games.$inferSelect;
+
+export type GameStat = typeof gameStats.$inferSelect;
+export type CreateGameWithStats = z.infer<typeof createGameWithStatsSchema>;

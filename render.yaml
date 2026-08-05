@@ -27,3 +27,7 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # AI box-score import — optional. Leave unset and manual game entry
+      # still works; only the photo/PDF import button is disabled.
+      - key: ANTHROPIC_API_KEY
+        sync: false

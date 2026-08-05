@@ -1,17 +1,43 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
+import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import {
   insertExerciseSchema,
   insertTrainingSessionSchema,
   insertPlayerSchema,
   insertAttendanceSchema,
   insertTeamSchema,
+  createGameWithStatsSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
 } from "@shared/schema";
+
+const ACCEPTED_BOX_SCORE_TYPES = new Set([
+  "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",
+]);
+const boxScoreUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    cb(null, ACCEPTED_BOX_SCORE_TYPES.has(file.mimetype));
+  },
+});
+
+// Each call costs real money (Anthropic API), so it's rate-limited more
+// tightly than a normal write route — 20 uploads/hour is generous for a
+// coach logging games one at a time but blocks a runaway client/script.
+const boxScoreAnalyzeRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many box score uploads. Please try again later." },
+});
 
 // Parses a route param as a positive integer id, or responds 400 and returns
 // null so callers can bail out instead of querying the DB with NaN.
@@ -430,6 +456,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch stats" });
     }
   });
+
+  // Game routes — scoped by the session's current team. Manual box-score
+  // entry is free; AI photo/PDF import (below) is a paid-plan convenience.
+  app.get("/api/games", requireTeam, async (req, res) => {
+    try {
+      const games = await storage.getAllGames(req.session.currentTeamId!);
+      res.json(games);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch games" });
+    }
+  });
+
+  app.get("/api/games/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const teamId = req.session.currentTeamId!;
+      const game = await storage.getGameById(id, teamId);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+      const stats = await storage.getGameStats(id);
+      res.json({ ...game, stats });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch game" });
+    }
+  });
+
+  app.post("/api/games", requireTeam, async (req, res) => {
+    try {
+      const teamId = req.session.currentTeamId!;
+      const data = createGameWithStatsSchema.parse(req.body);
+
+      // Drop any stat lines for playerIds that don't belong to this team, so
+      // a game can't end up crediting stats to another team's roster.
+      const roster = await storage.getAllPlayers(teamId);
+      const rosterIds = new Set(roster.map((p) => p.id));
+      data.stats = data.stats.filter((s) => rosterIds.has(s.playerId));
+
+      const game = await storage.createGameWithStats(teamId, data);
+      res.status(201).json(game);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid game data" });
+    }
+  });
+
+  app.delete("/api/games/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const deleted = await storage.deleteGame(id, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete game" });
+    }
+  });
+
+  // AI box-score import — upload a photo or PDF, get a draft back for the
+  // coach to review/correct before it's saved via POST /api/games above.
+  // Nothing is persisted here; this route only ever reads.
+  app.post(
+    "/api/games/analyze",
+    requireTeam,
+    boxScoreAnalyzeRateLimiter,
+    boxScoreUpload.single("file"),
+    async (req, res) => {
+      // Plan gate first: a free-plan coach should see "upgrade to unlock
+      // this" regardless of whether the AI backend happens to be
+      // configured — not a confusing "not configured" error that implies
+      // it's a temporary outage rather than a plan limit.
+      const account = await storage.getAccountById(req.session.accountId!);
+      if (account?.plan === "free") {
+        return res.status(403).json({ message: "Upgrade to a paid plan to import box scores automatically." });
+      }
+
+      if (!isAIConfigured()) {
+        return res.status(503).json({ message: "Box score import isn't configured yet." });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded." });
+      }
+
+      try {
+        const extracted = await extractBoxScore(req.file.buffer, req.file.mimetype);
+        res.json(extracted);
+      } catch (error) {
+        res.status(502).json({ message: "Couldn't read that file. Try a clearer photo or enter the game manually." });
+      }
+    },
+  );
 
   const httpServer = createServer(app);
   return httpServer;
