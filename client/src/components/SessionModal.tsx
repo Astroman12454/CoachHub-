@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,8 +20,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
-import type { Exercise, TrainingSession } from "@shared/schema";
+import type { Exercise, Play, TrainingSession } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
+
+const PLAY_CATEGORY_LABEL: Record<string, string> = {
+  offense: "Offense", defense: "Defense", inbound: "Inbound", special: "Special",
+};
 
 interface GeneratedSessionPlan {
   name: string;
@@ -67,6 +71,17 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   );
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
 
+  // Playbook plays this session will practice — same id-tracking rationale
+  // as selectedExerciseIds above.
+  const { data: plays = [] } = useQuery<Play[]>({ queryKey: ["/api/plays"] });
+  const [selectedPlayIds, setSelectedPlayIds] = useState<string[]>(
+    () => session?.playIds ?? []
+  );
+  const togglePlay = (playId: number) => {
+    const id = playId.toString();
+    setSelectedPlayIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  };
+
   const form = useForm<SessionFormData>({
     resolver: zodResolver(insertTrainingSessionSchema),
     defaultValues: {
@@ -75,6 +90,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
       time: session?.time ?? "",
       duration: session?.duration ?? 120,
       exerciseIds: session?.exerciseIds ?? [],
+      playIds: session?.playIds ?? [],
       notes: session?.notes ?? "",
       attendanceCount: session?.attendanceCount ?? 0,
       totalPlayers: session?.totalPlayers ?? 18,
@@ -96,6 +112,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
       onClose();
       form.reset();
       setSelectedExerciseIds([]);
+      setSelectedPlayIds([]);
     },
   });
 
@@ -104,6 +121,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     saveSessionMutation.mutate({
       ...data,
       exerciseIds: selectedExerciseIds,
+      playIds: selectedPlayIds,
     });
   };
 
@@ -361,6 +379,49 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 </div>
               </div>
             </div>
+
+            {/* Plays to Practice */}
+            {plays.length > 0 && (
+              <div>
+                <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Plays to Practice</h3>
+                <div className="border border-border rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Tap a play to mark it as practiced this session — see how often each one comes up on the Playbook page.
+                  </p>
+                  <div
+                    className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Plays to practice"
+                  >
+                    {plays.map(play => {
+                      const selected = selectedPlayIds.includes(play.id.toString());
+                      return (
+                        <button
+                          type="button"
+                          key={play.id}
+                          onClick={() => togglePlay(play.id)}
+                          aria-pressed={selected}
+                          className={`flex items-center justify-between gap-2 border rounded-lg p-3 text-left transition-all ${
+                            selected
+                              ? "border-basketball-orange bg-basketball-orange/5"
+                              : "border-border hover:border-basketball-orange hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <span className="font-medium text-foreground truncate block">{play.name}</span>
+                            <Badge variant="secondary" className="mt-1 text-xs">
+                              {PLAY_CATEGORY_LABEL[play.category] ?? play.category}
+                            </Badge>
+                          </div>
+                          {selected && <Check className="w-4 h-4 text-basketball-orange flex-shrink-0" strokeWidth={2.5} aria-hidden="true" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">

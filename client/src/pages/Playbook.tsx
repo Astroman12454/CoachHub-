@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Trash2, Plus, ClipboardList, Menu, Layers } from "lucide-react";
+import { Trash2, Plus, ClipboardList, Menu, Layers, Flame } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -9,32 +9,59 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
-import type { Play } from "@shared/schema";
+import type { Play, PlayPracticeStats } from "@shared/schema";
 
 const CATEGORY_LABEL: Record<string, string> = {
   offense: "Offense", defense: "Defense", inbound: "Inbound", special: "Special",
 };
 
+type SortMode = "name" | "most-practiced" | "least-practiced";
+
+function formatLastPracticed(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export default function Playbook() {
   const [, setLocation] = useLocation();
   const { openMobile } = useSidebar();
   const [playToDelete, setPlayToDelete] = useState<Play | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("name");
 
   const { data: plays = [], isLoading, isError, refetch } = useQuery<Play[]>({
     queryKey: ["/api/plays"],
   });
+
+  // Best-effort: a stats fetch failing shouldn't block the Playbook itself
+  // from rendering, so this just falls back to "no data yet" per play.
+  const { data: practiceStats = [] } = useQuery<PlayPracticeStats[]>({
+    queryKey: ["/api/plays/stats"],
+  });
+  const statsByPlayId = useMemo(
+    () => new Map(practiceStats.map((s) => [s.playId, s])),
+    [practiceStats],
+  );
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/plays",
     errorMessage: "Failed to delete play",
   });
 
-  const visiblePlays = useMemo(
-    () => plays.filter((p) => !isPendingDelete(p.id)).sort((a, b) => a.name.localeCompare(b.name)),
-    [plays, isPendingDelete],
-  );
+  const visiblePlays = useMemo(() => {
+    const remaining = plays.filter((p) => !isPendingDelete(p.id));
+    if (sortMode === "name") {
+      return remaining.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    const direction = sortMode === "most-practiced" ? -1 : 1;
+    return remaining.sort((a, b) => {
+      const countA = statsByPlayId.get(a.id)?.timesPracticed ?? 0;
+      const countB = statsByPlayId.get(b.id)?.timesPracticed ?? 0;
+      if (countA !== countB) return (countA - countB) * direction;
+      return a.name.localeCompare(b.name);
+    });
+  }, [plays, isPendingDelete, sortMode, statsByPlayId]);
 
   const confirmDelete = () => {
     if (playToDelete) {
@@ -59,11 +86,23 @@ export default function Playbook() {
             <p className="text-sm text-muted-foreground mt-0.5">Draw and animate your plays</p>
           </div>
         </div>
-        <Button onClick={() => setLocation("/playbook/new")} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
-          <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-          <span className="hidden sm:inline">New Play</span>
-          <span className="sm:hidden">New</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+            <SelectTrigger className="w-44" aria-label="Sort plays">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Name (A–Z)</SelectItem>
+              <SelectItem value="most-practiced">Most practiced</SelectItem>
+              <SelectItem value="least-practiced">Least practiced</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setLocation("/playbook/new")} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
+            <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+            <span className="hidden sm:inline">New Play</span>
+            <span className="sm:hidden">New</span>
+          </Button>
+        </div>
       </div>
     </header>
   );
@@ -136,6 +175,19 @@ export default function Playbook() {
                   {play.notes && (
                     <p className="text-sm text-muted-foreground line-clamp-2">{play.notes}</p>
                   )}
+                  <div className="flex items-center gap-1.5 text-sm">
+                    <Flame className={`w-3.5 h-3.5 flex-shrink-0 ${statsByPlayId.get(play.id) ? "text-basketball-orange" : "text-muted-foreground"}`} strokeWidth={1.75} aria-hidden="true" />
+                    {statsByPlayId.get(play.id) ? (
+                      <span className="text-foreground">
+                        Practiced {statsByPlayId.get(play.id)!.timesPracticed}x
+                        {statsByPlayId.get(play.id)!.lastPracticedDate && (
+                          <span className="text-muted-foreground"> · last {formatLastPracticed(statsByPlayId.get(play.id)!.lastPracticedDate!)}</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Not practiced yet</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Layers className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                     Tap to view or edit

@@ -284,6 +284,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return exerciseIds.filter(id => ownedIds.has(id));
   }
 
+  // Same defense-in-depth as sanitizeExerciseIds above, but scoped by team
+  // (plays belong to a team, not an account) — a session can't end up
+  // referencing another team's play by a guessed id.
+  async function sanitizePlayIds(teamId: number, playIds: string[] | null | undefined) {
+    if (!playIds || playIds.length === 0) return playIds;
+    const owned = await storage.getAllPlays(teamId);
+    const ownedIds = new Set(owned.map(p => p.id.toString()));
+    return playIds.filter(id => ownedIds.has(id));
+  }
+
   const generatePlanSchema = z.object({
     instructions: z.string().max(500).optional(),
   });
@@ -330,6 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sessionData = insertTrainingSessionSchema.parse(req.body);
       sessionData.exerciseIds = await sanitizeExerciseIds(req.session.accountId!, sessionData.exerciseIds);
+      sessionData.playIds = await sanitizePlayIds(req.session.currentTeamId!, sessionData.playIds);
       const session = await storage.createTrainingSession(req.session.currentTeamId!, sessionData);
       res.status(201).json(session);
     } catch (error) {
@@ -344,6 +355,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = insertTrainingSessionSchema.partial().parse(req.body);
       if (updateData.exerciseIds) {
         updateData.exerciseIds = await sanitizeExerciseIds(req.session.accountId!, updateData.exerciseIds);
+      }
+      if (updateData.playIds) {
+        updateData.playIds = await sanitizePlayIds(req.session.currentTeamId!, updateData.playIds);
       }
       const session = await storage.updateTrainingSession(id, req.session.currentTeamId!, updateData);
 
@@ -841,6 +855,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(teamPlays);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch plays" });
+    }
+  });
+
+  // Registered before /api/plays/:id so "stats" doesn't get swallowed as
+  // an :id param — how often each play has come up across the team's
+  // training sessions, tallied from trainingSessions.playIds.
+  app.get("/api/plays/stats", requireTeam, async (req, res) => {
+    try {
+      const stats = await storage.getPlayPracticeStats(req.session.currentTeamId!);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch play practice stats" });
     }
   });
 

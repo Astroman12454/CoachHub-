@@ -32,7 +32,8 @@ import {
   type PortalData,
   type SkillRatingInput,
   type PlayerNote,
-  type PlayerDevelopment
+  type PlayerDevelopment,
+  type PlayPracticeStats
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -114,6 +115,7 @@ export interface IStorage {
   createPlayWithSteps(teamId: number, data: CreatePlay): Promise<Play>;
   updatePlayWithSteps(id: number, teamId: number, data: CreatePlay): Promise<Play | undefined>;
   deletePlay(id: number, teamId: number): Promise<boolean>;
+  getPlayPracticeStats(teamId: number): Promise<PlayPracticeStats[]>;
 
   // Push subscription methods — scoped by player (portal visitors, not
   // accounts) since these back the player/parent portal's notifications.
@@ -689,6 +691,32 @@ export class DatabaseStorage implements IStorage {
       .delete(plays)
       .where(and(eq(plays.id, id), eq(plays.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Tallied in JS rather than SQL: trainingSessions.playIds is a text[]
+  // column (same shape as exerciseIds), and a team's session count is small
+  // enough that unnest-ing it in Postgres wouldn't be worth the extra query
+  // complexity over just reducing the rows we already fetch.
+  async getPlayPracticeStats(teamId: number): Promise<PlayPracticeStats[]> {
+    const sessions = await db.select().from(trainingSessions).where(eq(trainingSessions.teamId, teamId));
+
+    const tally = new Map<number, { count: number; lastDate: string | null }>();
+    for (const session of sessions) {
+      for (const idStr of session.playIds ?? []) {
+        const playId = parseInt(idStr, 10);
+        if (isNaN(playId)) continue;
+        const entry = tally.get(playId) ?? { count: 0, lastDate: null };
+        entry.count++;
+        if (!entry.lastDate || session.date > entry.lastDate) entry.lastDate = session.date;
+        tally.set(playId, entry);
+      }
+    }
+
+    return Array.from(tally.entries()).map(([playId, { count, lastDate }]) => ({
+      playId,
+      timesPracticed: count,
+      lastPracticedDate: lastDate,
+    }));
   }
 
   async getPlayerIdByPortalToken(token: string): Promise<number | undefined> {

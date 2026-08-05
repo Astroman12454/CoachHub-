@@ -54,6 +54,19 @@ export default async function globalSetup(config: FullConfig) {
     });
   }
 
+  const playsRes = await page.request.get("/api/plays");
+  const plays = await playsRes.json();
+  if (plays.length === 0) {
+    await page.request.post("/api/plays", {
+      data: {
+        name: "E2E Test Play",
+        category: "offense",
+        courtType: "half",
+        steps: [{ tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] }],
+      },
+    });
+  }
+
   await page.context().storageState({ path: AUTH_STATE_PATH });
   await browser.close();
 }

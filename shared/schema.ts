@@ -48,6 +48,7 @@ export const trainingSessions = pgTable("training_sessions", {
   time: text("time").notNull(),
   duration: integer("duration").notNull(), // in minutes
   exerciseIds: text("exercise_ids").array().default([]), // array of exercise IDs
+  playIds: text("play_ids").array().default([]), // array of playbook play IDs practiced this session
   notes: text("notes"),
   attendanceCount: integer("attendance_count").default(0),
   totalPlayers: integer("total_players").default(18),
@@ -370,6 +371,15 @@ export type CreateGameWithStats = z.infer<typeof createGameWithStatsSchema>;
 
 export type Play = typeof plays.$inferSelect;
 export type PlayStep = typeof playSteps.$inferSelect;
+
+// How often a play has come up in a training session — tallied from
+// trainingSessions.playIds (see getPlayPracticeStats), not a table of its
+// own, same as PlayerGameStatsSummary below.
+export interface PlayPracticeStats {
+  playId: number;
+  timesPracticed: number;
+  lastPracticedDate: string | null;
+}
 
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 

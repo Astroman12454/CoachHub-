@@ -73,6 +73,17 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — plays to practice picker", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    await page.waitForSelector("text=Plays to Practice");
+    await page.locator('[aria-label="Plays to practice"] button').first().click();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("training sessions — generate with AI panel open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");

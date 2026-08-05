@@ -218,14 +218,18 @@ export default function TrainingSessions() {
                     )}
                   </div>
 
-                  {session.exerciseIds && session.exerciseIds.length > 0 && (
-                    <div>
-                      <span className="text-sm text-muted-foreground">Exercises:</span>
-                      <div className="mt-1">
+                  {((session.exerciseIds && session.exerciseIds.length > 0) || (session.playIds && session.playIds.length > 0)) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {session.exerciseIds && session.exerciseIds.length > 0 && (
                         <Badge variant="outline" className="text-xs">
                           {session.exerciseIds.length} exercise{session.exerciseIds.length !== 1 ? 's' : ''}
                         </Badge>
-                      </div>
+                      )}
+                      {session.playIds && session.playIds.length > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          {session.playIds.length} play{session.playIds.length !== 1 ? 's' : ''}
+                        </Badge>
+                      )}
                     </div>
                   )}
 
