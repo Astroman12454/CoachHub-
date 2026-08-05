@@ -14,16 +14,19 @@ function CourtEnd({ mirror }: { mirror?: boolean }) {
       <rect x="34" y="0" width="32" height="38" fill="none" stroke="currentColor" strokeWidth="0.5" />
       {/* Free-throw circle */}
       <circle cx="50" cy="38" r="12" fill="none" stroke="currentColor" strokeWidth="0.5" />
-      {/* Backboard */}
-      <line x1="44" y1="4" x2="56" y2="4" stroke="currentColor" strokeWidth="1" />
-      {/* Basket */}
-      <circle cx="50" cy="5.5" r="1.5" fill="none" stroke="currentColor" strokeWidth="0.5" />
-      {/* Three-point arc — a circle of radius 44 centered on the basket
-          (50, 5.5), same as real courts measure the line from the hoop.
-          The old version used an arbitrary radius/endpoint pair that
-          wasn't centered on the basket at all, so its apex landed just
-          past the free-throw line instead of well beyond it. */}
-      <path d="M 6.3 0 A 44 44 0 1 0 93.7 0" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      {/* Backboard — 4ft from the baseline in real courts, scaled 2 units/ft */}
+      <line x1="44" y1="8" x2="56" y2="8" stroke="currentColor" strokeWidth="1" />
+      {/* Basket — rim center is 5.25ft (63") from the baseline, not 2.75ft;
+          the previous value quietly halved this, dragging the rim,
+          backboard, and the arc centered on it all too close to the line. */}
+      <circle cx="50" cy="10.5" r="1.5" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      {/* Three-point arc — radius 47.5 (23.75ft, the real arc distance)
+          centered on the basket (50, 10.5). Real courts flatten the
+          corners to straight 22ft lines parallel to the sideline instead
+          of following this circle all the way to the baseline; skipped
+          here to keep this a coaching tool rather than a blueprint, but
+          the radius and center now match a real hoop. */}
+      <path d="M 3.7 0 A 47.5 47.5 0 1 0 96.3 0" fill="none" stroke="currentColor" strokeWidth="0.5" />
     </g>
   );
 }
