@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X, Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast";
+import SessionTimeline from "@/components/SessionTimeline";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useAuth } from "@/hooks/use-auth";
@@ -64,7 +65,6 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>(
     () => session?.exerciseIds ?? []
   );
-  const selectedExercises = exercises.filter(ex => selectedExerciseIds.includes(ex.id.toString()));
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
 
   const form = useForm<SessionFormData>({
@@ -302,6 +302,18 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
             {/* Exercise Selection */}
             <div>
+              <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Session Timeline</h3>
+              <div className="border border-border rounded-lg p-4 mb-4">
+                <SessionTimeline
+                  selectedIds={selectedExerciseIds}
+                  exercises={exercises}
+                  onReorder={setSelectedExerciseIds}
+                  onRemove={removeExercise}
+                  startTime={form.watch("time")}
+                  sessionDuration={form.watch("duration") ?? 0}
+                />
+              </div>
+
               <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Add Exercises</h3>
               <div className="border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-4 mb-4">
@@ -319,32 +331,6 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                     </SelectContent>
                   </Select>
                 </div>
-
-                {/* Selected Exercises */}
-                {selectedExercises.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-foreground mb-2">Selected Exercises:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedExercises.map(exercise => (
-                        <Badge
-                          key={exercise.id}
-                          variant="secondary"
-                          className="flex items-center gap-2"
-                        >
-                          {exercise.name}
-                          <button
-                            type="button"
-                            onClick={() => removeExercise(exercise.id)}
-                            className="text-muted-foreground hover:text-foreground"
-                            aria-label={`Remove ${exercise.name}`}
-                          >
-                            <X className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Available Exercises */}
                 <div

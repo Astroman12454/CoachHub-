@@ -58,6 +58,21 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — session timeline with exercises added", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    const cards = page.locator('[aria-label="Available exercises"] > div');
+    const count = await cards.count();
+    for (let i = 0; i < Math.min(3, count); i++) {
+      await cards.nth(i).click();
+    }
+    await page.waitForSelector("text=Session Timeline");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("training sessions — generate with AI panel open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
