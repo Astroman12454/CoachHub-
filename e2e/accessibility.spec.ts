@@ -95,6 +95,33 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — save as template dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    await page.click('button:has-text("Save as Template")');
+    await page.waitForSelector("text=Template Name");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training sessions — start from template select populated", async ({ page }) => {
+    await login(page);
+    const templatesRes = await page.request.get("/api/session-templates");
+    const templates = await templatesRes.json();
+    if (templates.length === 0) {
+      await page.request.post("/api/session-templates", {
+        data: { name: "E2E Test Template", duration: 90, exerciseIds: [], playIds: [], notes: null },
+      });
+    }
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Start from Template");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("training sessions — delete confirm dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");

@@ -20,6 +20,7 @@ import {
   pushSubscriptionSchema,
   skillRatingInputSchema,
   createPlayerNoteSchema,
+  insertSessionTemplateSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
@@ -384,6 +385,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete training session" });
+    }
+  });
+
+  // Session templates — a reusable starting point for SessionModal (name,
+  // duration, exercises, plays, notes) that never links back to sessions
+  // created from it, so deleting a template can't cascade into anything.
+  app.get("/api/session-templates", requireTeam, async (req, res) => {
+    try {
+      const templates = await storage.getAllSessionTemplates(req.session.currentTeamId!);
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch session templates" });
+    }
+  });
+
+  app.post("/api/session-templates", requireTeam, async (req, res) => {
+    try {
+      const teamId = req.session.currentTeamId!;
+      const data = insertSessionTemplateSchema.parse(req.body);
+      data.exerciseIds = await sanitizeExerciseIds(req.session.accountId!, data.exerciseIds);
+      data.playIds = await sanitizePlayIds(teamId, data.playIds);
+      const template = await storage.createSessionTemplate(teamId, data);
+      res.status(201).json(template);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid session template data" });
+    }
+  });
+
+  app.delete("/api/session-templates/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const deleted = await storage.deleteSessionTemplate(id, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Session template not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete session template" });
     }
   });
 

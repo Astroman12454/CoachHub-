@@ -55,6 +55,22 @@ export const trainingSessions = pgTable("training_sessions", {
   status: text("status").default("scheduled"), // scheduled, in_progress, completed, cancelled
 });
 
+// A reusable starting point for a new session — everything about a session
+// EXCEPT the date/time/attendance, which are inherently per-occurrence.
+// Applying one just pre-fills SessionModal's fields; it never links back
+// to the sessions later created from it.
+export const sessionTemplates = pgTable("session_templates", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  duration: integer("duration").notNull(),
+  exerciseIds: text("exercise_ids").array().default([]),
+  playIds: text("play_ids").array().default([]),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+
 export const attendance = pgTable("attendance", {
   id: serial("id").primaryKey(),
   sessionId: integer("session_id").notNull().references(() => trainingSessions.id, { onDelete: "cascade" }),
@@ -272,6 +288,15 @@ export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).
   duration: z.number().int().min(1, "Duration must be at least 1 minute"),
 });
 
+export const insertSessionTemplateSchema = createInsertSchema(sessionTemplates).omit({
+  id: true,
+  teamId: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Template name is required"),
+  duration: z.number().int().min(1, "Duration must be at least 1 minute"),
+});
+
 export const insertPlayerSchema = createInsertSchema(players).omit({
   id: true,
   teamId: true,
@@ -344,6 +369,9 @@ export type Exercise = typeof exercises.$inferSelect;
 
 export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
 export type TrainingSession = typeof trainingSessions.$inferSelect;
+
+export type InsertSessionTemplate = z.infer<typeof insertSessionTemplateSchema>;
+export type SessionTemplate = typeof sessionTemplates.$inferSelect;
 
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
 export type Player = typeof players.$inferSelect;

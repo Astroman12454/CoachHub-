@@ -12,6 +12,7 @@ import {
   pushSubscriptions,
   skillRatings,
   playerNotes,
+  sessionTemplates,
   type Account,
   type Team,
   type Exercise,
@@ -33,7 +34,9 @@ import {
   type SkillRatingInput,
   type PlayerNote,
   type PlayerDevelopment,
-  type PlayPracticeStats
+  type PlayPracticeStats,
+  type InsertSessionTemplate,
+  type SessionTemplate
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -68,6 +71,11 @@ export interface IStorage {
   createTrainingSession(teamId: number, session: InsertTrainingSession): Promise<TrainingSession>;
   updateTrainingSession(id: number, teamId: number, session: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
   deleteTrainingSession(id: number, teamId: number): Promise<boolean>;
+
+  // Session template methods (scoped by team)
+  getAllSessionTemplates(teamId: number): Promise<SessionTemplate[]>;
+  createSessionTemplate(teamId: number, template: InsertSessionTemplate): Promise<SessionTemplate>;
+  deleteSessionTemplate(id: number, teamId: number): Promise<boolean>;
 
   // Player methods (scoped by team)
   getAllPlayers(teamId: number): Promise<Player[]>;
@@ -283,6 +291,25 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(trainingSessions)
       .where(and(eq(trainingSessions.id, id), eq(trainingSessions.teamId, teamId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getAllSessionTemplates(teamId: number): Promise<SessionTemplate[]> {
+    return await db.select().from(sessionTemplates).where(eq(sessionTemplates.teamId, teamId));
+  }
+
+  async createSessionTemplate(teamId: number, template: InsertSessionTemplate): Promise<SessionTemplate> {
+    const [row] = await db
+      .insert(sessionTemplates)
+      .values({ ...template, teamId, exerciseIds: template.exerciseIds || null, playIds: template.playIds || null, notes: template.notes || null })
+      .returning();
+    return row;
+  }
+
+  async deleteSessionTemplate(id: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .delete(sessionTemplates)
+      .where(and(eq(sessionTemplates.id, id), eq(sessionTemplates.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
   }
 

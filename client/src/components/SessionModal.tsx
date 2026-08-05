@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Sparkles, Loader2, Check } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Sparkles, Loader2, Check, BookmarkPlus, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ToastAction } from "@/components/ui/toast";
 import SessionTimeline from "@/components/SessionTimeline";
@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
-import type { Exercise, Play, TrainingSession } from "@shared/schema";
+import type { Exercise, Play, TrainingSession, SessionTemplate } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
 
 const PLAY_CATEGORY_LABEL: Record<string, string> = {
@@ -81,6 +81,57 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     const id = playId.toString();
     setSelectedPlayIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
+
+  const queryClient = useQueryClient();
+  const { data: templates = [] } = useQuery<SessionTemplate[]>({ queryKey: ["/api/session-templates"] });
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    const template = templates.find(t => t.id.toString() === templateId);
+    if (!template) return;
+    form.setValue("name", template.name, { shouldDirty: true });
+    form.setValue("duration", template.duration, { shouldDirty: true });
+    form.setValue("notes", template.notes ?? "", { shouldDirty: true });
+    setSelectedExerciseIds(template.exerciseIds ?? []);
+    setSelectedPlayIds(template.playIds ?? []);
+  };
+
+  const saveTemplateMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await apiRequest("POST", "/api/session-templates", {
+        name,
+        duration: form.getValues("duration"),
+        exerciseIds: selectedExerciseIds,
+        playIds: selectedPlayIds,
+        notes: form.getValues("notes") || null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/session-templates"] });
+      setIsSaveTemplateOpen(false);
+      setTemplateName("");
+      toast({ title: "Template saved", description: "You can start a new session from it anytime." });
+    },
+    onError: (error) => {
+      toast({ title: "Couldn't save template", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+    },
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest("DELETE", `/api/session-templates/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/session-templates"] });
+      setSelectedTemplateId("");
+      toast({ title: "Template deleted" });
+    },
+    onError: (error) => {
+      toast({ title: "Couldn't delete template", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+    },
+  });
 
   const form = useForm<SessionFormData>({
     resolver: zodResolver(insertTrainingSessionSchema),
@@ -186,13 +237,19 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
             <DialogTitle className="text-xl font-display uppercase tracking-tight">
               {isEditing ? "Edit Training Session" : "Create Training Session"}
             </DialogTitle>
-            {!isEditing && !isAIPanelOpen && (
-              <Button type="button" variant="outline" size="sm" onClick={handleGeneratePlanClick} className="flex-shrink-0">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
-                Generate with AI
-                {!canGeneratePlan && <Badge variant="secondary" className="ml-2 text-xs">Paid</Badge>}
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsSaveTemplateOpen(true)}>
+                <BookmarkPlus className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
+                Save as Template
               </Button>
-            )}
+              {!isEditing && !isAIPanelOpen && (
+                <Button type="button" variant="outline" size="sm" onClick={handleGeneratePlanClick}>
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
+                  Generate with AI
+                  {!canGeneratePlan && <Badge variant="secondary" className="ml-2 text-xs">Paid</Badge>}
+                </Button>
+              )}
+            </div>
           </div>
           <DialogDescription className="sr-only">
             Set the session's name, date, time and duration, and choose which exercises to include.
@@ -235,6 +292,40 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {!isEditing && templates.length > 0 && (
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <label htmlFor="template-select" className="text-sm font-medium text-foreground mb-2 block">
+                    Start from Template
+                  </label>
+                  <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+                    <SelectTrigger id="template-select" aria-label="Start from template">
+                      <SelectValue placeholder="Choose a template (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map(template => (
+                        <SelectItem key={template.id} value={template.id.toString()}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedTemplateId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Delete template"
+                    onClick={() => deleteTemplateMutation.mutate(parseInt(selectedTemplateId))}
+                    disabled={deleteTemplateMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Session Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
@@ -441,6 +532,54 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
           </form>
         </Form>
       </DialogContent>
+
+      <Dialog open={isSaveTemplateOpen} onOpenChange={setIsSaveTemplateOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+            <DialogDescription>
+              Saves this session's duration, exercises, plays and notes as a reusable starting point. The date and time aren't included.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (templateName.trim()) saveTemplateMutation.mutate(templateName.trim());
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label htmlFor="template-name" className="text-sm font-medium text-foreground mb-2 block">
+                Template Name
+              </label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="e.g., Shooting Focus"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSaveTemplateOpen(false)}
+                disabled={saveTemplateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="basketball-orange basketball-orange-hover text-white"
+                disabled={!templateName.trim() || saveTemplateMutation.isPending}
+              >
+                {saveTemplateMutation.isPending ? "Saving..." : "Save Template"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
