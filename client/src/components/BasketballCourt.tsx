@@ -18,8 +18,12 @@ function CourtEnd({ mirror }: { mirror?: boolean }) {
       <line x1="44" y1="4" x2="56" y2="4" stroke="currentColor" strokeWidth="1" />
       {/* Basket */}
       <circle cx="50" cy="5.5" r="1.5" fill="none" stroke="currentColor" strokeWidth="0.5" />
-      {/* Three-point arc */}
-      <path d="M 6 0 A 47 47 0 0 0 94 0" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      {/* Three-point arc — a circle of radius 44 centered on the basket
+          (50, 5.5), same as real courts measure the line from the hoop.
+          The old version used an arbitrary radius/endpoint pair that
+          wasn't centered on the basket at all, so its apex landed just
+          past the free-throw line instead of well beyond it. */}
+      <path d="M 6.3 0 A 44 44 0 1 0 93.7 0" fill="none" stroke="currentColor" strokeWidth="0.5" />
     </g>
   );
 }
