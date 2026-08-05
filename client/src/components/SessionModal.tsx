@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { X, Sparkles, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,10 +12,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ToastAction } from "@/components/ui/toast";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { startCheckout } from "@/lib/billing";
 import type { Exercise, TrainingSession } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
+
+interface GeneratedSessionPlan {
+  name: string;
+  notes: string | null;
+  duration: number;
+  exerciseIds: string[];
+}
 
 type SessionFormData = z.infer<typeof insertTrainingSessionSchema>;
 
@@ -28,10 +40,17 @@ interface SessionModalProps {
 export default function SessionModal({ isOpen, onClose, session }: SessionModalProps) {
   const isEditing = !!session;
   const restoreFocus = useDialogFocusReturn(isOpen);
+  const { account } = useAuth();
+  const { toast } = useToast();
+  const canGeneratePlan = account?.plan === "paid";
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
     onClose();
   };
+
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+  const [aiInstructions, setAiInstructions] = useState("");
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Fetch exercises for selection
   const { data: exercises = [] } = useQuery<Exercise[]>({
@@ -88,6 +107,49 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     });
   };
 
+  const handleGeneratePlanClick = () => {
+    if (!canGeneratePlan) {
+      toast({
+        title: "Free plan",
+        description: "Upgrade to a paid plan to generate a practice plan with AI.",
+        action: (
+          <ToastAction altText="Upgrade" onClick={() => startCheckout()}>
+            Upgrade
+          </ToastAction>
+        ),
+      });
+      return;
+    }
+    setIsAIPanelOpen(true);
+  };
+
+  const generatePlan = async () => {
+    if (isGeneratingPlan) return;
+    setIsGeneratingPlan(true);
+    try {
+      const res = await apiRequest("POST", "/api/training-sessions/generate-plan", {
+        instructions: aiInstructions.trim() || undefined,
+      });
+      const plan: GeneratedSessionPlan = await res.json();
+
+      form.setValue("name", plan.name, { shouldDirty: true });
+      form.setValue("notes", plan.notes ?? "", { shouldDirty: true });
+      form.setValue("duration", plan.duration, { shouldDirty: true });
+      setSelectedExerciseIds(plan.exerciseIds);
+      setIsAIPanelOpen(false);
+      setAiInstructions("");
+      toast({ title: "Plan generated", description: "Review the details below, then adjust anything before saving." });
+    } catch (error) {
+      toast({
+        title: "Couldn't generate a plan",
+        description: extractErrorMessage(error) ?? "Try again, or build the session by hand.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
   const addExercise = (exercise: Exercise) => {
     const id = exercise.id.toString();
     setSelectedExerciseIds(prev => prev.includes(id) ? prev : [...prev, id]);
@@ -102,14 +164,57 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-display uppercase tracking-tight">
-            {isEditing ? "Edit Training Session" : "Create Training Session"}
-          </DialogTitle>
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 pr-8 sm:pr-0">
+            <DialogTitle className="text-xl font-display uppercase tracking-tight">
+              {isEditing ? "Edit Training Session" : "Create Training Session"}
+            </DialogTitle>
+            {!isEditing && !isAIPanelOpen && (
+              <Button type="button" variant="outline" size="sm" onClick={handleGeneratePlanClick} className="flex-shrink-0">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
+                Generate with AI
+                {!canGeneratePlan && <Badge variant="secondary" className="ml-2 text-xs">Paid</Badge>}
+              </Button>
+            )}
+          </div>
           <DialogDescription className="sr-only">
             Set the session's name, date, time and duration, and choose which exercises to include.
           </DialogDescription>
         </DialogHeader>
-        
+
+        {!isEditing && isAIPanelOpen && (
+          <div className="border border-basketball-orange/40 bg-basketball-orange/5 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-basketball-orange flex-shrink-0" strokeWidth={2} aria-hidden="true" />
+              <h3 className="font-display uppercase tracking-tight text-sm text-foreground">Generate with AI</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Picks exercises from your own library based on your recent sessions. Optionally, tell it what to focus on:
+            </p>
+            <Textarea
+              value={aiInstructions}
+              onChange={(e) => setAiInstructions(e.target.value)}
+              placeholder="e.g., Focus on shooting, we have a game Saturday"
+              rows={2}
+              aria-label="Instructions for the AI-generated plan"
+            />
+            <div className="flex items-center justify-end gap-3">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsAIPanelOpen(false)} disabled={isGeneratingPlan}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="basketball-orange basketball-orange-hover text-white"
+                onClick={generatePlan}
+                disabled={isGeneratingPlan}
+              >
+                {isGeneratingPlan && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" aria-hidden="true" />}
+                {isGeneratingPlan ? "Generating..." : "Generate Plan"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Session Details */}

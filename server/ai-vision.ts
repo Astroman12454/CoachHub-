@@ -1,17 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { getAIClient, parseJSONResponse } from "./ai-client";
 
-export function isAIConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY;
-}
-
-let client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!client) {
-    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set");
-    client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  }
-  return client;
-}
+export { isAIConfigured } from "./ai-client";
 
 export interface ExtractedPlayerLine {
   name: string;
@@ -61,7 +51,7 @@ export async function extractBoxScore(
   fileBuffer: Buffer,
   mimeType: string,
 ): Promise<ExtractedBoxScore> {
-  const anthropic = getClient();
+  const anthropic = getAIClient();
   const base64 = fileBuffer.toString("base64");
 
   const content: Anthropic.ContentBlockParam[] =
@@ -90,12 +80,9 @@ export async function extractBoxScore(
     throw new Error("No text response from the model");
   }
 
-  // The model is instructed to return bare JSON, but strip fences defensively
-  // in case it wraps the response anyway.
-  const raw = textBlock.text.trim().replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = parseJSONResponse(textBlock.text);
   } catch {
     throw new Error("Could not parse the model's response as JSON");
   }

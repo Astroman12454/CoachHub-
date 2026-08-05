@@ -6,6 +6,8 @@ import { storage } from "./storage";
 import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
+import { generateSessionPlan } from "./ai-session-plan";
+import { z } from "zod";
 import {
   insertExerciseSchema,
   insertTrainingSessionSchema,
@@ -37,6 +39,16 @@ const boxScoreAnalyzeRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many box score uploads. Please try again later." },
+});
+
+// Text-only calls are cheaper than the vision-based box-score import, but
+// still real money — a bit more headroom than that limiter.
+const sessionPlanRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many practice plan requests. Please try again later." },
 });
 
 // Parses a route param as a positive integer id, or responds 400 and returns
@@ -217,6 +229,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ownedIds = new Set(owned.map(e => e.id.toString()));
     return exerciseIds.filter(id => ownedIds.has(id));
   }
+
+  const generatePlanSchema = z.object({
+    instructions: z.string().max(500).optional(),
+  });
+
+  // AI practice-plan draft — picks exercises from the coach's own library
+  // (never invents one) plus a suggested name/notes/duration. Returned as a
+  // draft only; nothing is saved until the coach reviews it and submits the
+  // normal POST /api/training-sessions below.
+  app.post("/api/training-sessions/generate-plan", requireTeam, sessionPlanRateLimiter, async (req, res) => {
+    const accountId = req.session.accountId!;
+    const account = await storage.getAccountById(accountId);
+    if (account?.plan === "free") {
+      return res.status(403).json({ message: "Upgrade to a paid plan to generate a practice plan with AI." });
+    }
+
+    const parseResult = generatePlanSchema.safeParse(req.body ?? {});
+    if (!parseResult.success) {
+      return res.status(400).json({ message: "Invalid request." });
+    }
+    const { instructions } = parseResult.data;
+
+    if (!isAIConfigured()) {
+      return res.status(503).json({ message: "AI practice plans aren't configured yet." });
+    }
+
+    const teamId = req.session.currentTeamId!;
+    const exercises = await storage.getAllExercises(accountId);
+    if (exercises.length === 0) {
+      return res.status(400).json({ message: "Add some exercises to your library first." });
+    }
+    const recentSessions = (await storage.getAllTrainingSessions(teamId))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    try {
+      const plan = await generateSessionPlan(exercises, recentSessions, instructions);
+      plan.exerciseIds = (await sanitizeExerciseIds(accountId, plan.exerciseIds)) ?? [];
+      res.json(plan);
+    } catch (error) {
+      res.status(502).json({ message: "Couldn't generate a plan right now. Try again, or build the session by hand." });
+    }
+  });
 
   app.post("/api/training-sessions", requireTeam, async (req, res) => {
     try {

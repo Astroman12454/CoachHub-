@@ -58,6 +58,17 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — generate with AI panel open", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    await page.click('button:has-text("Generate with AI")');
+    await page.waitForSelector("text=Picks exercises from your own library");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("training sessions — delete confirm dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
