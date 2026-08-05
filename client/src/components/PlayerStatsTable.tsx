@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { Player, PlayerGameStatsSummary } from "@shared/schema";
 
 const SORT_FIELDS = ["points", "rebounds", "assists", "steals", "blocks"] as const;
@@ -16,6 +17,11 @@ const AVG_COLUMNS = ["points", "rebounds", "assists", "steals", "blocks", "turno
 const AVG_LABELS: Record<(typeof AVG_COLUMNS)[number], string> = {
   points: "PPG", rebounds: "RPG", assists: "APG", steals: "SPG", blocks: "BPG", turnovers: "TOPG", fouls: "PF/G",
 };
+// Points/rebounds/assists are what a coach glances at first, so those stay
+// visible on a phone; the rest reappear once there's room (≥640px) instead
+// of forcing a horizontal-scrolling table with no visual hint that it
+// scrolls — a real dead end on a touch screen.
+const MOBILE_HIDDEN_COLUMNS = new Set<(typeof AVG_COLUMNS)[number]>(["steals", "blocks", "turnovers", "fouls"]);
 
 function average(total: number, gamesPlayed: number): string {
   return gamesPlayed > 0 ? (total / gamesPlayed).toFixed(1) : "0.0";
@@ -75,14 +81,19 @@ export default function PlayerStatsTable() {
       </div>
 
       <div className="overflow-x-auto -mx-1">
-        <table className="w-full text-sm min-w-[640px]">
+        <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground border-b border-border">
               <th className="px-2 py-2 font-medium">#</th>
               <th className="px-2 py-2 font-medium">Player</th>
               <th className="px-2 py-2 font-medium text-center">GP</th>
               {AVG_COLUMNS.map((c) => (
-                <th key={c} className="px-2 py-2 font-medium text-center">{AVG_LABELS[c]}</th>
+                <th
+                  key={c}
+                  className={cn("px-2 py-2 font-medium text-center", MOBILE_HIDDEN_COLUMNS.has(c) && "hidden sm:table-cell")}
+                >
+                  {AVG_LABELS[c]}
+                </th>
               ))}
             </tr>
           </thead>
@@ -93,12 +104,17 @@ export default function PlayerStatsTable() {
                 <td className="px-2 py-2.5 font-medium text-foreground">
                   {row.player.name}
                   {row.player.position && (
-                    <span className="text-muted-foreground font-normal"> · {row.player.position}</span>
+                    <span className="hidden sm:inline text-muted-foreground font-normal"> · {row.player.position}</span>
                   )}
                 </td>
                 <td className="px-2 py-2.5 text-center tabular-nums">{row.gamesPlayed}</td>
                 {AVG_COLUMNS.map((c) => (
-                  <td key={c} className="px-2 py-2.5 text-center tabular-nums">{average(row[c], row.gamesPlayed)}</td>
+                  <td
+                    key={c}
+                    className={cn("px-2 py-2.5 text-center tabular-nums", MOBILE_HIDDEN_COLUMNS.has(c) && "hidden sm:table-cell")}
+                  >
+                    {average(row[c], row.gamesPlayed)}
+                  </td>
                 ))}
               </tr>
             ))}
