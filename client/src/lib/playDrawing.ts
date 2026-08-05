@@ -47,4 +47,6 @@ export function screenCap(x1: number, y1: number, x2: number, y2: number) {
   };
 }
 
-export const DRAWING_COLORS = ["#1f2937", "#ea580c", "#2563eb", "#dc2626"] as const;
+// Orange is deliberately excluded — the court itself is now a fixed orange
+// background (see BasketballCourt), so an orange drawing would vanish on it.
+export const DRAWING_COLORS = ["#000000", "#ffffff", "#2563eb", "#dc2626"] as const;

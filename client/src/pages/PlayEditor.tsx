@@ -443,7 +443,7 @@ export default function PlayEditor() {
             onClick={() => setColor(c)}
             aria-label={`Color ${c}`}
             aria-pressed={color === c}
-            className={`flex-shrink-0 w-7 h-7 rounded-full border-2 ${color === c ? "border-foreground" : "border-transparent"}`}
+            className={`flex-shrink-0 w-7 h-7 rounded-full border-2 ${color === c ? "border-foreground" : "border-border"}`}
             style={{ backgroundColor: c }}
           />
         ))}
@@ -522,13 +522,16 @@ export default function PlayEditor() {
               {displayTokens.map((t) => (
                 <g key={t.id} transform={`translate(${t.x}, ${toViewBoxY(t.y)})`}>
                   {t.type === "ball" ? (
-                    <circle r={TOKEN_RADIUS * 0.6} fill="#ea580c" stroke="#7c2d12" strokeWidth="0.3" />
+                    <circle r={TOKEN_RADIUS * 0.6} fill="#fff" stroke="#000" strokeWidth="0.4" />
                   ) : (
                     <>
+                      {/* Fixed black/white scheme (not theme colors) so
+                          tokens read clearly against the court's fixed
+                          orange background regardless of app theme. */}
                       <circle
                         r={TOKEN_RADIUS}
-                        fill={t.type === "offense" ? "#ea580c" : "var(--card)"}
-                        stroke={t.type === "offense" ? "#7c2d12" : "#1f2937"}
+                        fill={t.type === "offense" ? "#000" : "#fff"}
+                        stroke="#000"
                         strokeWidth="0.5"
                       />
                       <text
@@ -536,7 +539,7 @@ export default function PlayEditor() {
                         dominantBaseline="central"
                         fontSize="3.2"
                         fontWeight="700"
-                        fill={t.type === "offense" ? "#fff" : "#1f2937"}
+                        fill={t.type === "offense" ? "#fff" : "#000"}
                         className="select-none"
                       >
                         {t.label}
