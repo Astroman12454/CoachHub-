@@ -130,6 +130,7 @@ export const plays = pgTable("plays", {
   name: text("name").notNull(),
   category: text("category").notNull(), // offense | defense | inbound | special
   courtType: text("court_type").notNull().default("half"), // full | half
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -259,6 +260,7 @@ export const createPlaySchema = z.object({
   name: z.string().min(1, "Play name is required"),
   category: z.enum(PLAY_CATEGORIES),
   courtType: z.enum(COURT_TYPES),
+  notes: z.string().max(2000).nullable().optional(),
   steps: z.array(playStepDataSchema).min(1, "A play needs at least one step"),
 });
 export type CreatePlay = z.infer<typeof createPlaySchema>;

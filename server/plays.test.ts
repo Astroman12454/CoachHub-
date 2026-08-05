@@ -83,6 +83,20 @@ describe("plays (playbook)", () => {
     expect(detail.body.steps[0].drawings).toHaveLength(1);
   });
 
+  it("saves and updates the play's notes/explanation", async () => {
+    const agent = await signedInPaidAgent(app);
+    const create = await agent.post("/api/plays").send(onePlay({ notes: "Set the screen after the second pass." }));
+    expect(create.status).toBe(201);
+    expect(create.body.notes).toBe("Set the screen after the second pass.");
+
+    const detail = await agent.get(`/api/plays/${create.body.id}`);
+    expect(detail.body.notes).toBe("Set the screen after the second pass.");
+
+    const update = await agent.put(`/api/plays/${create.body.id}`).send(onePlay({ notes: null }));
+    expect(update.status).toBe(200);
+    expect(update.body.notes).toBeNull();
+  });
+
   it("lists plays for the team", async () => {
     const agent = await signedInPaidAgent(app);
     await agent.post("/api/plays").send(onePlay({ name: "Play A" }));

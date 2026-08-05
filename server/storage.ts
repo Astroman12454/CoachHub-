@@ -492,7 +492,7 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       const [play] = await tx
         .insert(plays)
-        .values({ teamId, name: data.name, category: data.category, courtType: data.courtType })
+        .values({ teamId, name: data.name, category: data.category, courtType: data.courtType, notes: data.notes ?? null })
         .returning();
 
       await tx.insert(playSteps).values(
@@ -515,7 +515,7 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       const [play] = await tx
         .update(plays)
-        .set({ name: data.name, category: data.category, courtType: data.courtType })
+        .set({ name: data.name, category: data.category, courtType: data.courtType, notes: data.notes ?? null })
         .where(and(eq(plays.id, id), eq(plays.teamId, teamId)))
         .returning();
       if (!play) return undefined;

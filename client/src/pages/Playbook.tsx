@@ -133,6 +133,9 @@ export default function Playbook() {
                     <Badge variant="secondary">{CATEGORY_LABEL[play.category] ?? play.category}</Badge>
                     <Badge variant="outline" className="capitalize">{play.courtType} court</Badge>
                   </div>
+                  {play.notes && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{play.notes}</p>
+                  )}
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Layers className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                     Tap to view or edit

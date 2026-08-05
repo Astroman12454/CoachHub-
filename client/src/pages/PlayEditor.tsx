@@ -8,6 +8,7 @@ import {
 import BasketballCourt from "@/components/BasketballCourt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useSidebar } from "@/hooks/use-sidebar";
@@ -65,6 +66,7 @@ export default function PlayEditor() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("offense");
   const [courtType, setCourtType] = useState<string>("half");
+  const [notes, setNotes] = useState("");
   const [steps, setSteps] = useState<EditorStep[]>([emptyStep()]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [tool, setTool] = useState<Tool>("select");
@@ -79,6 +81,7 @@ export default function PlayEditor() {
       setName(existingPlay.name);
       setCategory(existingPlay.category);
       setCourtType(existingPlay.courtType);
+      setNotes(existingPlay.notes ?? "");
       setSteps(existingPlay.steps.map((s) => ({ tokens: s.tokens, drawings: s.drawings })));
       setCurrentStepIndex(0);
     }
@@ -333,7 +336,7 @@ export default function PlayEditor() {
     }
     setIsSaving(true);
     try {
-      const payload = { name: name.trim(), category, courtType, steps };
+      const payload = { name: name.trim(), category, courtType, notes: notes.trim() || null, steps };
       const res = isEditing
         ? await apiRequest("PUT", `/api/plays/${playId}`, payload)
         : await apiRequest("POST", "/api/plays", payload);
@@ -371,49 +374,59 @@ export default function PlayEditor() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 flex-wrap">
-        <button
-          onClick={openMobile}
-          className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-          aria-label="Open navigation menu"
-        >
-          <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
-        </button>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Play name"
-          aria-label="Play name"
-          className="max-w-[220px] font-display uppercase tracking-tight"
+      <header className="bg-card border-b border-border px-4 py-3 flex flex-col gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={openMobile}
+            className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
+          </button>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Play name"
+            aria-label="Play name"
+            className="max-w-[220px] font-display uppercase tracking-tight"
+          />
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="w-36" aria-label="Category"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PLAY_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={courtType} onValueChange={setCourtType}>
+            <SelectTrigger className="w-32" aria-label="Court"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {COURT_TYPES.map((c) => (
+                <SelectItem key={c} value={c}>{c === "half" ? "Half Court" : "Full Court"}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex-1" />
+          <Button type="button" variant="outline" onClick={() => setLocation("/playbook")}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="basketball-orange basketball-orange-hover text-white"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving…" : "Save Play"}
+          </Button>
+        </div>
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Explain the play: reads, timing, what triggers each option…"
+          aria-label="Play explanation"
+          rows={2}
+          className="resize-none text-sm"
         />
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-36" aria-label="Category"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {PLAY_CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={courtType} onValueChange={setCourtType}>
-          <SelectTrigger className="w-32" aria-label="Court"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {COURT_TYPES.map((c) => (
-              <SelectItem key={c} value={c}>{c === "half" ? "Half Court" : "Full Court"}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex-1" />
-        <Button type="button" variant="outline" onClick={() => setLocation("/playbook")}>
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          className="basketball-orange basketball-orange-hover text-white"
-          onClick={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? "Saving…" : "Save Play"}
-        </Button>
       </header>
 
       {/* Tool palette */}
