@@ -19,10 +19,11 @@ import {
   type InsertAttendance,
   type Game,
   type GameStat,
-  type CreateGameWithStats
+  type CreateGameWithStats,
+  type PlayerGameStatsSummary
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, sum, countDistinct } from "drizzle-orm";
 
 export interface IStorage {
   // Account methods
@@ -79,6 +80,7 @@ export interface IStorage {
   getGameStats(gameId: number): Promise<GameStat[]>;
   createGameWithStats(teamId: number, data: CreateGameWithStats): Promise<Game>;
   deleteGame(id: number, teamId: number): Promise<boolean>;
+  getPlayerGameStatsSummary(teamId: number): Promise<PlayerGameStatsSummary[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -410,6 +412,40 @@ export class DatabaseStorage implements IStorage {
       .delete(games)
       .where(and(eq(games.id, id), eq(games.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Season totals per player, aggregated in Postgres across every game_stats
+  // row tied to one of this team's games. gamesPlayed counts distinct games
+  // (not stat rows) so a player only shows up once per game they appeared in.
+  async getPlayerGameStatsSummary(teamId: number): Promise<PlayerGameStatsSummary[]> {
+    const rows = await db
+      .select({
+        playerId: gameStats.playerId,
+        gamesPlayed: countDistinct(gameStats.gameId),
+        points: sum(gameStats.points),
+        rebounds: sum(gameStats.rebounds),
+        assists: sum(gameStats.assists),
+        steals: sum(gameStats.steals),
+        blocks: sum(gameStats.blocks),
+        turnovers: sum(gameStats.turnovers),
+        fouls: sum(gameStats.fouls),
+      })
+      .from(gameStats)
+      .innerJoin(games, eq(gameStats.gameId, games.id))
+      .where(eq(games.teamId, teamId))
+      .groupBy(gameStats.playerId);
+
+    return rows.map((r) => ({
+      playerId: r.playerId,
+      gamesPlayed: Number(r.gamesPlayed),
+      points: Number(r.points ?? 0),
+      rebounds: Number(r.rebounds ?? 0),
+      assists: Number(r.assists ?? 0),
+      steals: Number(r.steals ?? 0),
+      blocks: Number(r.blocks ?? 0),
+      turnovers: Number(r.turnovers ?? 0),
+      fouls: Number(r.fouls ?? 0),
+    }));
   }
 }
 

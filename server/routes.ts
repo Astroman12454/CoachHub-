@@ -516,6 +516,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Season totals per player, aggregated across every logged game — the
+  // leaderboard view on the Games page.
+  app.get("/api/players/stats", requireTeam, async (req, res) => {
+    try {
+      const summary = await storage.getPlayerGameStatsSummary(req.session.currentTeamId!);
+      res.json(summary);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch player stats" });
+    }
+  });
+
   // AI box-score import — upload a photo or PDF, get a draft back for the
   // coach to review/correct before it's saved via POST /api/games above.
   // Nothing is persisted here; this route only ever reads.

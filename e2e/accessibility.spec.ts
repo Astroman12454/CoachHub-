@@ -139,6 +139,16 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("games — player stats tab", async ({ page }) => {
+    await login(page);
+    await page.goto("/games");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Player Stats")');
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("games — manual entry form open", async ({ page }) => {
     await login(page);
     await page.goto("/games");

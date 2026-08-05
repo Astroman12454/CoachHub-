@@ -223,3 +223,18 @@ export type Game = typeof games.$inferSelect;
 
 export type GameStat = typeof gameStats.$inferSelect;
 export type CreateGameWithStats = z.infer<typeof createGameWithStatsSchema>;
+
+// Season totals for one player, aggregated across every game they have a
+// stat line in — computed in Postgres (see getPlayerGameStatsSummary), not
+// a table of its own.
+export interface PlayerGameStatsSummary {
+  playerId: number;
+  gamesPlayed: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fouls: number;
+}

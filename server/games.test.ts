@@ -120,3 +120,39 @@ describe("games", () => {
     expect(res.status).toBe(503);
   });
 });
+
+describe("player stats summary", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("aggregates totals and games-played across multiple games, scoped to the team", async () => {
+    const agent = await signedInPaidAgent(app);
+    const player = await agent.post("/api/players").send({ name: "Stat Player", position: "Forward", isActive: 1 });
+    const playerId = player.body.id;
+
+    await agent.post("/api/games").send({
+      opponent: "Game One", date: "2026-08-01",
+      stats: [{ playerId, points: 10, rebounds: 4, assists: 1, steals: 0, blocks: 0, turnovers: 2, fouls: 1 }],
+    });
+    await agent.post("/api/games").send({
+      opponent: "Game Two", date: "2026-08-05",
+      stats: [{ playerId, points: 20, rebounds: 6, assists: 3, steals: 1, blocks: 1, turnovers: 0, fouls: 3 }],
+    });
+
+    const res = await agent.get("/api/players/stats");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([
+      { playerId, gamesPlayed: 2, points: 30, rebounds: 10, assists: 4, steals: 1, blocks: 1, turnovers: 2, fouls: 4 },
+    ]);
+  });
+
+  it("only counts stats from the requesting team's own games", async () => {
+    const otherAgent = await signedInPaidAgent(app);
+    const res = await otherAgent.get("/api/players/stats");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+});

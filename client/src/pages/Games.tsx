@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, MapPin, Trash2, Plus, Trophy, Menu } from "lucide-react";
 import GameModal from "@/components/GameModal";
+import PlayerStatsTable from "@/components/PlayerStatsTable";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import type { Game } from "@shared/schema";
@@ -30,6 +32,7 @@ export default function Games() {
   const { openMobile } = useSidebar();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
+  const [tab, setTab] = useState<"games" | "stats">("games");
 
   const { data: games = [], isLoading, isError, refetch } = useQuery<Game[]>({
     queryKey: ["/api/games"],
@@ -91,20 +94,25 @@ export default function Games() {
     </header>
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-full">
-        {header}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-40" />
-            ))}
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const tabBar = (
+    <div className="flex gap-1 border-b border-border px-4 lg:px-6">
+      {(["games", "stats"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => setTab(t)}
+          className={cn(
+            "px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+            tab === t
+              ? "border-basketball-orange text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {t === "games" ? "Games" : "Player Stats"}
+        </button>
+      ))}
+    </div>
+  );
 
   if (isError) {
     return (
@@ -120,9 +128,18 @@ export default function Games() {
   return (
     <div className="flex flex-col h-full">
       {header}
+      {tabBar}
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-        {sortedGames.length === 0 ? (
+        {tab === "stats" ? (
+          <PlayerStatsTable />
+        ) : isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-40" />
+            ))}
+          </div>
+        ) : sortedGames.length === 0 ? (
           <EmptyState
             icon={Trophy}
             title="No Games Logged"
