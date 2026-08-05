@@ -27,6 +27,7 @@ const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const Players = lazy(() => import("@/pages/Players"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
+const Portal = lazy(() => import("@/pages/Portal"));
 
 function PageLoadingFallback() {
   return (
@@ -94,14 +95,23 @@ function App() {
           <AuthProvider>
             <TooltipProvider>
               <Toaster />
-              {/* Privacy/Terms/Support must be reachable with no session at
-                  all — app store reviewers and logged-out users both need
+              {/* Privacy/Terms/Support/Portal must be reachable with no
+                  session at all — app store reviewers, logged-out users,
+                  and a player/parent with a shared portal link all need
                   them — so they're matched here, ahead of AuthGate's
                   login/loading gate. */}
               <Switch>
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/terms" component={Terms} />
                 <Route path="/support" component={Support} />
+                <Route
+                  path="/portal/:token"
+                  component={() => (
+                    <Suspense fallback={<PageLoadingFallback />}>
+                      <Portal />
+                    </Suspense>
+                  )}
+                />
                 <Route component={AuthGate} />
               </Switch>
             </TooltipProvider>

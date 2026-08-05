@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, CheckCircle2, Target, PieChart } from "lucide-react";
+import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
+import PlayerPortalDialog from "@/components/PlayerPortalDialog";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -19,6 +20,7 @@ export default function Players() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterActive, setFilterActive] = useState<string>("all");
+  const [portalPlayer, setPortalPlayer] = useState<Player | null>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -233,17 +235,29 @@ export default function Players() {
                             {player.isActive === 1 ? "Active" : "Inactive"}
                           </Badge>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm text-muted-foreground">{player.position}</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => togglePlayerStatus(player)}
-                            disabled={updatePlayerMutation.isPending}
-                            className="text-xs"
-                          >
-                            {player.isActive === 1 ? "Deactivate" : "Activate"}
-                          </Button>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm text-muted-foreground truncate">{player.position}</p>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setPortalPlayer(player)}
+                              className="w-8 h-8"
+                              aria-label={`Portal link for ${player.name}`}
+                              title="Portal link"
+                            >
+                              <Link2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => togglePlayerStatus(player)}
+                              disabled={updatePlayerMutation.isPending}
+                              className="text-xs"
+                            >
+                              {player.isActive === 1 ? "Deactivate" : "Activate"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -261,6 +275,8 @@ export default function Players() {
           onClose={() => setIsCreateModalOpen(false)}
         />
       )}
+
+      <PlayerPortalDialog player={portalPlayer} onOpenChange={(open) => !open && setPortalPlayer(null)} />
     </div>
   );
 }

@@ -69,6 +69,10 @@ export const players = pgTable("players", {
   name: text("name").notNull(),
   position: text("position"),
   isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
+  // Unguessable (24 random bytes) credential for the public read-only player
+  // portal — a coach shares a link built from this instead of the parent
+  // needing an account. Null until the coach first generates a link.
+  portalToken: text("portal_token").unique(),
 });
 
 export const games = pgTable("games", {
@@ -305,4 +309,23 @@ export interface PlayerGameStatsSummary {
   blocks: number;
   turnovers: number;
   fouls: number;
+}
+
+// The read-only payload served by the public player/parent portal
+// (GET /api/portal/:token) — deliberately narrow: only what a parent needs
+// to see about their own player, never the coach's account/team internals.
+export interface PortalData {
+  player: { id: number; name: string; position: string | null };
+  team: { name: string };
+  upcomingSessions: {
+    id: number;
+    name: string;
+    date: string;
+    time: string;
+    duration: number;
+    status: string | null;
+  }[];
+  upcomingGames: { id: number; opponent: string; date: string; location: string | null }[];
+  attendance: { sessionId: number; sessionName: string; date: string; status: string }[];
+  stats: PlayerGameStatsSummary | null;
 }

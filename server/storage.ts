@@ -25,10 +25,12 @@ import {
   type PlayerGameStatsSummary,
   type Play,
   type PlayStep,
-  type CreatePlay
+  type CreatePlay,
+  type PortalData
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, sum, countDistinct, asc } from "drizzle-orm";
+import { eq, and, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
+import crypto from "crypto";
 
 export interface IStorage {
   // Account methods
@@ -68,6 +70,9 @@ export interface IStorage {
   deletePlayer(id: number, teamId: number): Promise<boolean>;
   getActivePlayersCount(teamId: number): Promise<number>;
   getPlayerCount(teamId: number): Promise<number>;
+  getOrCreatePortalToken(playerId: number, teamId: number): Promise<string | undefined>;
+  revokePortalToken(playerId: number, teamId: number): Promise<boolean>;
+  getPortalData(token: string): Promise<PortalData | undefined>;
 
   // Attendance methods — callers verify session/player ownership first
   // (via getTrainingSessionById/getPlayerById above) since attendance rows
@@ -308,6 +313,80 @@ export class DatabaseStorage implements IStorage {
   async getPlayerCount(teamId: number): Promise<number> {
     const teamPlayers = await db.select().from(players).where(eq(players.teamId, teamId));
     return teamPlayers.length;
+  }
+
+  async getOrCreatePortalToken(playerId: number, teamId: number): Promise<string | undefined> {
+    const player = await this.getPlayerById(playerId, teamId);
+    if (!player) return undefined;
+    if (player.portalToken) return player.portalToken;
+
+    const token = crypto.randomBytes(24).toString("hex");
+    await db.update(players).set({ portalToken: token }).where(eq(players.id, playerId));
+    return token;
+  }
+
+  async revokePortalToken(playerId: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .update(players)
+      .set({ portalToken: null })
+      .where(and(eq(players.id, playerId), eq(players.teamId, teamId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Public, unauthenticated lookup for the player/parent portal — the token
+  // itself (only ever handed out via the authenticated portal-link endpoint
+  // above) is what scopes this to exactly one player, not a session.
+  async getPortalData(token: string): Promise<PortalData | undefined> {
+    const [player] = await db.select().from(players).where(eq(players.portalToken, token));
+    if (!player) return undefined;
+
+    const [team] = await db.select().from(teams).where(eq(teams.id, player.teamId));
+    if (!team) return undefined;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const upcomingSessions = await db
+      .select()
+      .from(trainingSessions)
+      .where(and(eq(trainingSessions.teamId, player.teamId), sql`${trainingSessions.date} >= ${today}`))
+      .orderBy(asc(trainingSessions.date), asc(trainingSessions.time))
+      .limit(10);
+
+    const upcomingGames = await db
+      .select()
+      .from(games)
+      .where(and(eq(games.teamId, player.teamId), sql`${games.date} >= ${today}`))
+      .orderBy(asc(games.date))
+      .limit(10);
+
+    const attendanceRows = await db
+      .select({
+        sessionId: attendance.sessionId,
+        status: attendance.status,
+        sessionName: trainingSessions.name,
+        date: trainingSessions.date,
+      })
+      .from(attendance)
+      .innerJoin(trainingSessions, eq(attendance.sessionId, trainingSessions.id))
+      .where(eq(attendance.playerId, player.id))
+      .orderBy(desc(trainingSessions.date))
+      .limit(10);
+
+    const seasonStats = await this.getPlayerGameStatsSummary(player.teamId);
+    const stats = seasonStats.find((s) => s.playerId === player.id) ?? null;
+
+    return {
+      player: { id: player.id, name: player.name, position: player.position },
+      team: { name: team.name },
+      upcomingSessions: upcomingSessions.map((s) => ({
+        id: s.id, name: s.name, date: s.date, time: s.time, duration: s.duration, status: s.status,
+      })),
+      upcomingGames: upcomingGames.map((g) => ({
+        id: g.id, opponent: g.opponent, date: g.date, location: g.location,
+      })),
+      attendance: attendanceRows,
+      stats,
+    };
   }
 
   // Attendance methods

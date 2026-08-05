@@ -113,6 +113,33 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("players — portal link dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Portal link for"]').first().click();
+    await page.waitForSelector("text=Portal Link");
+    await expect(page.locator('input[aria-label="Portal link"]')).toHaveValue(/\/portal\//);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("player portal page (public, no session)", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Portal link for"]').first().click();
+    await page.waitForSelector("text=Portal Link");
+    const input = page.locator('input[aria-label="Portal link"]');
+    await expect(input).toHaveValue(/\/portal\//);
+    const url = await input.inputValue();
+
+    await page.goto(url);
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("weekly schedule", async ({ page }) => {
     await login(page);
     await page.goto("/weekly-schedule");

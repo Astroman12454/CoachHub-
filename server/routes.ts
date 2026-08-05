@@ -53,6 +53,17 @@ const sessionPlanRateLimiter = rateLimit({
   message: { message: "Too many practice plan requests. Please try again later." },
 });
 
+// Unauthenticated by design (see requireAuth's /portal/ exemption), so this
+// throttles token-scanning/scraping rather than a coach's normal usage —
+// generous enough for a parent refreshing the page repeatedly.
+const portalRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please try again later." },
+});
+
 // Parses a route param as a positive integer id, or responds 400 and returns
 // null so callers can bail out instead of querying the DB with NaN.
 function parseId(req: Request, res: Response, param = "id"): number | null {
@@ -392,6 +403,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete player" });
+    }
+  });
+
+  // Player/parent portal — a coach generates a shareable, unguessable link
+  // per player; the public GET below (no requireTeam, no session) is what
+  // that link resolves to. See requireAuth's /portal/ exemption.
+  app.post("/api/players/:id/portal-link", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const token = await storage.getOrCreatePortalToken(id, req.session.currentTeamId!);
+      if (!token) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      res.json({ token });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create portal link" });
+    }
+  });
+
+  app.delete("/api/players/:id/portal-link", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const revoked = await storage.revokePortalToken(id, req.session.currentTeamId!);
+      if (!revoked) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to revoke portal link" });
+    }
+  });
+
+  app.get("/api/portal/:token", portalRateLimiter, async (req, res) => {
+    try {
+      const data = await storage.getPortalData(req.params.token);
+      if (!data) {
+        return res.status(404).json({ message: "Link not found or no longer active" });
+      }
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load portal" });
     }
   });
 

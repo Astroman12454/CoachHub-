@@ -151,7 +151,15 @@ export function setupAuth(app: Express) {
   });
 }
 
+// The player/parent portal (GET /api/portal/:token) is intentionally public
+// — a coach shares a link built from an unguessable token instead of the
+// parent needing an account of their own — so it's exempted from the
+// blanket session check below. It's the token, not this exemption, that
+// actually scopes access to a single player; see storage.getPortalData.
+const PUBLIC_API_PREFIXES = ["/portal/"];
+
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (PUBLIC_API_PREFIXES.some((prefix) => req.path.startsWith(prefix))) return next();
   if (req.session.accountId) return next();
   res.status(401).json({ message: "Not authenticated" });
 }
