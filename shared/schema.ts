@@ -137,6 +137,20 @@ export const playerNotes = pgTable("player_notes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// A player can have several injuries over a season; each stays in this
+// history table forever (even once recovered) so the profile shows a real
+// record, not just the current state.
+export const playerInjuries = pgTable("player_injuries", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("active"), // 'active' | 'recovered'
+  reportedDate: text("reported_date").notNull(),
+  recoveredDate: text("recovered_date"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
@@ -233,6 +247,18 @@ export const createPlayerNoteSchema = z.object({
   content: z.string().min(1, "Note can't be empty").max(2000),
 });
 export type CreatePlayerNote = z.infer<typeof createPlayerNoteSchema>;
+
+export const createPlayerInjurySchema = z.object({
+  description: z.string().min(1, "Description is required").max(500),
+  reportedDate: z.string().min(1, "Date is required"),
+  notes: z.string().max(2000).optional().nullable(),
+});
+export type CreatePlayerInjury = z.infer<typeof createPlayerInjurySchema>;
+
+export const recoverInjurySchema = z.object({
+  recoveredDate: z.string().min(1, "Date is required"),
+});
+export type RecoverInjury = z.infer<typeof recoverInjurySchema>;
 
 export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
 
@@ -378,6 +404,7 @@ export type Player = typeof players.$inferSelect;
 
 export type SkillRating = typeof skillRatings.$inferSelect;
 export type PlayerNote = typeof playerNotes.$inferSelect;
+export type PlayerInjury = typeof playerInjuries.$inferSelect;
 
 // A player's development profile: current standing (latest rating per
 // category, null until the coach rates them at least once), every past

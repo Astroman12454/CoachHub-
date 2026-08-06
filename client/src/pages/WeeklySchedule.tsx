@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { TrainingSession, Player, Attendance } from "@shared/schema";
+import type { TrainingSession, Player, Attendance, PlayerInjury } from "@shared/schema";
 
 const DAYS_OF_WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
@@ -61,6 +61,11 @@ export default function WeeklySchedule() {
   const { data: players = [] } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
+
+  const { data: activeInjuries = [] } = useQuery<PlayerInjury[]>({
+    queryKey: ['/api/players/injuries'],
+  });
+  const injuredPlayerIds = new Set(activeInjuries.map((injury) => injury.playerId));
 
   const { data: attendance = [], isLoading: attendanceLoading } = useQuery<Attendance[]>({
     queryKey: ['/api/attendance/session', selectedSession?.id],
@@ -314,6 +319,7 @@ export default function WeeklySchedule() {
           players={players}
           attendance={attendance}
           isLoading={attendanceLoading}
+          injuredPlayerIds={injuredPlayerIds}
           onToggleAttendance={handleAttendanceToggle}
           pendingPlayerId={markAttendanceMutation.isPending ? markAttendanceMutation.variables?.playerId : undefined}
         />

@@ -20,6 +20,8 @@ import {
   pushSubscriptionSchema,
   skillRatingInputSchema,
   createPlayerNoteSchema,
+  createPlayerInjurySchema,
+  recoverInjurySchema,
   insertSessionTemplateSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
@@ -588,6 +590,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete note" });
+    }
+  });
+
+  // Injury tracking. The team-wide list (active injuries only) powers the
+  // "injured" badge on the players list and attendance modal without an
+  // N+1 fetch per player; the per-player list is the full history shown on
+  // their profile.
+  app.get("/api/players/injuries", requireTeam, async (req, res) => {
+    try {
+      const injuries = await storage.getActiveInjuriesForTeam(req.session.currentTeamId!);
+      res.json(injuries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch injuries" });
+    }
+  });
+
+  app.get("/api/players/:id/injuries", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const injuries = await storage.getPlayerInjuries(id);
+      res.json(injuries);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch injuries" });
+    }
+  });
+
+  app.post("/api/players/:id/injuries", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const data = createPlayerInjurySchema.parse(req.body);
+      const injury = await storage.createPlayerInjury(id, data);
+      res.status(201).json(injury);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid injury data" });
+    }
+  });
+
+  app.put("/api/players/:id/injuries/:injuryId/recover", requireTeam, async (req, res) => {
+    try {
+      const injuryId = parseId(req, res, "injuryId");
+      if (injuryId === null) return;
+      const { recoveredDate } = recoverInjurySchema.parse(req.body);
+      const updated = await storage.markInjuryRecovered(injuryId, req.session.currentTeamId!, recoveredDate);
+      if (!updated) {
+        return res.status(404).json({ message: "Injury not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  app.delete("/api/players/:id/injuries/:injuryId", requireTeam, async (req, res) => {
+    try {
+      const injuryId = parseId(req, res, "injuryId");
+      if (injuryId === null) return;
+      const deleted = await storage.deletePlayerInjury(injuryId, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Injury not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete injury" });
     }
   });
 

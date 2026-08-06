@@ -12,6 +12,7 @@ import {
   pushSubscriptions,
   skillRatings,
   playerNotes,
+  playerInjuries,
   sessionTemplates,
   type Account,
   type Team,
@@ -33,6 +34,8 @@ import {
   type PortalData,
   type SkillRatingInput,
   type PlayerNote,
+  type PlayerInjury,
+  type CreatePlayerInjury,
   type PlayerDevelopment,
   type PlayPracticeStats,
   type InsertSessionTemplate,
@@ -106,6 +109,15 @@ export interface IStorage {
   createPlayerNote(playerId: number, content: string): Promise<PlayerNote>;
   deletePlayerNote(id: number, teamId: number): Promise<boolean>;
   getPlayerDevelopment(playerId: number): Promise<PlayerDevelopment>;
+
+  // Injury tracking — history lives on the player (getPlayerInjuries);
+  // getActiveInjuriesForTeam is the roster-wide cross-reference used for the
+  // "injured" badge on the players list and the attendance modal.
+  getPlayerInjuries(playerId: number): Promise<PlayerInjury[]>;
+  getActiveInjuriesForTeam(teamId: number): Promise<PlayerInjury[]>;
+  createPlayerInjury(playerId: number, data: CreatePlayerInjury): Promise<PlayerInjury>;
+  markInjuryRecovered(id: number, teamId: number, recoveredDate: string): Promise<PlayerInjury | undefined>;
+  deletePlayerInjury(id: number, teamId: number): Promise<boolean>;
 
   // Game methods (scoped by team)
   getAllGames(teamId: number): Promise<Game[]>;
@@ -553,6 +565,61 @@ export class DatabaseStorage implements IStorage {
       history: ratingRows.map((r) => ({ category: r.category, rating: r.rating, ratedAt: (r.ratedAt ?? new Date()).toISOString() })),
       notes,
     };
+  }
+
+  async getPlayerInjuries(playerId: number): Promise<PlayerInjury[]> {
+    return await db
+      .select()
+      .from(playerInjuries)
+      .where(eq(playerInjuries.playerId, playerId))
+      .orderBy(desc(playerInjuries.createdAt));
+  }
+
+  async getActiveInjuriesForTeam(teamId: number): Promise<PlayerInjury[]> {
+    const rows = await db
+      .select({ injury: playerInjuries })
+      .from(playerInjuries)
+      .innerJoin(players, eq(playerInjuries.playerId, players.id))
+      .where(and(eq(players.teamId, teamId), eq(playerInjuries.status, "active")));
+    return rows.map((r) => r.injury);
+  }
+
+  async createPlayerInjury(playerId: number, data: CreatePlayerInjury): Promise<PlayerInjury> {
+    const [injury] = await db
+      .insert(playerInjuries)
+      .values({ playerId, ...data, status: "active" })
+      .returning();
+    return injury;
+  }
+
+  async markInjuryRecovered(id: number, teamId: number, recoveredDate: string): Promise<PlayerInjury | undefined> {
+    const [existing] = await db
+      .select({ playerId: playerInjuries.playerId })
+      .from(playerInjuries)
+      .where(eq(playerInjuries.id, id));
+    if (!existing) return undefined;
+    const player = await this.getPlayerById(existing.playerId, teamId);
+    if (!player) return undefined;
+
+    const [updated] = await db
+      .update(playerInjuries)
+      .set({ status: "recovered", recoveredDate })
+      .where(eq(playerInjuries.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePlayerInjury(id: number, teamId: number): Promise<boolean> {
+    const [existing] = await db
+      .select({ playerId: playerInjuries.playerId })
+      .from(playerInjuries)
+      .where(eq(playerInjuries.id, id));
+    if (!existing) return false;
+    const player = await this.getPlayerById(existing.playerId, teamId);
+    if (!player) return false;
+
+    const result = await db.delete(playerInjuries).where(eq(playerInjuries.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Game methods

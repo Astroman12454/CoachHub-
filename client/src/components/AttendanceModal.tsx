@@ -1,4 +1,4 @@
-import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, XCircle, Clock3, Info } from "lucide-react";
+import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, XCircle, Clock3, Info, HeartPulse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,9 @@ interface AttendanceModalProps {
    * status buttons are disabled so a second tap before the optimistic
    * update lands can't create a duplicate attendance record. */
   pendingPlayerId?: number;
+  /** Players with a currently-active injury, so the coach sees a flag right
+   * where they're marking attendance. */
+  injuredPlayerIds?: Set<number>;
 }
 
 export default function AttendanceModal({
@@ -64,6 +67,7 @@ export default function AttendanceModal({
   isLoading,
   onToggleAttendance,
   pendingPlayerId,
+  injuredPlayerIds,
 }: AttendanceModalProps) {
   const { t } = useTranslation();
   const getPlayerAttendance = (playerId: number) => attendance.find(a => a.playerId === playerId);
@@ -133,7 +137,15 @@ export default function AttendanceModal({
                           {player.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div>
-                          <div className="font-semibold text-base">{player.name}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-base">{player.name}</span>
+                            {injuredPlayerIds?.has(player.id) && (
+                              <Badge variant="destructive" className="gap-1">
+                                <HeartPulse className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                                {t("playerProfile.injured")}
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-sm text-muted-foreground">{player.position}</div>
                         </div>
                       </div>

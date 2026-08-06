@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -10,6 +10,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +18,9 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { SKILL_CATEGORIES } from "@shared/schema";
-import type { Player, PlayerDevelopment, PlayerGameStatsSummary } from "@shared/schema";
+import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury } from "@shared/schema";
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 // `createdAt`/`ratedAt` are typed Date in the DB schema, but arrive over the
 // wire as ISO strings once JSON-serialized — accepting both here means
@@ -52,6 +55,9 @@ export default function PlayerProfile() {
   const [isRateOpen, setIsRateOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
   const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
+  const [injuryDescription, setInjuryDescription] = useState("");
+  const [injuryDate, setInjuryDate] = useState(todayISO());
+  const [injuryToDelete, setInjuryToDelete] = useState<number | null>(null);
 
   const { data: players = [], isLoading: isLoadingPlayers } = useQuery<Player[]>({ queryKey: ["/api/players"] });
   const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId]);
@@ -68,6 +74,12 @@ export default function PlayerProfile() {
 
   const { data: allStats = [] } = useQuery<PlayerGameStatsSummary[]>({ queryKey: ["/api/players/stats"] });
   const gameStats = useMemo(() => allStats.find((s) => s.playerId === playerId), [allStats, playerId]);
+
+  const { data: injuries = [] } = useQuery<PlayerInjury[]>({
+    queryKey: [`/api/players/${playerId}/injuries`],
+    enabled: !isNaN(playerId),
+  });
+  const hasActiveInjury = injuries.some((i) => i.status === "active");
 
   const addNoteMutation = useMutation({
     mutationFn: async () => apiRequest("POST", `/api/players/${playerId}/notes`, { content: noteDraft.trim() }),
@@ -87,6 +99,43 @@ export default function PlayerProfile() {
     },
     onError: (error) => {
       toast({ title: t("playerProfile.couldntDeleteNote"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
+  });
+
+  const reportInjuryMutation = useMutation({
+    mutationFn: async () =>
+      apiRequest("POST", `/api/players/${playerId}/injuries`, { description: injuryDescription.trim(), reportedDate: injuryDate }),
+    onSuccess: () => {
+      setInjuryDescription("");
+      setInjuryDate(todayISO());
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/injuries`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/players/injuries"] });
+    },
+    onError: (error) => {
+      toast({ title: t("playerProfile.couldntReportInjury"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
+  });
+
+  const recoverInjuryMutation = useMutation({
+    mutationFn: async (injuryId: number) =>
+      apiRequest("PUT", `/api/players/${playerId}/injuries/${injuryId}/recover`, { recoveredDate: todayISO() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/injuries`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/players/injuries"] });
+    },
+    onError: (error) => {
+      toast({ title: t("playerProfile.couldntUpdateInjury"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
+  });
+
+  const deleteInjuryMutation = useMutation({
+    mutationFn: async (injuryId: number) => apiRequest("DELETE", `/api/players/${playerId}/injuries/${injuryId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/injuries`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/players/injuries"] });
+    },
+    onError: (error) => {
+      toast({ title: t("playerProfile.couldntDeleteInjury"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -143,6 +192,12 @@ export default function PlayerProfile() {
               >
                 {player.isActive === 1 ? t("players.active") : t("players.inactive")}
               </Badge>
+              {hasActiveInjury && (
+                <Badge className="bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40">
+                  <HeartPulse className="w-3 h-3 mr-1" strokeWidth={1.75} aria-hidden="true" />
+                  {t("playerProfile.injured")}
+                </Badge>
+              )}
             </div>
             {player.position && <p className="text-sm text-muted-foreground mt-0.5">{player.position}</p>}
           </div>
@@ -216,6 +271,95 @@ export default function PlayerProfile() {
 
         <Card>
           <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <HeartPulse className="w-4 h-4 text-red-600" strokeWidth={1.75} aria-hidden="true" />
+              {t("playerProfile.injuries")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                value={injuryDescription}
+                onChange={(e) => setInjuryDescription(e.target.value)}
+                placeholder={t("playerProfile.injuryDescriptionPlaceholder")}
+                aria-label={t("playerProfile.injuryDescription")}
+                className="flex-1"
+              />
+              <Input
+                type="date"
+                value={injuryDate}
+                onChange={(e) => setInjuryDate(e.target.value)}
+                aria-label={t("playerProfile.injuryDate")}
+                className="sm:w-40"
+              />
+              <Button
+                type="button"
+                onClick={() => reportInjuryMutation.mutate()}
+                disabled={!injuryDescription.trim() || !injuryDate || reportInjuryMutation.isPending}
+                className="sm:self-end whitespace-nowrap"
+              >
+                <HeartPulse className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+                {t("playerProfile.reportInjury")}
+              </Button>
+            </div>
+
+            {injuries.length > 0 ? (
+              <ul className="space-y-3">
+                {injuries.map((injury) => (
+                  <li key={injury.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-foreground">{injury.description}</p>
+                        <Badge
+                          variant="secondary"
+                          className={injury.status === "active"
+                            ? "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40"
+                            : "bg-success-tint text-success"}
+                        >
+                          {injury.status === "active" ? t("playerProfile.injuryActive") : t("playerProfile.injuryRecovered")}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {injury.status === "active"
+                          ? t("playerProfile.reportedOn", { date: injury.reportedDate })
+                          : t("playerProfile.reportedRecoveredRange", { reported: injury.reportedDate, recovered: injury.recoveredDate })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {injury.status === "active" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-success"
+                          onClick={() => recoverInjuryMutation.mutate(injury.id)}
+                          disabled={recoverInjuryMutation.isPending}
+                          aria-label={t("playerProfile.markRecovered")}
+                          title={t("playerProfile.markRecovered")}
+                        >
+                          <Check className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-red-600"
+                        onClick={() => setInjuryToDelete(injury.id)}
+                        aria-label={t("playerProfile.deleteInjury")}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("playerProfile.noInjuriesYet")}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">{t("playerProfile.coachNotes")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -282,6 +426,17 @@ export default function PlayerProfile() {
         onConfirm={() => {
           if (noteToDelete !== null) deleteNoteMutation.mutate(noteToDelete);
           setNoteToDelete(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={injuryToDelete !== null}
+        onOpenChange={(open) => !open && setInjuryToDelete(null)}
+        title={t("playerProfile.deleteInjuryConfirmTitle")}
+        description={t("playerProfile.deleteInjuryConfirmDescription")}
+        onConfirm={() => {
+          if (injuryToDelete !== null) deleteInjuryMutation.mutate(injuryToDelete);
+          setInjuryToDelete(null);
         }}
       />
     </div>

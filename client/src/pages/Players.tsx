@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2 } from "lucide-react";
+import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Player } from "@shared/schema";
+import type { Player, PlayerInjury } from "@shared/schema";
 
 export default function Players() {
   const { t } = useTranslation();
@@ -32,6 +32,14 @@ export default function Players() {
   const { data: players = [], isLoading, isError, refetch } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
+
+  const { data: activeInjuries = [] } = useQuery<PlayerInjury[]>({
+    queryKey: ['/api/players/injuries'],
+  });
+  const injuredPlayerIds = useMemo(
+    () => new Set(activeInjuries.map((injury) => injury.playerId)),
+    [activeInjuries]
+  );
 
   const updatePlayerMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: number; isActive: number }) => {
@@ -248,14 +256,22 @@ export default function Players() {
                           className="cursor-pointer mb-2"
                           aria-label={t("players.viewProfile", { name: player.name })}
                         >
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-2 gap-2">
                             <h3 className="font-display font-semibold uppercase tracking-tight text-foreground">{player.name}</h3>
-                            <Badge
-                              variant={player.isActive === 1 ? "default" : "secondary"}
-                              className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
-                            >
-                              {player.isActive === 1 ? t("players.active") : t("players.inactive")}
-                            </Badge>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {injuredPlayerIds.has(player.id) && (
+                                <Badge variant="destructive" className="gap-1">
+                                  <HeartPulse className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                                  {t("playerProfile.injured")}
+                                </Badge>
+                              )}
+                              <Badge
+                                variant={player.isActive === 1 ? "default" : "secondary"}
+                                className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
+                              >
+                                {player.isActive === 1 ? t("players.active") : t("players.inactive")}
+                              </Badge>
+                            </div>
                           </div>
                           <p className="text-sm text-muted-foreground truncate">{player.position}</p>
                         </div>
