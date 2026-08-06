@@ -545,5 +545,77 @@
   "exerciseCard": {
     "editName": "Editar {{name}}",
     "deleteName": "Eliminar {{name}}"
+  },
+  "schedule": {
+    "failedToUpdateAttendance": "No se pudo actualizar la asistencia",
+    "subtitleLoading": "Planifica tu semana y gestiona la asistencia",
+    "subtitle": "Planifica tu semana de entrenamiento y controla la asistencia",
+    "trainingScheduleOverview": "Resumen del Horario de Entrenamiento",
+    "previous": "Anterior",
+    "previousWeek": "Semana Anterior",
+    "next": "Siguiente",
+    "nextWeek": "Siguiente Semana",
+    "completed": "Completadas",
+    "upcoming": "Próximas",
+    "days": {
+      "mon": { "short": "Lun", "full": "Lunes" },
+      "tue": { "short": "Mar", "full": "Martes" },
+      "wed": { "short": "Mié", "full": "Miércoles" },
+      "thu": { "short": "Jue", "full": "Jueves" },
+      "fri": { "short": "Vie", "full": "Viernes" },
+      "sat": { "short": "Sáb", "full": "Sábado" },
+      "sun": { "short": "Dom", "full": "Domingo" }
+    },
+    "today": "Hoy",
+    "noSessions": "Sin sesiones",
+    "sessionAriaLabel": "{{name}}, {{time}}, {{duration}} minutos. Abrir asistencia.",
+    "durationMinNoSpace": "{{count}}min",
+    "status": {
+      "scheduled": "programada",
+      "in_progress": "en curso",
+      "completed": "completada",
+      "cancelled": "cancelada"
+    }
+  },
+  "attendanceModal": {
+    "present": "Presente",
+    "absent": "Ausente",
+    "late": "Tarde",
+    "excused": "Justificado",
+    "title": "Asistencia - {{name}}",
+    "dialogDescription": "Marca el estado de asistencia de cada jugador activo para esta sesión de entrenamiento.",
+    "durationMinutes": "{{count}} minutos",
+    "attendanceRateAriaLabel": "Tasa de asistencia",
+    "markedAt": "Marcado a las {{time}}",
+    "closeAttendance": "Cerrar Asistencia"
+  },
+  "portal": {
+    "linkNotAvailable": "Enlace no disponible",
+    "linkNotAvailableDescription": "Este enlace puede haber caducado o haber sido revocado. Pide a tu entrenador uno nuevo.",
+    "seasonStats": "Estadísticas de Temporada",
+    "upcomingPractices": "Próximos Entrenamientos",
+    "noUpcomingPractices": "No hay entrenamientos próximos programados.",
+    "upcomingGames": "Próximos Partidos",
+    "noUpcomingGames": "No hay partidos próximos programados.",
+    "vsOpponent": "vs {{opponent}}",
+    "recentAttendance": "Asistencia Reciente",
+    "noAttendanceRecorded": "Aún no hay asistencia registrada."
+  },
+  "newTeamDialog": {
+    "createdToast": "\"{{name}}\" creado",
+    "failedToCreate": "No se pudo crear el equipo",
+    "newTeam": "Nuevo Equipo",
+    "dialogDescription": "Ingresa un nombre para el nuevo equipo. Disponible en el plan de pago.",
+    "teamName": "Nombre del Equipo",
+    "teamNamePlaceholder": "ej., Equipo Junior",
+    "creatingEllipsis": "Creando...",
+    "createTeam": "Crear Equipo"
+  },
+  "billingStatus": {
+    "upgraded": "¡Tu Cuenta Está Mejorada!",
+    "canceled": "Pago Cancelado",
+    "upgradedDescription": "Tu plan de pago está activo. Puede tardar unos segundos en aparecer en todas partes — actualiza la página si aún ves la insignia del plan gratis.",
+    "canceledDescription": "No se hicieron cambios en tu plan. Puedes mejorar tu plan cuando quieras desde el menú lateral.",
+    "backToDashboard": "Volver al Panel"
   }
 }

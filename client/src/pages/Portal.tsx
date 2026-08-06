@@ -1,11 +1,13 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, Trophy, ClipboardCheck, BarChart3 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import PortalNotificationsToggle from "@/components/PortalNotificationsToggle";
+import LanguageToggle from "@/components/LanguageToggle";
 import type { PortalData } from "@shared/schema";
 
 type PortalResponse = PortalData & { vapidPublicKey: string | null };
@@ -30,6 +32,7 @@ function formatDate(date: string): string {
 // exemption for /api/portal/:token). Read-only: no mutation ever originates
 // from this page.
 export default function Portal() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const { data, isLoading, isError, refetch } = useQuery<PortalResponse>({
     queryKey: [`/api/portal/${token}`],
@@ -50,11 +53,14 @@ export default function Portal() {
 
   if (isError || !data) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center p-4">
+      <main className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+        <div className="absolute top-4 right-4 text-foreground">
+          <LanguageToggle />
+        </div>
         <div className="w-full max-w-sm">
           <ErrorState
-            title="Link not available"
-            description="This link may have expired or been revoked. Ask your coach for a new one."
+            title={t("portal.linkNotAvailable")}
+            description={t("portal.linkNotAvailableDescription")}
             onRetry={() => refetch()}
           />
         </div>
@@ -84,7 +90,10 @@ export default function Portal() {
               <Badge variant="secondary" className="mt-1">{data.player.position}</Badge>
             )}
           </div>
-          <PortalNotificationsToggle token={token} vapidPublicKey={data.vapidPublicKey} />
+          <div className="flex items-center gap-2 text-foreground">
+            <LanguageToggle />
+            <PortalNotificationsToggle token={token} vapidPublicKey={data.vapidPublicKey} />
+          </div>
         </header>
 
         {data.stats && (
@@ -92,7 +101,7 @@ export default function Portal() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <BarChart3 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-                Season Stats
+                {t("portal.seasonStats")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -112,12 +121,12 @@ export default function Portal() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <CalendarClock className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-              Upcoming Practices
+              {t("portal.upcomingPractices")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {data.upcomingSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming practices scheduled.</p>
+              <p className="text-sm text-muted-foreground">{t("portal.noUpcomingPractices")}</p>
             ) : (
               <ul className="space-y-2">
                 {data.upcomingSessions.map((s) => (
@@ -129,7 +138,7 @@ export default function Portal() {
                       <p className="font-medium text-foreground">{s.name}</p>
                       <p className="text-muted-foreground">{formatDate(s.date)} · {s.time}</p>
                     </div>
-                    <span className="text-muted-foreground whitespace-nowrap">{s.duration} min</span>
+                    <span className="text-muted-foreground whitespace-nowrap">{t("sessionModal.minAbbrev", { count: s.duration })}</span>
                   </li>
                 ))}
               </ul>
@@ -141,12 +150,12 @@ export default function Portal() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-              Upcoming Games
+              {t("portal.upcomingGames")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {data.upcomingGames.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming games scheduled.</p>
+              <p className="text-sm text-muted-foreground">{t("portal.noUpcomingGames")}</p>
             ) : (
               <ul className="space-y-2">
                 {data.upcomingGames.map((g) => (
@@ -154,7 +163,7 @@ export default function Portal() {
                     key={g.id}
                     className="flex items-center justify-between text-sm border-b border-border last:border-0 pb-2 last:pb-0"
                   >
-                    <p className="font-medium text-foreground">vs {g.opponent}</p>
+                    <p className="font-medium text-foreground">{t("portal.vsOpponent", { opponent: g.opponent })}</p>
                     <div className="text-right text-muted-foreground">
                       <p>{formatDate(g.date)}</p>
                       {g.location && <p className="capitalize text-xs">{g.location}</p>}
@@ -170,12 +179,12 @@ export default function Portal() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <ClipboardCheck className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-              Recent Attendance
+              {t("portal.recentAttendance")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {data.attendance.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No attendance recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t("portal.noAttendanceRecorded")}</p>
             ) : (
               <ul className="space-y-2">
                 {data.attendance.map((a) => (
@@ -185,7 +194,7 @@ export default function Portal() {
                       <p className="text-muted-foreground text-xs">{formatDate(a.date)}</p>
                     </div>
                     <Badge variant="outline" className={`capitalize ${ATTENDANCE_BADGE[a.status] ?? ""}`}>
-                      {a.status}
+                      {t(`attendanceModal.${a.status}`, a.status)}
                     </Badge>
                   </li>
                 ))}

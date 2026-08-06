@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 interface BillingStatusProps {
@@ -10,6 +11,7 @@ interface BillingStatusProps {
 // The webhook — not this page — is what actually flips the account's plan;
 // this is just the human-facing confirmation.
 export default function BillingStatus({ status }: BillingStatusProps) {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const isSuccess = status === "success";
 
@@ -23,18 +25,18 @@ export default function BillingStatus({ status }: BillingStatusProps) {
         )}
       </div>
       <h1 className="font-display font-bold uppercase tracking-tight text-2xl text-foreground mb-2">
-        {isSuccess ? "You're Upgraded!" : "Checkout Canceled"}
+        {isSuccess ? t("billingStatus.upgraded") : t("billingStatus.canceled")}
       </h1>
       <p className="text-muted-foreground max-w-sm mb-6">
         {isSuccess
-          ? "Your paid plan is active. It can take a few seconds to show up everywhere — refresh if you still see the free plan badge."
-          : "No changes were made to your plan. You can upgrade any time from the sidebar."}
+          ? t("billingStatus.upgradedDescription")
+          : t("billingStatus.canceledDescription")}
       </p>
       <Button
         onClick={() => setLocation("/dashboard")}
         className="basketball-orange basketball-orange-hover text-white"
       >
-        Back to Dashboard
+        {t("billingStatus.backToDashboard")}
       </Button>
     </main>
   );

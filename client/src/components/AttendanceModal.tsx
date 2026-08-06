@@ -1,4 +1,5 @@
 import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, XCircle, Clock3, Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,25 +16,25 @@ import type { TrainingSession, Player, Attendance } from "@shared/schema";
 // late/excused by color at a glance, the same way the pill already does.
 const ATTENDANCE_STATUS = {
   present: {
-    label: "Present",
+    labelKey: "attendanceModal.present",
     color: "bg-success-tint text-success border-success",
     selected: "bg-green-700 hover:bg-green-800 text-white border-green-700",
     icon: CheckCircle2,
   },
   absent: {
-    label: "Absent",
+    labelKey: "attendanceModal.absent",
     color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40",
     selected: "bg-red-600 hover:bg-red-700 text-white border-red-600",
     icon: XCircle,
   },
   late: {
-    label: "Late",
+    labelKey: "attendanceModal.late",
     color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/40",
     selected: "bg-amber-700 hover:bg-amber-800 text-white border-amber-700",
     icon: Clock3,
   },
   excused: {
-    label: "Excused",
+    labelKey: "attendanceModal.excused",
     color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/40",
     selected: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
     icon: Info,
@@ -64,6 +65,7 @@ export default function AttendanceModal({
   onToggleAttendance,
   pendingPlayerId,
 }: AttendanceModalProps) {
+  const { t } = useTranslation();
   const getPlayerAttendance = (playerId: number) => attendance.find(a => a.playerId === playerId);
 
   const getAttendanceRate = () => {
@@ -84,27 +86,27 @@ export default function AttendanceModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl font-display uppercase tracking-tight">
             <ClipboardList className="w-5 h-5 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
-            Attendance - {session?.name}
+            {t("attendanceModal.title", { name: session?.name })}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Mark each active player's attendance status for this training session.
+            {t("attendanceModal.dialogDescription")}
           </DialogDescription>
           <div className="text-sm text-muted-foreground mt-2">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />{session?.date}</span>
               <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />{session?.time}</span>
-              <span className="flex items-center gap-1.5"><Timer className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />{session?.duration} minutes</span>
+              <span className="flex items-center gap-1.5"><Timer className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />{t("attendanceModal.durationMinutes", { count: session?.duration })}</span>
             </div>
           </div>
           {attendance.length > 0 && (
             <div className="mt-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-medium">Attendance Rate:</span>
+                <span className="text-sm font-medium">{t("sessions.attendanceRate")}:</span>
                 <Badge className="basketball-orange text-white">
                   {getAttendanceRate()}%
                 </Badge>
               </div>
-              <Progress value={getAttendanceRate()} className="h-2" aria-label="Attendance rate" />
+              <Progress value={getAttendanceRate()} className="h-2" aria-label={t("attendanceModal.attendanceRateAriaLabel")} />
             </div>
           )}
         </DialogHeader>
@@ -149,7 +151,7 @@ export default function AttendanceModal({
                             }`}
                           >
                             <config.icon className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-                            {config.label}
+                            {t(config.labelKey)}
                           </Button>
                         ))}
                       </div>
@@ -159,11 +161,11 @@ export default function AttendanceModal({
                       <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                         <Badge className={ATTENDANCE_STATUS[playerAttendance.status as keyof typeof ATTENDANCE_STATUS]?.color}>
                           <CurrentIcon className="w-3 h-3 mr-1" strokeWidth={1.75} aria-hidden="true" />
-                          {ATTENDANCE_STATUS[playerAttendance.status as keyof typeof ATTENDANCE_STATUS]?.label}
+                          {t(ATTENDANCE_STATUS[playerAttendance.status as keyof typeof ATTENDANCE_STATUS]?.labelKey ?? "")}
                         </Badge>
                         {playerAttendance.markedAt && (
                           <span className="text-xs text-muted-foreground">
-                            Marked at {new Date(playerAttendance.markedAt).toLocaleTimeString()}
+                            {t("attendanceModal.markedAt", { time: new Date(playerAttendance.markedAt).toLocaleTimeString() })}
                           </span>
                         )}
                       </div>
@@ -181,7 +183,7 @@ export default function AttendanceModal({
             className="w-full"
             variant="outline"
           >
-            Close Attendance
+            {t("attendanceModal.closeAttendance")}
           </Button>
         </div>
       </DialogContent>

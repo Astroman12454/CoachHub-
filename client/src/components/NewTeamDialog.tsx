@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ interface NewTeamDialogProps {
 }
 
 export default function NewTeamDialog({ open, onOpenChange }: NewTeamDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const { switchTeam } = useAuth();
   const queryClient = useQueryClient();
@@ -38,13 +40,13 @@ export default function NewTeamDialog({ open, onOpenChange }: NewTeamDialogProps
     onSuccess: async (team) => {
       queryClient.invalidateQueries({ queryKey: ["/api/session"] });
       await switchTeam(team.id);
-      toast({ title: "Success", description: `"${team.name}" created` });
+      toast({ title: t("playerForm.success"), description: t("newTeamDialog.createdToast", { name: team.name }) });
       handleOpenChange(false);
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: extractErrorMessage(error) ?? "Failed to create team",
+        title: t("players.error"),
+        description: extractErrorMessage(error) ?? t("newTeamDialog.failedToCreate"),
         variant: "destructive",
       });
     },
@@ -60,34 +62,34 @@ export default function NewTeamDialog({ open, onOpenChange }: NewTeamDialogProps
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">New Team</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">{t("newTeamDialog.newTeam")}</DialogTitle>
           <DialogDescription className="sr-only">
-            Enter a name for the new team. Available on the paid plan.
+            {t("newTeamDialog.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="team-name">Team Name</Label>
+            <Label htmlFor="team-name">{t("newTeamDialog.teamName")}</Label>
             <Input
               id="team-name"
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., JV Squad"
+              placeholder={t("newTeamDialog.teamNamePlaceholder")}
               className="mt-2"
             />
           </div>
           <div className="flex items-center justify-end space-x-4 pt-2 border-t border-border">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
               className="basketball-orange basketball-orange-hover text-white"
               disabled={createTeamMutation.isPending || !name.trim()}
             >
-              {createTeamMutation.isPending ? "Creating..." : "Create Team"}
+              {createTeamMutation.isPending ? t("newTeamDialog.creatingEllipsis") : t("newTeamDialog.createTeam")}
             </Button>
           </div>
         </form>

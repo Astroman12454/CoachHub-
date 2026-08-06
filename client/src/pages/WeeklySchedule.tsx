@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import AttendanceModal from "@/components/AttendanceModal";
 import StatCard from "@/components/StatCard";
@@ -13,15 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { TrainingSession, Player, Attendance } from "@shared/schema";
 
-const DAYS_OF_WEEK = [
-  { short: "Mon", full: "Monday" },
-  { short: "Tue", full: "Tuesday" },
-  { short: "Wed", full: "Wednesday" },
-  { short: "Thu", full: "Thursday" },
-  { short: "Fri", full: "Friday" },
-  { short: "Sat", full: "Saturday" },
-  { short: "Sun", full: "Sunday" }
-];
+const DAYS_OF_WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 // Left-border accent + neutral card background — a status color that reads
 // as a marker on a stat sheet rather than a full pastel-filled block.
@@ -33,6 +26,7 @@ const STATUS_COLORS = {
 };
 
 export default function WeeklySchedule() {
+  const { t } = useTranslation();
   const [selectedWeek, setSelectedWeek] = useState(() => {
     const today = new Date();
     const monday = new Date(today);
@@ -115,8 +109,8 @@ export default function WeeklySchedule() {
         queryClient.setQueryData(context.queryKey, context.previousAttendance);
       }
       toast({
-        title: "Error",
-        description: "Failed to update attendance",
+        title: t("players.error"),
+        description: t("schedule.failedToUpdateAttendance"),
         variant: "destructive",
       });
     },
@@ -169,8 +163,8 @@ export default function WeeklySchedule() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Weekly Schedule"
-          subtitle="Plan your week and manage attendance"
+          title={t("nav.weeklySchedule")}
+          subtitle={t("schedule.subtitleLoading")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <Skeleton className="h-96 w-full" />
@@ -183,8 +177,8 @@ export default function WeeklySchedule() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Weekly Schedule"
-          subtitle="Plan your training week and track attendance"
+          title={t("nav.weeklySchedule")}
+          subtitle={t("schedule.subtitle")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <ErrorState onRetry={() => refetchSessions()} />
@@ -196,8 +190,8 @@ export default function WeeklySchedule() {
   return (
     <div className="flex flex-col h-full">
       <TopBar
-        title="Weekly Schedule"
-        subtitle="Plan your training week and track attendance"
+        title={t("nav.weeklySchedule")}
+        subtitle={t("schedule.subtitle")}
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
@@ -208,34 +202,34 @@ export default function WeeklySchedule() {
               {weekDates[0].toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {' '}
               {weekDates[6].toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </h2>
-            <p className="text-muted-foreground mt-0.5 text-sm">Training Schedule Overview</p>
+            <p className="text-muted-foreground mt-0.5 text-sm">{t("schedule.trainingScheduleOverview")}</p>
           </div>
 
           <Button variant="outline" onClick={() => navigateWeek('prev')} className="flex items-center justify-center gap-2 sm:order-1">
             <ChevronLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-            <span className="sm:hidden">Previous</span>
-            <span className="hidden sm:inline">Previous Week</span>
+            <span className="sm:hidden">{t("schedule.previous")}</span>
+            <span className="hidden sm:inline">{t("schedule.previousWeek")}</span>
           </Button>
 
           <Button variant="outline" onClick={() => navigateWeek('next')} className="flex items-center justify-center gap-2 sm:order-3">
-            <span className="sm:hidden">Next</span>
-            <span className="hidden sm:inline">Next Week</span>
+            <span className="sm:hidden">{t("schedule.next")}</span>
+            <span className="hidden sm:inline">{t("schedule.nextWeek")}</span>
             <ChevronRight className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
         </div>
 
         {/* Weekly Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Total Sessions" value={weekStats.total} icon={CalendarDays} color="orange" />
-          <StatCard label="Completed" value={weekStats.completed} icon={CheckCircle2} color="success" />
-          <StatCard label="Upcoming" value={weekStats.scheduled} icon={Clock} color="court" />
-          <StatCard label="Attendance" value={weekStats.totalAttendance} icon={Users} color="violet" />
+          <StatCard label={t("dashboard.totalSessions")} value={weekStats.total} icon={CalendarDays} color="orange" />
+          <StatCard label={t("schedule.completed")} value={weekStats.completed} icon={CheckCircle2} color="success" />
+          <StatCard label={t("schedule.upcoming")} value={weekStats.scheduled} icon={Clock} color="court" />
+          <StatCard label={t("sessions.attendance")} value={weekStats.totalAttendance} icon={Users} color="violet" />
         </div>
 
         {/* Weekly Calendar */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
           {weekDates.map((date, index) => {
-            const dayInfo = DAYS_OF_WEEK[index];
+            const dayKey = DAYS_OF_WEEK[index];
             const daySessions = getSessionsForDate(date);
             const isToday = date.toDateString() === new Date().toDateString();
 
@@ -246,13 +240,13 @@ export default function WeeklySchedule() {
               >
                 <CardHeader className="pb-3 border-b border-border">
                   <div className="text-center">
-                    <div className="font-display font-bold uppercase text-base text-foreground">{dayInfo.short}</div>
-                    <div className="text-xs text-muted-foreground">{dayInfo.full}</div>
+                    <div className="font-display font-bold uppercase text-base text-foreground">{t(`schedule.days.${dayKey}.short`)}</div>
+                    <div className="text-xs text-muted-foreground">{t(`schedule.days.${dayKey}.full`)}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
                     {isToday && (
-                      <Badge className="mt-2 basketball-orange text-white">Today</Badge>
+                      <Badge className="mt-2 basketball-orange text-white">{t("schedule.today")}</Badge>
                     )}
                   </div>
                 </CardHeader>
@@ -260,7 +254,7 @@ export default function WeeklySchedule() {
                   {daySessions.length === 0 ? (
                     <div className="text-center py-8">
                       <CalendarPlus className="w-5 h-5 text-muted-foreground/50 mx-auto mb-2" strokeWidth={1.5} aria-hidden="true" />
-                      <p className="text-xs text-muted-foreground">No sessions</p>
+                      <p className="text-xs text-muted-foreground">{t("schedule.noSessions")}</p>
                     </div>
                   ) : (
                     daySessions.map((session) => (
@@ -268,7 +262,7 @@ export default function WeeklySchedule() {
                         key={session.id}
                         role="button"
                         tabIndex={0}
-                        aria-label={`${session.name}, ${session.time}, ${session.duration} minutes. Open attendance.`}
+                        aria-label={t("schedule.sessionAriaLabel", { name: session.name, time: session.time, duration: session.duration })}
                         className={`rounded-md p-3 cursor-pointer transition-colors bg-muted/50 hover:bg-muted border-l-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                           STATUS_COLORS[session.status as keyof typeof STATUS_COLORS] || STATUS_COLORS.scheduled
                         }`}
@@ -285,7 +279,7 @@ export default function WeeklySchedule() {
                             {session.time}
                           </Badge>
                           <div className="text-xs font-medium tabular-nums text-muted-foreground">
-                            {session.duration}min
+                            {t("schedule.durationMinNoSpace", { count: session.duration })}
                           </div>
                         </div>
                         <div className="font-semibold text-sm truncate mb-1.5 text-foreground">
@@ -296,7 +290,7 @@ export default function WeeklySchedule() {
                             variant="secondary"
                             className="text-xs capitalize"
                           >
-                            {session.status || 'scheduled'}
+                            {t(`schedule.status.${session.status || 'scheduled'}`, session.status || 'scheduled')}
                           </Badge>
                           {session.attendanceCount !== undefined && (
                             <div className="text-xs tabular-nums text-muted-foreground">

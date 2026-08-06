@@ -545,5 +545,77 @@
   "exerciseCard": {
     "editName": "Edit {{name}}",
     "deleteName": "Delete {{name}}"
+  },
+  "schedule": {
+    "failedToUpdateAttendance": "Failed to update attendance",
+    "subtitleLoading": "Plan your week and manage attendance",
+    "subtitle": "Plan your training week and track attendance",
+    "trainingScheduleOverview": "Training Schedule Overview",
+    "previous": "Previous",
+    "previousWeek": "Previous Week",
+    "next": "Next",
+    "nextWeek": "Next Week",
+    "completed": "Completed",
+    "upcoming": "Upcoming",
+    "days": {
+      "mon": { "short": "Mon", "full": "Monday" },
+      "tue": { "short": "Tue", "full": "Tuesday" },
+      "wed": { "short": "Wed", "full": "Wednesday" },
+      "thu": { "short": "Thu", "full": "Thursday" },
+      "fri": { "short": "Fri", "full": "Friday" },
+      "sat": { "short": "Sat", "full": "Saturday" },
+      "sun": { "short": "Sun", "full": "Sunday" }
+    },
+    "today": "Today",
+    "noSessions": "No sessions",
+    "sessionAriaLabel": "{{name}}, {{time}}, {{duration}} minutes. Open attendance.",
+    "durationMinNoSpace": "{{count}}min",
+    "status": {
+      "scheduled": "scheduled",
+      "in_progress": "in_progress",
+      "completed": "completed",
+      "cancelled": "cancelled"
+    }
+  },
+  "attendanceModal": {
+    "present": "Present",
+    "absent": "Absent",
+    "late": "Late",
+    "excused": "Excused",
+    "title": "Attendance - {{name}}",
+    "dialogDescription": "Mark each active player's attendance status for this training session.",
+    "durationMinutes": "{{count}} minutes",
+    "attendanceRateAriaLabel": "Attendance rate",
+    "markedAt": "Marked at {{time}}",
+    "closeAttendance": "Close Attendance"
+  },
+  "portal": {
+    "linkNotAvailable": "Link not available",
+    "linkNotAvailableDescription": "This link may have expired or been revoked. Ask your coach for a new one.",
+    "seasonStats": "Season Stats",
+    "upcomingPractices": "Upcoming Practices",
+    "noUpcomingPractices": "No upcoming practices scheduled.",
+    "upcomingGames": "Upcoming Games",
+    "noUpcomingGames": "No upcoming games scheduled.",
+    "vsOpponent": "vs {{opponent}}",
+    "recentAttendance": "Recent Attendance",
+    "noAttendanceRecorded": "No attendance recorded yet."
+  },
+  "newTeamDialog": {
+    "createdToast": "\"{{name}}\" created",
+    "failedToCreate": "Failed to create team",
+    "newTeam": "New Team",
+    "dialogDescription": "Enter a name for the new team. Available on the paid plan.",
+    "teamName": "Team Name",
+    "teamNamePlaceholder": "e.g., JV Squad",
+    "creatingEllipsis": "Creating...",
+    "createTeam": "Create Team"
+  },
+  "billingStatus": {
+    "upgraded": "You're Upgraded!",
+    "canceled": "Checkout Canceled",
+    "upgradedDescription": "Your paid plan is active. It can take a few seconds to show up everywhere — refresh if you still see the free plan badge.",
+    "canceledDescription": "No changes were made to your plan. You can upgrade any time from the sidebar.",
+    "backToDashboard": "Back to Dashboard"
   }
 }
