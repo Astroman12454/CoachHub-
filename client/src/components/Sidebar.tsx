@@ -98,7 +98,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     // Fixed dark "scoreboard rail" regardless of the app's light/dark
     // theme — a stable brand anchor, same pattern as Linear/Vercel-style
     // dashboards, instead of the old solid-orange-everywhere sidebar.
-    <nav aria-label="Main" className="bg-rail text-rail-foreground flex flex-col h-full">
+    <nav aria-label="Main" className="bg-rail text-rail-foreground flex flex-col h-full w-full min-w-0">
       <div className="p-5 border-b border-rail-border flex items-center gap-3">
         <div className="w-9 h-9 flex-shrink-0 rounded-md basketball-orange flex items-center justify-center">
           <BrandMark className="w-5 h-5 text-white" />
