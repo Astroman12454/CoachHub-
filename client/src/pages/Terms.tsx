@@ -1,165 +1,122 @@
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import BrandMark from "@/components/BrandMark";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const LAST_UPDATED = "August 4, 2026";
 const CONTACT_EMAIL = "luis.barrionuevo0308@gmail.com";
 
 export default function Terms() {
+  const { t } = useTranslation();
+  const acceptableUseItems = t("terms.sections.acceptableUse.items", { returnObjects: true }) as string[];
+
   return (
-    <main className="min-h-screen bg-rail p-4 py-10">
+    <main className="min-h-screen bg-rail p-4 py-10 relative">
+      <div className="absolute top-4 right-4 text-foreground">
+        <LanguageToggle />
+      </div>
       <div className="w-full max-w-2xl mx-auto bg-card rounded-lg shadow-2xl p-8 fade-in">
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 basketball-orange rounded-lg flex items-center justify-center mb-4">
             <BrandMark className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-display font-bold uppercase tracking-tight text-2xl text-foreground">
-            Terms of Use
+            {t("terms.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">Last updated: {LAST_UPDATED}</p>
+          <p className="text-muted-foreground text-sm">{t("privacy.lastUpdated", { date: LAST_UPDATED })}</p>
         </div>
 
         <div className="prose-content text-sm text-foreground space-y-5 leading-relaxed">
-          <p>
-            These terms govern your use of Coach Hub, operated by Luis Barrionuevo, an
-            individual based in Spain ("we", "us"). By creating an account you agree to
-            them. If you don't agree, don't use the app.
-          </p>
+          <p>{t("terms.intro")}</p>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              1. The service
+              {t("terms.sections.service.heading")}
             </h2>
-            <p>
-              Coach Hub helps amateur basketball coaches manage a team: rosters, training
-              sessions, an exercise library, and attendance tracking.
-            </p>
+            <p>{t("terms.sections.service.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              2. Accounts
+              {t("terms.sections.accounts.heading")}
             </h2>
-            <p>
-              You must be at least 18 years old to create an account — Coach Hub accounts
-              are for coaches, not for the players themselves. You're responsible for
-              keeping your login credentials secure and for all activity under your
-              account. Let us know right away if you suspect unauthorized access.
-            </p>
+            <p>{t("terms.sections.accounts.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              3. Plans and payment
+              {t("terms.sections.plans.heading")}
             </h2>
-            <p>
-              The free plan is limited to 1 team, up to 15 players, and the built-in
-              exercise library (no custom exercises). The paid plan removes those limits
-              and lets you create custom exercises, billed monthly through Stripe.
-            </p>
-            <p className="mt-2">
-              You can cancel anytime from the billing portal in the app; your paid plan
-              stays active until the end of the period you already paid for. Except where
-              the law gives you a right to a refund, payments already made are
-              non-refundable.
-            </p>
+            <p>{t("terms.sections.plans.body")}</p>
+            <p className="mt-2">{t("terms.sections.plans.bodyCancel")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              4. Data you enter about others
+              {t("terms.sections.dataAboutOthers.heading")}
             </h2>
             <p>
-              When you add players, sessions, or attendance records, you're entering data
-              about real people — often minors. You're responsible for having a legitimate
-              basis to enter that data (your role as coach or club, and any parental/
-              guardian consent required in your context) and for keeping it accurate and
-              up to date. See our{" "}
+              {t("terms.sections.dataAboutOthers.bodyPrefix")}{" "}
               <Link href="/privacy" className="text-basketball-orange hover:underline">
-                Privacy Policy
+                {t("terms.sections.dataAboutOthers.privacyPolicyLink")}
               </Link>{" "}
-              for how we handle it.
+              {t("terms.sections.dataAboutOthers.bodySuffix")}
             </p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              5. Acceptable use
+              {t("terms.sections.acceptableUse.heading")}
             </h2>
-            <p>You agree not to:</p>
+            <p>{t("terms.sections.acceptableUse.intro")}</p>
             <ul className="list-disc pl-5 space-y-1 mt-1">
-              <li>Use the service for anything illegal or that infringes someone else's rights.</li>
-              <li>Enter data about a person without a legitimate basis to do so.</li>
-              <li>Attempt to bypass rate limits, access other accounts' data, or otherwise probe/attack the service's security.</li>
-              <li>Resell or provide the service to third parties without our agreement.</li>
+              {acceptableUseItems.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
             </ul>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              6. Intellectual property
+              {t("terms.sections.ip.heading")}
             </h2>
-            <p>
-              The app, its design, and the built-in exercise library belong to us. You
-              keep ownership of the team/player/session data you enter; you grant us the
-              limited right to store and process it solely to provide the service to you.
-            </p>
+            <p>{t("terms.sections.ip.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              7. Availability and liability
+              {t("terms.sections.liability.heading")}
             </h2>
-            <p>
-              We do our best to keep Coach Hub available and your data safe, but the
-              service is provided "as is," without guaranteeing uninterrupted availability.
-              To the maximum extent permitted by law, we're not liable for indirect
-              damages or lost data resulting from outages, bugs, or third-party service
-              failures (e.g. our hosting or payment provider). Nothing here limits
-              liability where the law doesn't allow it to be limited, or affects the
-              statutory rights you have as a consumer.
-            </p>
+            <p>{t("terms.sections.liability.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              8. Suspension and termination
+              {t("terms.sections.termination.heading")}
             </h2>
-            <p>
-              You can stop using the service and delete your account at any time by
-              emailing us. We may suspend or terminate accounts that violate these terms,
-              with notice where reasonably possible.
-            </p>
+            <p>{t("terms.sections.termination.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              9. Changes to these terms
+              {t("terms.sections.changes.heading")}
             </h2>
-            <p>
-              We may update these terms as the app evolves. We'll update the "last
-              updated" date above, and if a change is material we'll let you know in the
-              app.
-            </p>
+            <p>{t("terms.sections.changes.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              10. Governing law
+              {t("terms.sections.governingLaw.heading")}
             </h2>
-            <p>
-              These terms are governed by Spanish law. Any dispute will be submitted to
-              the Spanish courts, without prejudice to any right you have as a consumer
-              to bring a claim before the courts of your own place of residence under
-              applicable consumer protection law.
-            </p>
+            <p>{t("terms.sections.governingLaw.body")}</p>
           </section>
 
           <section>
             <h2 className="font-display font-bold uppercase tracking-tight text-base mb-2">
-              11. Contact
+              {t("terms.sections.contact.heading")}
             </h2>
             <p>
-              Questions about these terms? Email{" "}
+              {t("terms.sections.contact.bodyPrefix")}{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="text-basketball-orange hover:underline">
                 {CONTACT_EMAIL}
               </a>
@@ -170,7 +127,7 @@ export default function Terms() {
 
         <p className="text-center text-sm mt-8">
           <Link href="/" className="text-basketball-orange font-medium hover:underline">
-            Back to Coach Hub
+            {t("privacy.backToCoachHub")}
           </Link>
         </p>
       </div>

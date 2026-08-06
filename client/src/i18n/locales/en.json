@@ -617,5 +617,138 @@
     "upgradedDescription": "Your paid plan is active. It can take a few seconds to show up everywhere — refresh if you still see the free plan badge.",
     "canceledDescription": "No changes were made to your plan. You can upgrade any time from the sidebar.",
     "backToDashboard": "Back to Dashboard"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: {{date}}",
+    "intro": "Coach Hub is operated by Luis Barrionuevo, an individual based in Spain (the \"controller\", \"we\", \"us\"). This policy explains what personal data we collect through the app, why, and what rights you have over it under the EU/Spanish data protection framework (GDPR and LOPDGDD).",
+    "backToCoachHub": "Back to Coach Hub",
+    "sections": {
+      "dataCollection": {
+        "heading": "1. Data we collect",
+        "items": [
+          { "bold": "Account data:", "text": "the email address and password you sign up with. Passwords are hashed (bcrypt) before storage — we never store or can recover your plain-text password." },
+          { "bold": "Team, player, and session data you enter:", "text": "team names, player names/positions/status, training session details (date, time, duration, notes, exercises used), attendance records, and any custom exercises you create." },
+          { "bold": "Billing data:", "text": "if you subscribe to the paid plan, payment is processed by Stripe. We never see or store your card details — we only keep a Stripe customer/subscription ID to know which plan your account is on." },
+          { "bold": "Technical data:", "text": "a session cookie that keeps you logged in (deleted automatically after 30 days of inactivity), and server logs (e.g. IP address) used only for security purposes such as rate-limiting login attempts." }
+        ],
+        "noAds": "We do not run any advertising or third-party analytics/tracking in the app."
+      },
+      "whyWeProcess": {
+        "heading": "2. Why we process this data",
+        "body": "Account, team, and billing data are processed to perform the contract with you (provide the service you signed up for, per GDPR Art. 6.1.b). Security logs (rate-limiting, abuse prevention) are processed under our legitimate interest (Art. 6.1.f). We do not use your data for marketing and do not sell it to third parties."
+      },
+      "minors": {
+        "heading": "3. Player data and minors",
+        "body": "Coach Hub accounts are created and controlled by the coach, who must be an adult (18+). Players do not create accounts or log in themselves — the coach enters and manages their roster. Player rosters commonly include minors. If you enter data about players under 18, you are responsible for having a legitimate basis to do so (e.g. your role as coach/club and, where required, consent from a parent or guardian) and for keeping that data accurate and deleting it when it's no longer needed. Coach Hub does not direct the service at children and does not knowingly allow minors to register their own accounts."
+      },
+      "sharing": {
+        "heading": "4. Who we share data with",
+        "items": [
+          { "bold": "Stripe", "text": "(payment processing) — only if you subscribe to the paid plan." },
+          { "bold": "Render", "text": "(application hosting and database infrastructure) — processes all data on our behalf to run the service." }
+        ],
+        "footer": "Both act as processors under our instructions; neither is authorized to use your data for their own purposes. We do not share your data with anyone else, and we don't sell it."
+      },
+      "transfers": {
+        "heading": "5. International transfers",
+        "body": "Stripe and Render may process data on infrastructure located outside the European Economic Area (primarily the United States). Where that happens, it relies on the safeguards each provider has in place (such as Standard Contractual Clauses) to ensure an adequate level of protection."
+      },
+      "retention": {
+        "heading": "6. How long we keep your data",
+        "body": "We keep your data for as long as your account is active. If you ask us to delete your account, we will erase your account, team, player, session, and billing-reference data within 30 days, except where we're legally required to keep records for longer (e.g. tax obligations tied to payments)."
+      },
+      "security": {
+        "heading": "7. Security",
+        "body": "Passwords are hashed with bcrypt and never stored in plain text. All traffic between the app and our servers is encrypted (HTTPS). Access to production data is limited to what's needed to operate the service."
+      },
+      "rights": {
+        "heading": "8. Your rights",
+        "bodyPrefix": "Under GDPR you can request access to, correction of, deletion of, or export of your data, and you can object to or ask us to limit certain processing. To exercise any of these rights, email",
+        "bodyMiddle": ". You also have the right to lodge a complaint with the Spanish Data Protection Agency (",
+        "bodySuffix": ")."
+      },
+      "cookies": {
+        "heading": "9. Cookies",
+        "body": "We only use one cookie: a technical session cookie required to keep you logged in. It's strictly necessary for the app to function, so it doesn't require consent under EU cookie rules. We don't use marketing, advertising, or third-party analytics cookies."
+      },
+      "changes": {
+        "heading": "10. Changes to this policy",
+        "body": "If we make material changes to this policy, we'll update the \"last updated\" date above and, where the change is significant, notify you in the app."
+      },
+      "contact": {
+        "heading": "11. Contact",
+        "bodyPrefix": "Questions about this policy or your data? Email"
+      }
+    }
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "intro": "These terms govern your use of Coach Hub, operated by Luis Barrionuevo, an individual based in Spain (\"we\", \"us\"). By creating an account you agree to them. If you don't agree, don't use the app.",
+    "sections": {
+      "service": {
+        "heading": "1. The service",
+        "body": "Coach Hub helps amateur basketball coaches manage a team: rosters, training sessions, an exercise library, and attendance tracking."
+      },
+      "accounts": {
+        "heading": "2. Accounts",
+        "body": "You must be at least 18 years old to create an account — Coach Hub accounts are for coaches, not for the players themselves. You're responsible for keeping your login credentials secure and for all activity under your account. Let us know right away if you suspect unauthorized access."
+      },
+      "plans": {
+        "heading": "3. Plans and payment",
+        "body": "The free plan is limited to 1 team, up to 15 players, and the built-in exercise library (no custom exercises). The paid plan removes those limits and lets you create custom exercises, billed monthly through Stripe.",
+        "bodyCancel": "You can cancel anytime from the billing portal in the app; your paid plan stays active until the end of the period you already paid for. Except where the law gives you a right to a refund, payments already made are non-refundable."
+      },
+      "dataAboutOthers": {
+        "heading": "4. Data you enter about others",
+        "bodyPrefix": "When you add players, sessions, or attendance records, you're entering data about real people — often minors. You're responsible for having a legitimate basis to enter that data (your role as coach or club, and any parental/ guardian consent required in your context) and for keeping it accurate and up to date. See our",
+        "privacyPolicyLink": "Privacy Policy",
+        "bodySuffix": "for how we handle it."
+      },
+      "acceptableUse": {
+        "heading": "5. Acceptable use",
+        "intro": "You agree not to:",
+        "items": [
+          "Use the service for anything illegal or that infringes someone else's rights.",
+          "Enter data about a person without a legitimate basis to do so.",
+          "Attempt to bypass rate limits, access other accounts' data, or otherwise probe/attack the service's security.",
+          "Resell or provide the service to third parties without our agreement."
+        ]
+      },
+      "ip": {
+        "heading": "6. Intellectual property",
+        "body": "The app, its design, and the built-in exercise library belong to us. You keep ownership of the team/player/session data you enter; you grant us the limited right to store and process it solely to provide the service to you."
+      },
+      "liability": {
+        "heading": "7. Availability and liability",
+        "body": "We do our best to keep Coach Hub available and your data safe, but the service is provided \"as is,\" without guaranteeing uninterrupted availability. To the maximum extent permitted by law, we're not liable for indirect damages or lost data resulting from outages, bugs, or third-party service failures (e.g. our hosting or payment provider). Nothing here limits liability where the law doesn't allow it to be limited, or affects the statutory rights you have as a consumer."
+      },
+      "termination": {
+        "heading": "8. Suspension and termination",
+        "body": "You can stop using the service and delete your account at any time by emailing us. We may suspend or terminate accounts that violate these terms, with notice where reasonably possible."
+      },
+      "changes": {
+        "heading": "9. Changes to these terms",
+        "body": "We may update these terms as the app evolves. We'll update the \"last updated\" date above, and if a change is material we'll let you know in the app."
+      },
+      "governingLaw": {
+        "heading": "10. Governing law",
+        "body": "These terms are governed by Spanish law. Any dispute will be submitted to the Spanish courts, without prejudice to any right you have as a consumer to bring a claim before the courts of your own place of residence under applicable consumer protection law."
+      },
+      "contact": {
+        "heading": "11. Contact",
+        "bodyPrefix": "Questions about these terms? Email"
+      }
+    }
+  },
+  "support": {
+    "title": "Support",
+    "intro": "Need help with Coach Hub, found a bug, or have a question about your account or billing? Email us and we'll get back to you as soon as we can:",
+    "commonQuestions": "Common questions",
+    "faqItems": [
+      { "bold": "How do I upgrade or cancel my plan?", "text": "Open the sidebar in the app and tap your plan badge — that takes you to Stripe's checkout or billing portal, where you can upgrade, change payment details, or cancel anytime." },
+      { "bold": "How do I delete my account?", "text": "Email us from the address on your account and we'll delete it, along with your team, player, and session data, within 30 days." },
+      { "bold": "What's included in the free plan?", "text": "1 team, up to 15 players, and the full built-in exercise library." }
+    ]
   }
 }
