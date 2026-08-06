@@ -13,6 +13,7 @@ import {
   skillRatings,
   playerNotes,
   playerInjuries,
+  drillAttempts,
   sessionTemplates,
   type Account,
   type Team,
@@ -36,6 +37,8 @@ import {
   type PlayerNote,
   type PlayerInjury,
   type CreatePlayerInjury,
+  type DrillAttempt,
+  type LogDrillAttempt,
   type PlayerDevelopment,
   type PlayPracticeStats,
   type InsertSessionTemplate,
@@ -118,6 +121,14 @@ export interface IStorage {
   createPlayerInjury(playerId: number, data: CreatePlayerInjury): Promise<PlayerInjury>;
   markInjuryRecovered(id: number, teamId: number, recoveredDate: string): Promise<PlayerInjury | undefined>;
   deletePlayerInjury(id: number, teamId: number): Promise<boolean>;
+
+  // Drill stat tracking — one row per logged rep (see drillAttempts in the
+  // schema for why), so a quick tap during practice is just an insert and
+  // undo is just deleting the row it returned.
+  getPlayerDrillAttempts(playerId: number): Promise<DrillAttempt[]>;
+  getTeamDrillAttempts(teamId: number): Promise<DrillAttempt[]>;
+  logDrillAttempt(playerId: number, data: LogDrillAttempt): Promise<DrillAttempt>;
+  deleteDrillAttempt(id: number, teamId: number): Promise<boolean>;
 
   // Game methods (scoped by team)
   getAllGames(teamId: number): Promise<Game[]>;
@@ -619,6 +630,45 @@ export class DatabaseStorage implements IStorage {
     if (!player) return false;
 
     const result = await db.delete(playerInjuries).where(eq(playerInjuries.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getPlayerDrillAttempts(playerId: number): Promise<DrillAttempt[]> {
+    return await db
+      .select()
+      .from(drillAttempts)
+      .where(eq(drillAttempts.playerId, playerId))
+      .orderBy(desc(drillAttempts.createdAt));
+  }
+
+  async getTeamDrillAttempts(teamId: number): Promise<DrillAttempt[]> {
+    const rows = await db
+      .select({ attempt: drillAttempts })
+      .from(drillAttempts)
+      .innerJoin(players, eq(drillAttempts.playerId, players.id))
+      .where(eq(players.teamId, teamId))
+      .orderBy(desc(drillAttempts.createdAt));
+    return rows.map((r) => r.attempt);
+  }
+
+  async logDrillAttempt(playerId: number, data: LogDrillAttempt): Promise<DrillAttempt> {
+    const [attempt] = await db
+      .insert(drillAttempts)
+      .values({ playerId, ...data })
+      .returning();
+    return attempt;
+  }
+
+  async deleteDrillAttempt(id: number, teamId: number): Promise<boolean> {
+    const [existing] = await db
+      .select({ playerId: drillAttempts.playerId })
+      .from(drillAttempts)
+      .where(eq(drillAttempts.id, id));
+    if (!existing) return false;
+    const player = await this.getPlayerById(existing.playerId, teamId);
+    if (!player) return false;
+
+    const result = await db.delete(drillAttempts).where(eq(drillAttempts.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 

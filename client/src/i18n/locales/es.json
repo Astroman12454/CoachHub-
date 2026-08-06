@@ -324,7 +324,9 @@
     "couldntUpdateInjury": "No se pudo actualizar la lesión",
     "couldntDeleteInjury": "No se pudo eliminar la lesión",
     "deleteInjuryConfirmTitle": "¿Eliminar este registro de lesión?",
-    "deleteInjuryConfirmDescription": "Esto no se puede deshacer."
+    "deleteInjuryConfirmDescription": "Esto no se puede deshacer.",
+    "drillStats": "Estadísticas de Ejercicios",
+    "noDrillStatsYet": "Aún no hay ejercicios registrados — registra intentos desde la pantalla de asistencia de una sesión."
   },
   "playerForm": {
     "success": "Éxito",
@@ -605,7 +607,22 @@
     "durationMinutes": "{{count}} minutos",
     "attendanceRateAriaLabel": "Tasa de asistencia",
     "markedAt": "Marcado a las {{time}}",
-    "closeAttendance": "Cerrar Asistencia"
+    "closeAttendance": "Cerrar Asistencia",
+    "attendanceTab": "Asistencia",
+    "drillsTab": "Ejercicios"
+  },
+  "drillTracker": {
+    "drillName": "Ejercicio",
+    "drillNamePlaceholder": "ej., Tiros libres",
+    "pickADrill": "Escribe o elige un ejercicio arriba para empezar a registrar intentos.",
+    "tally": "{{made}}/{{total}} ({{pct}}%)",
+    "noAttemptsYet": "Aún no hay intentos registrados",
+    "logMadeFor": "Registrar acierto para {{name}}",
+    "logMissedFor": "Registrar fallo para {{name}}",
+    "undoLastFor": "Deshacer último intento de {{name}}",
+    "undo": "Deshacer",
+    "couldntLogAttempt": "No se pudo registrar el intento",
+    "couldntUndo": "No se pudo deshacer el intento"
   },
   "portal": {
     "linkNotAvailable": "Enlace no disponible",

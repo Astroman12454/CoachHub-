@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, XCircle, Clock3, Info, HeartPulse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -6,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import DrillTrackerPanel from "@/components/DrillTrackerPanel";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
+import { cn } from "@/lib/utils";
 import type { TrainingSession, Player, Attendance } from "@shared/schema";
 
 // Each status has two treatments: a light "tint" badge for the summary pill
@@ -70,6 +73,7 @@ export default function AttendanceModal({
   injuredPlayerIds,
 }: AttendanceModalProps) {
   const { t } = useTranslation();
+  const [view, setView] = useState<"attendance" | "drills">("attendance");
   const getPlayerAttendance = (playerId: number) => attendance.find(a => a.playerId === playerId);
 
   const getAttendanceRate = () => {
@@ -83,6 +87,10 @@ export default function AttendanceModal({
     if (!next) restoreFocus();
     onOpenChange(next);
   };
+
+  useEffect(() => {
+    if (open) setView("attendance");
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -115,8 +123,28 @@ export default function AttendanceModal({
           )}
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="space-y-4">
+        <div className="flex gap-1 border-b border-border mt-4">
+          {(["attendance", "drills"] as const).map((viewKey) => (
+            <button
+              key={viewKey}
+              type="button"
+              onClick={() => setView(viewKey)}
+              className={cn(
+                "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                view === viewKey
+                  ? "border-basketball-orange text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {viewKey === "attendance" ? t("attendanceModal.attendanceTab") : t("attendanceModal.drillsTab")}
+            </button>
+          ))}
+        </div>
+
+        {view === "drills" ? (
+          <DrillTrackerPanel players={players} date={session?.date ?? ""} />
+        ) : isLoading ? (
+          <div className="space-y-4 mt-6">
             {[1, 2, 3, 4, 5].map((i) => (
               <Skeleton key={i} className="h-16" />
             ))}

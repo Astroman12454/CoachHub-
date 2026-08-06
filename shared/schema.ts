@@ -151,6 +151,19 @@ export const playerInjuries = pgTable("player_injuries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// One row per shot/rep logged during practice (e.g. one free throw), not
+// an aggregate — so a quick tap during a drill just inserts a row, and
+// season totals are a simple count/sum over this table instead of needing
+// careful increment/decrement logic to support undo.
+export const drillAttempts = pgTable("drill_attempts", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  drillName: text("drill_name").notNull(),
+  date: text("date").notNull(),
+  made: integer("made").notNull(), // 1 = made, 0 = missed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
@@ -259,6 +272,13 @@ export const recoverInjurySchema = z.object({
   recoveredDate: z.string().min(1, "Date is required"),
 });
 export type RecoverInjury = z.infer<typeof recoverInjurySchema>;
+
+export const logDrillAttemptSchema = z.object({
+  drillName: z.string().min(1, "Drill name is required").max(100),
+  date: z.string().min(1, "Date is required"),
+  made: z.union([z.literal(0), z.literal(1)]),
+});
+export type LogDrillAttempt = z.infer<typeof logDrillAttemptSchema>;
 
 export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
 
@@ -405,6 +425,7 @@ export type Player = typeof players.$inferSelect;
 export type SkillRating = typeof skillRatings.$inferSelect;
 export type PlayerNote = typeof playerNotes.$inferSelect;
 export type PlayerInjury = typeof playerInjuries.$inferSelect;
+export type DrillAttempt = typeof drillAttempts.$inferSelect;
 
 // A player's development profile: current standing (latest rating per
 // category, null until the coach rates them at least once), every past

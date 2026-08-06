@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -18,7 +18,7 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { SKILL_CATEGORIES } from "@shared/schema";
-import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury } from "@shared/schema";
+import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt } from "@shared/schema";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -80,6 +80,23 @@ export default function PlayerProfile() {
     enabled: !isNaN(playerId),
   });
   const hasActiveInjury = injuries.some((i) => i.status === "active");
+
+  const { data: drillAttempts = [] } = useQuery<DrillAttempt[]>({
+    queryKey: [`/api/players/${playerId}/drill-attempts`],
+    enabled: !isNaN(playerId),
+  });
+  const drillSummary = useMemo(() => {
+    const byDrill = new Map<string, { made: number; total: number }>();
+    for (const attempt of drillAttempts) {
+      const entry = byDrill.get(attempt.drillName) ?? { made: 0, total: 0 };
+      entry.total += 1;
+      if (attempt.made === 1) entry.made += 1;
+      byDrill.set(attempt.drillName, entry);
+    }
+    return Array.from(byDrill.entries())
+      .map(([drillName, { made, total }]) => ({ drillName, made, total, pct: total > 0 ? Math.round((made / total) * 100) : 0 }))
+      .sort((a, b) => b.total - a.total);
+  }, [drillAttempts]);
 
   const addNoteMutation = useMutation({
     mutationFn: async () => apiRequest("POST", `/api/players/${playerId}/notes`, { content: noteDraft.trim() }),
@@ -354,6 +371,31 @@ export default function PlayerProfile() {
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">{t("playerProfile.noInjuriesYet")}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("playerProfile.drillStats")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {drillSummary.length > 0 ? (
+              <ul className="space-y-2.5">
+                {drillSummary.map((row) => (
+                  <li key={row.drillName} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium text-foreground truncate">{row.drillName}</span>
+                    <span className="text-muted-foreground tabular-nums flex-shrink-0">
+                      {t("drillTracker.tally", { made: row.made, total: row.total, pct: row.pct })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("playerProfile.noDrillStatsYet")}</p>
             )}
           </CardContent>
         </Card>

@@ -22,6 +22,7 @@ import {
   createPlayerNoteSchema,
   createPlayerInjurySchema,
   recoverInjurySchema,
+  logDrillAttemptSchema,
   insertSessionTemplateSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
@@ -663,6 +664,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete injury" });
+    }
+  });
+
+  // Drill stat tracking — one attempt per tap during practice. The
+  // team-wide list backs the live tally shown while marking attendance
+  // (every roster player at once, no N+1); the per-player list is a
+  // player's full season history shown on their profile.
+  app.get("/api/players/drill-attempts", requireTeam, async (req, res) => {
+    try {
+      const attempts = await storage.getTeamDrillAttempts(req.session.currentTeamId!);
+      res.json(attempts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch drill attempts" });
+    }
+  });
+
+  app.get("/api/players/:id/drill-attempts", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const attempts = await storage.getPlayerDrillAttempts(id);
+      res.json(attempts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch drill attempts" });
+    }
+  });
+
+  app.post("/api/players/:id/drill-attempts", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const data = logDrillAttemptSchema.parse(req.body);
+      const attempt = await storage.logDrillAttempt(id, data);
+      res.status(201).json(attempt);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid drill attempt data" });
+    }
+  });
+
+  app.delete("/api/players/:id/drill-attempts/:attemptId", requireTeam, async (req, res) => {
+    try {
+      const attemptId = parseId(req, res, "attemptId");
+      if (attemptId === null) return;
+      const deleted = await storage.deleteDrillAttempt(attemptId, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Drill attempt not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete drill attempt" });
     }
   });
 

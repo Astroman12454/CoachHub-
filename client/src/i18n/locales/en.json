@@ -324,7 +324,9 @@
     "couldntUpdateInjury": "Couldn't update injury",
     "couldntDeleteInjury": "Couldn't delete injury",
     "deleteInjuryConfirmTitle": "Delete this injury record?",
-    "deleteInjuryConfirmDescription": "This can't be undone."
+    "deleteInjuryConfirmDescription": "This can't be undone.",
+    "drillStats": "Drill Stats",
+    "noDrillStatsYet": "No drills logged yet — track attempts from a session's attendance screen."
   },
   "playerForm": {
     "success": "Success",
@@ -605,7 +607,22 @@
     "durationMinutes": "{{count}} minutes",
     "attendanceRateAriaLabel": "Attendance rate",
     "markedAt": "Marked at {{time}}",
-    "closeAttendance": "Close Attendance"
+    "closeAttendance": "Close Attendance",
+    "attendanceTab": "Attendance",
+    "drillsTab": "Drills"
+  },
+  "drillTracker": {
+    "drillName": "Drill",
+    "drillNamePlaceholder": "e.g., Free throws",
+    "pickADrill": "Enter or pick a drill above to start logging attempts.",
+    "tally": "{{made}}/{{total}} ({{pct}}%)",
+    "noAttemptsYet": "No attempts logged yet",
+    "logMadeFor": "Log made attempt for {{name}}",
+    "logMissedFor": "Log missed attempt for {{name}}",
+    "undoLastFor": "Undo last attempt for {{name}}",
+    "undo": "Undo",
+    "couldntLogAttempt": "Couldn't log attempt",
+    "couldntUndo": "Couldn't undo attempt"
   },
   "portal": {
     "linkNotAvailable": "Link not available",
