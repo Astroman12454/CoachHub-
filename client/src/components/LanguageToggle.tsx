@@ -14,7 +14,7 @@ export default function LanguageToggle() {
       title={isSpanish ? t("common.switchToEnglish") : t("common.switchToSpanish")}
     >
       <Languages className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-      <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-bold uppercase bg-basketball-orange text-white rounded px-0.5 leading-tight">
+      <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-bold uppercase basketball-orange text-white rounded px-0.5 leading-tight">
         {isSpanish ? "ES" : "EN"}
       </span>
     </button>
