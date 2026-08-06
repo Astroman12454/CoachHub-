@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +48,7 @@ interface ExtractedBoxScore {
 }
 
 export default function GameModal({ isOpen, onClose }: GameModalProps) {
+  const { t } = useTranslation();
   const restoreFocus = useDialogFocusReturn(isOpen);
   const { toast } = useToast();
   const { account } = useAuth();
@@ -86,11 +88,11 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
   const handleUploadClick = () => {
     if (!canImport) {
       toast({
-        title: "Free plan",
-        description: "Upgrade to a paid plan to import box scores from a photo or PDF.",
+        title: t("sessionModal.freePlan"),
+        description: t("gameModal.upgradeToImport"),
         action: (
-          <ToastAction altText="Upgrade" onClick={() => startCheckout()}>
-            Upgrade
+          <ToastAction altText={t("sessionModal.upgrade")} onClick={() => startCheckout()}>
+            {t("sessionModal.upgrade")}
           </ToastAction>
         ),
       });
@@ -110,7 +112,7 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
       formData.append("file", file);
       const res = await fetch("/api/games/analyze", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) {
-        let message = "Couldn't read that file.";
+        let message = t("gameModal.couldntReadFile");
         try {
           const body = await res.json();
           if (typeof body?.message === "string") message = body.message;
@@ -140,14 +142,14 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
       setRows(newRows);
       setUnmatchedNote(
         unmatchedCount > 0
-          ? `${unmatchedCount} player${unmatchedCount === 1 ? "" : "s"} from the photo couldn't be matched to your roster automatically — pick them from the dropdown below, or remove the row.`
+          ? t("gameModal.unmatchedNote", { count: unmatchedCount })
           : null,
       );
       setMode("form");
     } catch (error) {
       toast({
-        title: "Import failed",
-        description: error instanceof Error ? error.message : "Couldn't read that file.",
+        title: t("gameModal.importFailed"),
+        description: error instanceof Error ? error.message : t("gameModal.couldntReadFile"),
         variant: "destructive",
       });
     } finally {
@@ -186,12 +188,12 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/games"] });
-      toast({ title: "Success", description: "Game saved." });
+      toast({ title: t("playerForm.success"), description: t("gameModal.gameSaved") });
       restoreFocus();
       onClose();
       resetAll();
     } catch (error) {
-      toast({ title: "Error", description: extractErrorMessage(error) ?? "Failed to save game", variant: "destructive" });
+      toast({ title: t("players.error"), description: extractErrorMessage(error) ?? t("gameModal.failedToSaveGame"), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -201,10 +203,9 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-display uppercase tracking-tight">Log a Game</DialogTitle>
+          <DialogTitle className="text-xl font-display uppercase tracking-tight">{t("gameModal.logAGame")}</DialogTitle>
           <DialogDescription className="sr-only">
-            Record a game's result and, optionally, each player's stats — either by hand or by uploading a
-            photo or PDF of the box score.
+            {t("gameModal.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -215,8 +216,8 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
               onClick={() => { setRows([]); setMode("form"); }}
               className="border border-border rounded-lg p-6 text-left hover:border-basketball-orange hover:shadow-sm transition-all"
             >
-              <h3 className="font-display uppercase tracking-tight text-base text-foreground mb-1">Enter Manually</h3>
-              <p className="text-sm text-muted-foreground">Type in the score and any stats you want to track.</p>
+              <h3 className="font-display uppercase tracking-tight text-base text-foreground mb-1">{t("gameModal.enterManually")}</h3>
+              <p className="text-sm text-muted-foreground">{t("gameModal.enterManuallyDescription")}</p>
             </button>
 
             <button
@@ -226,11 +227,11 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
               className="border border-border rounded-lg p-6 text-left hover:border-basketball-orange hover:shadow-sm transition-all relative disabled:opacity-70"
             >
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-display uppercase tracking-tight text-base text-foreground">Import from Photo/PDF</h3>
-                {!canImport && <Badge variant="secondary" className="text-xs">Paid</Badge>}
+                <h3 className="font-display uppercase tracking-tight text-base text-foreground">{t("gameModal.importFromPhotoPdf")}</h3>
+                {!canImport && <Badge variant="secondary" className="text-xs">{t("sessionModal.paid")}</Badge>}
               </div>
               <p className="text-sm text-muted-foreground pr-6">
-                {analyzing ? "Reading the box score…" : "Upload a scoresheet or scoreboard photo and we'll fill it in."}
+                {analyzing ? t("gameModal.readingBoxScore") : t("gameModal.uploadScoresheetDescription")}
               </p>
               {analyzing && (
                 <Loader2 className="w-4 h-4 animate-spin absolute top-4 right-4 text-basketball-orange" aria-hidden="true" />
@@ -242,7 +243,7 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
               accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
               onChange={handleFileChange}
               className="hidden"
-              aria-label="Box score photo or PDF"
+              aria-label={t("gameModal.boxScorePhotoOrPdf")}
             />
           </div>
         )}
@@ -257,64 +258,64 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="game-opponent">Opponent</Label>
-                <Input id="game-opponent" value={opponent} onChange={(e) => setOpponent(e.target.value)} placeholder="e.g., Central High" required />
+                <Label htmlFor="game-opponent">{t("gameModal.opponent")}</Label>
+                <Input id="game-opponent" value={opponent} onChange={(e) => setOpponent(e.target.value)} placeholder={t("gameModal.opponentPlaceholder")} required />
               </div>
               <div>
-                <Label htmlFor="game-date">Date</Label>
+                <Label htmlFor="game-date">{t("sessionModal.date")}</Label>
                 <Input id="game-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
               </div>
               <div>
-                <Label htmlFor="game-location">Location</Label>
+                <Label htmlFor="game-location">{t("gameModal.location")}</Label>
                 <Select value={location || "unset"} onValueChange={(v) => setLocation(v === "unset" ? "" : v)}>
                   <SelectTrigger id="game-location">
-                    <SelectValue placeholder="Home or away" />
+                    <SelectValue placeholder={t("gameModal.homeOrAway")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unset">Not set</SelectItem>
-                    <SelectItem value="home">Home</SelectItem>
-                    <SelectItem value="away">Away</SelectItem>
+                    <SelectItem value="unset">{t("gameModal.notSet")}</SelectItem>
+                    <SelectItem value="home">{t("gameModal.home")}</SelectItem>
+                    <SelectItem value="away">{t("gameModal.away")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="game-team-score">Your Score</Label>
+                  <Label htmlFor="game-team-score">{t("gameModal.yourScore")}</Label>
                   <Input id="game-team-score" type="number" min="0" inputMode="numeric" value={teamScore} onChange={(e) => setTeamScore(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="game-opp-score">Opponent Score</Label>
+                  <Label htmlFor="game-opp-score">{t("gameModal.opponentScore")}</Label>
                   <Input id="game-opp-score" type="number" min="0" inputMode="numeric" value={opponentScore} onChange={(e) => setOpponentScore(e.target.value)} />
                 </div>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="game-notes">Notes (Optional)</Label>
-              <Textarea id="game-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="How the team played, standout moments..." />
+              <Label htmlFor="game-notes">{t("sessionModal.notesOptional")}</Label>
+              <Textarea id="game-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("gameModal.notesPlaceholder")} />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display uppercase tracking-tight text-base text-foreground">Player Stats (Optional)</h3>
+                <h3 className="font-display uppercase tracking-tight text-base text-foreground">{t("gameModal.playerStatsOptional")}</h3>
                 <Button type="button" variant="outline" size="sm" onClick={addRow}>
                   <Plus className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
-                  Add Player
+                  {t("dashboard.addPlayer")}
                 </Button>
               </div>
 
               {rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No player stats added yet. Add a player to log points, rebounds, and more.</p>
+                <p className="text-sm text-muted-foreground">{t("gameModal.noPlayerStatsYet")}</p>
               ) : (
                 <div className="overflow-x-auto -mx-1">
                   <table className="w-full text-sm min-w-[600px]">
                     <thead>
                       <tr className="text-left text-muted-foreground">
-                        <th className="px-1 py-1 font-medium">Player</th>
+                        <th className="px-1 py-1 font-medium">{t("gameModal.player")}</th>
                         {STAT_FIELDS.map((f) => (
                           <th key={f} className="px-1 py-1 font-medium text-center">{STAT_LABELS[f]}</th>
                         ))}
-                        <th className="px-1 py-1"><span className="sr-only">Remove</span></th>
+                        <th className="px-1 py-1"><span className="sr-only">{t("gameModal.remove")}</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -325,11 +326,11 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
                               value={row.playerId?.toString() ?? "unmatched"}
                               onValueChange={(v) => updateRow(row.key, { playerId: v === "unmatched" ? null : parseInt(v, 10) })}
                             >
-                              <SelectTrigger aria-label="Player" className="h-8">
-                                <SelectValue placeholder="Select player" />
+                              <SelectTrigger aria-label={t("gameModal.player")} className="h-8">
+                                <SelectValue placeholder={t("gameModal.selectPlayer")} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="unmatched">Unmatched — skip</SelectItem>
+                                <SelectItem value="unmatched">{t("gameModal.unmatchedSkip")}</SelectItem>
                                 {roster.map((p) => (
                                   <SelectItem key={p.id} value={p.id.toString()} disabled={usedPlayerIds.has(p.id) && row.playerId !== p.id}>
                                     {p.name}
@@ -347,7 +348,7 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
                                 className="h-8 w-14 text-center px-1"
                                 value={row[stat]}
                                 onChange={(e) => updateRow(row.key, { [stat]: Math.max(0, parseInt(e.target.value, 10) || 0) } as Partial<StatRow>)}
-                                aria-label={`${STAT_LABELS[stat]} for ${roster.find((p) => p.id === row.playerId)?.name ?? "player"}`}
+                                aria-label={t("gameModal.statForPlayer", { stat: STAT_LABELS[stat], name: roster.find((p) => p.id === row.playerId)?.name ?? t("gameModal.player").toLowerCase() })}
                               />
                             </td>
                           ))}
@@ -358,7 +359,7 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={() => removeRow(row.key)}
-                              aria-label="Remove player from box score"
+                              aria-label={t("gameModal.removePlayerFromBoxScore")}
                             >
                               <X className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
                             </Button>
@@ -373,10 +374,10 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
 
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button type="button" variant="outline" onClick={() => setMode("choose")}>
-                Back
+                {t("gameModal.back")}
               </Button>
               <Button type="submit" className="basketball-orange basketball-orange-hover text-white" disabled={saving || !opponent || !date}>
-                {saving ? "Saving..." : "Save Game"}
+                {saving ? t("common.saving") : t("gameModal.saveGame")}
               </Button>
             </div>
           </form>

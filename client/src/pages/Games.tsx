@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, MapPin, Trash2, Plus, Trophy, Menu, BellRing } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import GameModal from "@/components/GameModal";
 import PlayerStatsTable from "@/components/PlayerStatsTable";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -24,20 +25,21 @@ function todayISO(): string {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
-function resultBadge(game: Game) {
+function resultBadge(game: Game, t: (key: string) => string) {
   if (game.teamScore == null || game.opponentScore == null) return null;
   if (game.teamScore === game.opponentScore) {
-    return <Badge variant="secondary">TIE</Badge>;
+    return <Badge variant="secondary">{t("games.tie")}</Badge>;
   }
   const won = game.teamScore > game.opponentScore;
   return (
     <Badge className={won ? "bg-success text-white hover:bg-success" : "bg-red-600 text-white hover:bg-red-600"}>
-      {won ? "W" : "L"}
+      {won ? t("games.win") : t("games.loss")}
     </Badge>
   );
 }
 
 export default function Games() {
+  const { t } = useTranslation();
   const { openMobile } = useSidebar();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
@@ -49,7 +51,7 @@ export default function Games() {
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/games",
-    errorMessage: "Failed to delete game",
+    errorMessage: t("games.failedToDelete"),
   });
 
   const { toast } = useToast();
@@ -60,16 +62,16 @@ export default function Games() {
     },
     onSuccess: (data) => {
       toast({
-        title: data.sent > 0 ? "Reminder sent" : "No one to notify yet",
+        title: data.sent > 0 ? t("sessions.reminderSent") : t("sessions.noOneToNotify"),
         description: data.sent > 0
-          ? `Notified ${data.sent} player${data.sent === 1 ? "" : "s"} subscribed to their portal.`
-          : "No players have enabled notifications on their portal link yet.",
+          ? t("sessions.notifiedCount", { count: data.sent })
+          : t("sessions.noPlayersNotifications"),
       });
     },
     onError: (error) => {
       toast({
-        title: "Couldn't send reminder",
-        description: extractErrorMessage(error) ?? "Try again.",
+        title: t("sessions.couldntSendReminder"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -94,7 +96,7 @@ export default function Games() {
 
   const confirmDeleteGame = () => {
     if (gameToDelete) {
-      requestDelete(gameToDelete.id, `Game vs. ${gameToDelete.opponent} deleted.`);
+      requestDelete(gameToDelete.id, t("games.deletedToast", { opponent: gameToDelete.opponent }));
       setGameToDelete(null);
     }
   };
@@ -106,21 +108,21 @@ export default function Games() {
           <button
             onClick={openMobile}
             className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-            aria-label="Open navigation menu"
+            aria-label={t("common.openNavigationMenu")}
           >
             <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
           </button>
           <div>
-            <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">Games</h2>
+            <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">{t("nav.games")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {games.length > 0 ? `Record: ${record.wins}-${record.losses}${record.ties > 0 ? `-${record.ties}` : ""}` : "Track results and box scores"}
+              {games.length > 0 ? t("games.record", { wins: record.wins, losses: record.losses, ties: record.ties > 0 ? `-${record.ties}` : "" }) : t("games.trackResults")}
             </p>
           </div>
         </div>
         <Button onClick={() => setIsCreateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
           <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-          <span className="hidden sm:inline">New Game</span>
-          <span className="sm:hidden">New</span>
+          <span className="hidden sm:inline">{t("games.newGame")}</span>
+          <span className="sm:hidden">{t("topBar.new")}</span>
         </Button>
       </div>
     </header>
@@ -128,19 +130,19 @@ export default function Games() {
 
   const tabBar = (
     <div className="flex gap-1 border-b border-border px-4 lg:px-6">
-      {(["games", "stats"] as const).map((t) => (
+      {(["games", "stats"] as const).map((tabKey) => (
         <button
-          key={t}
+          key={tabKey}
           type="button"
-          onClick={() => setTab(t)}
+          onClick={() => setTab(tabKey)}
           className={cn(
             "px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-            tab === t
+            tab === tabKey
               ? "border-basketball-orange text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
-          {t === "games" ? "Games" : "Player Stats"}
+          {tabKey === "games" ? t("nav.games") : t("games.playerStats")}
         </button>
       ))}
     </div>
@@ -174,9 +176,9 @@ export default function Games() {
         ) : sortedGames.length === 0 ? (
           <EmptyState
             icon={Trophy}
-            title="No Games Logged"
-            description="Record your first game — type it in by hand, or upload a photo of the box score."
-            action={{ label: "Log First Game", icon: Plus, onClick: () => setIsCreateOpen(true) }}
+            title={t("games.emptyTitle")}
+            description={t("games.emptyDescription")}
+            action={{ label: t("games.logFirstGame"), icon: Plus, onClick: () => setIsCreateOpen(true) }}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -186,7 +188,7 @@ export default function Games() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1">
-                        vs. {game.opponent}
+                        {t("games.vsOpponent", { opponent: game.opponent })}
                       </CardTitle>
                       <div className="flex items-center text-sm text-muted-foreground gap-3">
                         <span className="flex items-center gap-1">
@@ -209,8 +211,8 @@ export default function Games() {
                           className="text-muted-foreground hover:text-foreground"
                           onClick={() => notifyMutation.mutate(game.id)}
                           disabled={notifyMutation.isPending}
-                          aria-label={`Notify players about the game vs. ${game.opponent}`}
-                          title="Send a reminder to subscribed players"
+                          aria-label={t("games.notifyPlayersAbout", { opponent: game.opponent })}
+                          title={t("sessions.sendReminderTitle")}
                         >
                           <BellRing className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                         </Button>
@@ -220,7 +222,7 @@ export default function Games() {
                         size="icon"
                         className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
                         onClick={() => setGameToDelete(game)}
-                        aria-label={`Delete game vs. ${game.opponent}`}
+                        aria-label={t("games.deleteGameVs", { opponent: game.opponent })}
                       >
                         <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
@@ -229,12 +231,12 @@ export default function Games() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Score</span>
+                    <span className="text-sm text-muted-foreground">{t("games.score")}</span>
                     <div className="flex items-center gap-2">
                       <span className="font-display font-bold text-xl tabular-nums text-foreground">
                         {game.teamScore ?? "–"}<span className="text-muted-foreground mx-1">-</span>{game.opponentScore ?? "–"}
                       </span>
-                      {resultBadge(game)}
+                      {resultBadge(game, t)}
                     </div>
                   </div>
                   {game.notes && (
@@ -252,8 +254,8 @@ export default function Games() {
       <ConfirmDialog
         open={!!gameToDelete}
         onOpenChange={(open) => !open && setGameToDelete(null)}
-        title="Delete game?"
-        description={`This will permanently delete the game vs. "${gameToDelete?.opponent}" and its box score. This can't be undone.`}
+        title={t("games.deleteConfirmTitle")}
+        description={t("games.deleteConfirmDescription", { opponent: gameToDelete?.opponent })}
         onConfirm={confirmDeleteGame}
       />
     </div>

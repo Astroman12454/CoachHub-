@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import EmptyState from "@/components/EmptyState";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,9 +10,6 @@ import type { Player, PlayerGameStatsSummary } from "@shared/schema";
 
 const SORT_FIELDS = ["points", "rebounds", "assists", "steals", "blocks"] as const;
 type SortField = (typeof SORT_FIELDS)[number];
-const SORT_LABELS: Record<SortField, string> = {
-  points: "Points", rebounds: "Rebounds", assists: "Assists", steals: "Steals", blocks: "Blocks",
-};
 
 const AVG_COLUMNS = ["points", "rebounds", "assists", "steals", "blocks", "turnovers", "fouls"] as const;
 const AVG_LABELS: Record<(typeof AVG_COLUMNS)[number], string> = {
@@ -28,6 +26,7 @@ function average(total: number, gamesPlayed: number): string {
 }
 
 export default function PlayerStatsTable() {
+  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState<SortField>("points");
 
   const { data: summary = [], isLoading: isLoadingSummary } = useQuery<PlayerGameStatsSummary[]>({
@@ -59,8 +58,8 @@ export default function PlayerStatsTable() {
     return (
       <EmptyState
         icon={BarChart3}
-        title="No Player Stats Yet"
-        description="Add stats when logging a game — by hand or from a photo — to see season averages and a leaderboard here."
+        title={t("playerStatsTable.emptyTitle")}
+        description={t("playerStatsTable.emptyDescription")}
       />
     );
   }
@@ -69,12 +68,12 @@ export default function PlayerStatsTable() {
     <div>
       <div className="flex items-center justify-end mb-3">
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortField)}>
-          <SelectTrigger className="w-44" aria-label="Sort by">
-            <SelectValue placeholder="Sort by" />
+          <SelectTrigger className="w-44" aria-label={t("playerStatsTable.sortBy")}>
+            <SelectValue placeholder={t("playerStatsTable.sortBy")} />
           </SelectTrigger>
           <SelectContent>
             {SORT_FIELDS.map((f) => (
-              <SelectItem key={f} value={f}>Sort by {SORT_LABELS[f]}</SelectItem>
+              <SelectItem key={f} value={f}>{t("playerStatsTable.sortByField", { field: t(`playerStatsTable.sortLabels.${f}`) })}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -85,7 +84,7 @@ export default function PlayerStatsTable() {
           <thead>
             <tr className="text-left text-muted-foreground border-b border-border">
               <th className="px-2 py-2 font-medium">#</th>
-              <th className="px-2 py-2 font-medium">Player</th>
+              <th className="px-2 py-2 font-medium">{t("gameModal.player")}</th>
               <th className="px-2 py-2 font-medium text-center">GP</th>
               {AVG_COLUMNS.map((c) => (
                 <th
