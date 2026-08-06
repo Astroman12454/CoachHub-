@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff, BellRing } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { urlBase64ToUint8Array, isPushSupported } from "@/lib/push";
@@ -17,6 +18,7 @@ type Status = "checking" | "unsupported" | "denied" | "subscribed" | "unsubscrib
 // browser support, or the server has no VAPID keys configured) rather than
 // offering a button that would just fail.
 export default function PortalNotificationsToggle({ token, vapidPublicKey }: PortalNotificationsToggleProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [status, setStatus] = useState<Status>("checking");
   const [busy, setBusy] = useState(false);
@@ -62,10 +64,10 @@ export default function PortalNotificationsToggle({ token, vapidPublicKey }: Por
       });
       if (!res.ok) throw new Error("Failed to save subscription");
       setStatus("subscribed");
-      toast({ title: "Notifications on", description: "You'll get a reminder before practices and games." });
+      toast({ title: t("portalNotificationsToggle.notificationsOn"), description: t("portalNotificationsToggle.notificationsOnDescription") });
     } catch {
       setStatus(Notification.permission === "denied" ? "denied" : "unsubscribed");
-      toast({ title: "Couldn't enable notifications", description: "Please try again.", variant: "destructive" });
+      toast({ title: t("portalNotificationsToggle.couldntEnable"), description: t("portalNotificationsToggle.pleaseTryAgain"), variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -85,9 +87,9 @@ export default function PortalNotificationsToggle({ token, vapidPublicKey }: Por
         await sub.unsubscribe();
       }
       setStatus("unsubscribed");
-      toast({ title: "Notifications off" });
+      toast({ title: t("portalNotificationsToggle.notificationsOff") });
     } catch {
-      toast({ title: "Couldn't turn off notifications", description: "Please try again.", variant: "destructive" });
+      toast({ title: t("portalNotificationsToggle.couldntDisable"), description: t("portalNotificationsToggle.pleaseTryAgain"), variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -99,7 +101,7 @@ export default function PortalNotificationsToggle({ token, vapidPublicKey }: Por
     return (
       <p className="text-xs text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
         <BellOff className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
-        Notifications blocked
+        {t("portalNotificationsToggle.notificationsBlocked")}
       </p>
     );
   }
@@ -108,7 +110,7 @@ export default function PortalNotificationsToggle({ token, vapidPublicKey }: Por
     return (
       <Button type="button" variant="outline" size="sm" onClick={unsubscribe} disabled={busy} className="whitespace-nowrap">
         <BellRing className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
-        Notifications On
+        {t("portalNotificationsToggle.notificationsOnButton")}
       </Button>
     );
   }
@@ -116,7 +118,7 @@ export default function PortalNotificationsToggle({ token, vapidPublicKey }: Por
   return (
     <Button type="button" variant="outline" size="sm" onClick={subscribe} disabled={busy} className="whitespace-nowrap">
       <Bell className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
-      {busy ? "Enabling…" : "Enable Notifications"}
+      {busy ? t("portalNotificationsToggle.enablingEllipsis") : t("portalNotificationsToggle.enableNotifications")}
     </Button>
   );
 }

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
 import RatePlayerDialog from "@/components/RatePlayerDialog";
@@ -17,14 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { SKILL_CATEGORIES } from "@shared/schema";
 import type { Player, PlayerDevelopment, PlayerGameStatsSummary } from "@shared/schema";
-
-const SKILL_LABELS: Record<string, string> = {
-  shooting: "Shooting",
-  dribbling: "Dribbling",
-  defense: "Defense",
-  passing: "Passing",
-  conditioning: "Conditioning",
-};
 
 // `createdAt`/`ratedAt` are typed Date in the DB schema, but arrive over the
 // wire as ISO strings once JSON-serialized — accepting both here means
@@ -48,6 +41,7 @@ function groupHistory(history: PlayerDevelopment["history"]): { ratedAt: string;
 }
 
 export default function PlayerProfile() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const playerId = parseInt(params.id, 10);
   const [, setLocation] = useLocation();
@@ -82,7 +76,7 @@ export default function PlayerProfile() {
       queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
     },
     onError: (error) => {
-      toast({ title: "Couldn't add note", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("playerProfile.couldntAddNote"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -92,7 +86,7 @@ export default function PlayerProfile() {
       queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
     },
     onError: (error) => {
-      toast({ title: "Couldn't delete note", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("playerProfile.couldntDeleteNote"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -115,8 +109,8 @@ export default function PlayerProfile() {
       <div className="flex flex-col h-full">
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <ErrorState
-            title="Couldn't load this player"
-            description="They may have been removed, or something went wrong loading their profile."
+            title={t("playerProfile.couldntLoadPlayer")}
+            description={t("playerProfile.couldntLoadPlayerDescription")}
             onRetry={() => refetch()}
           />
         </main>
@@ -131,11 +125,11 @@ export default function PlayerProfile() {
           <button
             onClick={openMobile}
             className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-            aria-label="Open navigation menu"
+            aria-label={t("common.openNavigationMenu")}
           >
             <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
           </button>
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/players")} aria-label="Back to players">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/players")} aria-label={t("playerProfile.backToPlayers")}>
             <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
           <div className="flex-1 min-w-0">
@@ -147,37 +141,37 @@ export default function PlayerProfile() {
                 variant={player.isActive === 1 ? "default" : "secondary"}
                 className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
               >
-                {player.isActive === 1 ? "Active" : "Inactive"}
+                {player.isActive === 1 ? t("players.active") : t("players.inactive")}
               </Badge>
             </div>
             {player.position && <p className="text-sm text-muted-foreground mt-0.5">{player.position}</p>}
           </div>
           <Button onClick={() => setIsRateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
             <Star className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            <span className="hidden sm:inline">Rate Player</span>
-            <span className="sm:hidden">Rate</span>
+            <span className="hidden sm:inline">{t("playerProfile.ratePlayer")}</span>
+            <span className="sm:hidden">{t("playerProfile.rate")}</span>
           </Button>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Attendance Rate" value={`${attendanceStats?.rate ?? 0}%`} icon={CheckCircle2} color="success" />
-          <StatCard label="Games Played" value={gameStats?.gamesPlayed ?? 0} icon={TrendingUp} color="court" />
-          <StatCard label="Season Points" value={gameStats?.points ?? 0} icon={Star} color="orange" />
-          <StatCard label="Season Assists" value={gameStats?.assists ?? 0} icon={MessageSquarePlus} color="violet" />
+          <StatCard label={t("playerProfile.attendanceRate")} value={`${attendanceStats?.rate ?? 0}%`} icon={CheckCircle2} color="success" />
+          <StatCard label={t("playerProfile.gamesPlayed")} value={gameStats?.gamesPlayed ?? 0} icon={TrendingUp} color="court" />
+          <StatCard label={t("playerProfile.seasonPoints")} value={gameStats?.points ?? 0} icon={Star} color="orange" />
+          <StatCard label={t("playerProfile.seasonAssists")} value={gameStats?.assists ?? 0} icon={MessageSquarePlus} color="violet" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Skill Development</CardTitle>
+              <CardTitle className="text-base">{t("playerProfile.skillDevelopment")}</CardTitle>
             </CardHeader>
             <CardContent>
               <SkillRadarChart ratings={development?.current ?? null} />
               {!development?.current && (
                 <p className="text-sm text-muted-foreground text-center mt-2">
-                  No ratings yet — tap "Rate Player" to start tracking development.
+                  {t("playerProfile.noRatingsYet")}
                 </p>
               )}
             </CardContent>
@@ -185,19 +179,19 @@ export default function PlayerProfile() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Rating History</CardTitle>
+              <CardTitle className="text-base">{t("playerProfile.ratingHistory")}</CardTitle>
             </CardHeader>
             <CardContent>
               {historyGroups.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No evaluations recorded yet.</p>
+                <p className="text-sm text-muted-foreground">{t("playerProfile.noEvaluationsYet")}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-muted-foreground">
-                        <th className="pb-2 pr-3 font-medium">Date</th>
+                        <th className="pb-2 pr-3 font-medium">{t("playerProfile.date")}</th>
                         {SKILL_CATEGORIES.map((cat) => (
-                          <th key={cat} className="pb-2 pr-3 font-medium text-center">{SKILL_LABELS[cat].slice(0, 3)}</th>
+                          <th key={cat} className="pb-2 pr-3 font-medium text-center">{t(`categories.exercise.${cat}`, cat).slice(0, 3)}</th>
                         ))}
                       </tr>
                     </thead>
@@ -222,15 +216,15 @@ export default function PlayerProfile() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Coach Notes</CardTitle>
+            <CardTitle className="text-base">{t("playerProfile.coachNotes")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2">
               <Textarea
                 value={noteDraft}
                 onChange={(e) => setNoteDraft(e.target.value)}
-                placeholder="Observations, goals, things to work on…"
-                aria-label="New note"
+                placeholder={t("playerProfile.notePlaceholder")}
+                aria-label={t("playerProfile.newNote")}
                 rows={2}
                 className="resize-none"
               />
@@ -241,7 +235,7 @@ export default function PlayerProfile() {
                 className="sm:self-end whitespace-nowrap"
               >
                 <MessageSquarePlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-                Add Note
+                {t("playerProfile.addNote")}
               </Button>
             </div>
 
@@ -260,7 +254,7 @@ export default function PlayerProfile() {
                       size="icon"
                       className="text-muted-foreground hover:text-red-600 flex-shrink-0"
                       onClick={() => setNoteToDelete(note.id)}
-                      aria-label="Delete note"
+                      aria-label={t("playerProfile.deleteNote")}
                     >
                       <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                     </Button>
@@ -268,7 +262,7 @@ export default function PlayerProfile() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">No notes yet.</p>
+              <p className="text-sm text-muted-foreground">{t("playerProfile.noNotesYet")}</p>
             )}
           </CardContent>
         </Card>
@@ -283,8 +277,8 @@ export default function PlayerProfile() {
       <ConfirmDialog
         open={noteToDelete !== null}
         onOpenChange={(open) => !open && setNoteToDelete(null)}
-        title="Delete this note?"
-        description="This can't be undone."
+        title={t("playerProfile.deleteNoteConfirmTitle")}
+        description={t("playerProfile.deleteNoteConfirmDescription")}
         onConfirm={() => {
           if (noteToDelete !== null) deleteNoteMutation.mutate(noteToDelete);
           setNoteToDelete(null);

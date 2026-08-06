@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Copy, Check, Link2, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ interface PlayerPortalDialogProps {
 // reuses) the link the moment the dialog opens, since there's nothing else
 // to configure first.
 export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPortalDialogProps) {
+  const { t } = useTranslation();
   const open = !!player;
   const restoreFocus = useDialogFocusReturn(open);
   const { toast } = useToast();
@@ -34,7 +36,7 @@ export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPorta
       setUrl(`${window.location.origin}/portal/${data.token}`);
     },
     onError: (error) => {
-      toast({ title: "Couldn't create link", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("playerPortalDialog.couldntCreateLink"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -43,10 +45,10 @@ export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPorta
     onSuccess: () => {
       setUrl(null);
       setCopied(false);
-      toast({ title: "Link revoked", description: "The old link no longer works. You can generate a new one anytime." });
+      toast({ title: t("playerPortalDialog.linkRevoked"), description: t("playerPortalDialog.linkRevokedDescription") });
     },
     onError: (error) => {
-      toast({ title: "Couldn't revoke link", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("playerPortalDialog.couldntRevokeLink"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -69,7 +71,7 @@ export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPorta
     if (!url) return;
     await navigator.clipboard.writeText(url);
     setCopied(true);
-    toast({ title: "Copied", description: "Portal link copied to clipboard." });
+    toast({ title: t("playerPortalDialog.copied"), description: t("playerPortalDialog.copiedDescription") });
   };
 
   return (
@@ -78,23 +80,22 @@ export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPorta
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-tight flex items-center gap-2">
             <Link2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-            Portal Link
+            {t("playerPortalDialog.portalLink")}
           </DialogTitle>
           <DialogDescription>
-            Share this read-only link with {player?.name}'s parent or the player. It shows upcoming
-            practices, games, attendance, and stats — no access to your coach dashboard.
+            {t("playerPortalDialog.dialogDescription", { name: player?.name })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center gap-2">
           <Input
-            value={linkMutation.isPending ? "Generating…" : url ?? ""}
+            value={linkMutation.isPending ? t("playerPortalDialog.generatingEllipsis") : url ?? ""}
             readOnly
-            aria-label="Portal link"
+            aria-label={t("playerPortalDialog.portalLinkLower")}
             className="font-mono text-xs"
             onFocus={(e) => e.currentTarget.select()}
           />
-          <Button type="button" size="icon" variant="outline" onClick={copyLink} disabled={!url} aria-label="Copy link">
+          <Button type="button" size="icon" variant="outline" onClick={copyLink} disabled={!url} aria-label={t("playerPortalDialog.copyLink")}>
             {copied ? <Check className="w-4 h-4" strokeWidth={2} aria-hidden="true" /> : <Copy className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />}
           </Button>
         </div>
@@ -108,10 +109,10 @@ export default function PlayerPortalDialog({ player, onOpenChange }: PlayerPorta
             disabled={!url || revokeMutation.isPending}
           >
             <Trash2 className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
-            Revoke Link
+            {t("playerPortalDialog.revokeLink")}
           </Button>
           <Button type="button" onClick={() => onOpenChange(false)}>
-            Done
+            {t("playerPortalDialog.done")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,14 +8,6 @@ import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { SKILL_CATEGORIES, type SkillRatingInput } from "@shared/schema";
-
-const SKILL_LABELS: Record<string, string> = {
-  shooting: "Shooting",
-  dribbling: "Dribbling",
-  defense: "Defense",
-  passing: "Passing",
-  conditioning: "Conditioning",
-};
 
 interface RatePlayerDialogProps {
   playerId: number | null;
@@ -27,6 +20,7 @@ const DEFAULT_RATINGS: SkillRatingInput = {
 };
 
 export default function RatePlayerDialog({ playerId, playerName, onOpenChange }: RatePlayerDialogProps) {
+  const { t } = useTranslation();
   const open = playerId !== null;
   const restoreFocus = useDialogFocusReturn(open);
   const { toast } = useToast();
@@ -44,11 +38,11 @@ export default function RatePlayerDialog({ playerId, playerName, onOpenChange }:
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
-      toast({ title: "Rating saved", description: "The player's development profile is updated." });
+      toast({ title: t("ratePlayerDialog.ratingSaved"), description: t("ratePlayerDialog.ratingSavedDescription") });
       onOpenChange(false);
     },
     onError: (error) => {
-      toast({ title: "Couldn't save rating", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("ratePlayerDialog.couldntSaveRating"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -61,9 +55,9 @@ export default function RatePlayerDialog({ playerId, playerName, onOpenChange }:
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">Rate {playerName ?? "Player"}</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">{t("ratePlayerDialog.rateTitle", { name: playerName ?? t("ratePlayerDialog.player") })}</DialogTitle>
           <DialogDescription>
-            Score each skill from 1 to 10. This adds a new snapshot to their development history — it doesn't overwrite past ratings.
+            {t("ratePlayerDialog.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -71,7 +65,7 @@ export default function RatePlayerDialog({ playerId, playerName, onOpenChange }:
           {SKILL_CATEGORIES.map((category) => (
             <div key={category}>
               <div className="flex items-center justify-between mb-1.5">
-                <Label htmlFor={`rating-${category}`}>{SKILL_LABELS[category] ?? category}</Label>
+                <Label htmlFor={`rating-${category}`}>{t(`categories.exercise.${category}`, category)}</Label>
                 <span className="font-display font-bold tabular-nums text-basketball-orange">{ratings[category]}</span>
               </div>
               <input
@@ -91,7 +85,7 @@ export default function RatePlayerDialog({ playerId, playerName, onOpenChange }:
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -99,7 +93,7 @@ export default function RatePlayerDialog({ playerId, playerName, onOpenChange }:
             onClick={() => rateMutation.mutate()}
             disabled={rateMutation.isPending}
           >
-            {rateMutation.isPending ? "Saving…" : "Save Rating"}
+            {rateMutation.isPending ? t("ratePlayerDialog.savingEllipsis") : t("ratePlayerDialog.saveRating")}
           </Button>
         </DialogFooter>
       </DialogContent>

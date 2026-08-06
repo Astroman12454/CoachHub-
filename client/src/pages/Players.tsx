@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
 import PlayerPortalDialog from "@/components/PlayerPortalDialog";
@@ -18,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Player } from "@shared/schema";
 
 export default function Players() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -53,8 +55,8 @@ export default function Players() {
         queryClient.setQueryData(context.queryKey, context.previousPlayers);
       }
       toast({
-        title: "Error",
-        description: "Failed to update player",
+        title: t("players.error"),
+        description: t("players.failedToUpdate"),
         variant: "destructive",
       });
     },
@@ -86,7 +88,7 @@ export default function Players() {
   // Group players by position
   const playersByPosition = useMemo(() => {
     return filteredPlayers.reduce((acc, player) => {
-      const position = player.position || "No Position";
+      const position = player.position || t("players.noPosition");
       if (!acc[position]) acc[position] = [];
       acc[position].push(player);
       return acc;
@@ -101,10 +103,10 @@ export default function Players() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Players"
-          subtitle="Manage your team's players"
+          title={t("nav.players")}
+          subtitle={t("players.subtitle")}
           onSearch={setSearchQuery}
-          searchPlaceholder="Search players..."
+          searchPlaceholder={t("players.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -121,10 +123,10 @@ export default function Players() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Players"
-          subtitle="Manage your team's players"
+          title={t("nav.players")}
+          subtitle={t("players.subtitle")}
           onSearch={setSearchQuery}
-          searchPlaceholder="Search players..."
+          searchPlaceholder={t("players.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <ErrorState onRetry={() => refetch()} />
@@ -136,10 +138,10 @@ export default function Players() {
   return (
     <div className="flex flex-col h-full">
       <TopBar
-        title="Players"
-        subtitle="Manage your team's players"
+        title={t("nav.players")}
+        subtitle={t("players.subtitle")}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search players..."
+        searchPlaceholder={t("players.searchPlaceholder")}
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -147,13 +149,13 @@ export default function Players() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center">
             <Select value={filterActive} onValueChange={setFilterActive}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filter by status">
-                <SelectValue placeholder="Filter by status" />
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("players.filterByStatus")}>
+                <SelectValue placeholder={t("players.filterByStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Players</SelectItem>
-                <SelectItem value="active">Active Players</SelectItem>
-                <SelectItem value="inactive">Inactive Players</SelectItem>
+                <SelectItem value="all">{t("players.allPlayers")}</SelectItem>
+                <SelectItem value="active">{t("players.activePlayers")}</SelectItem>
+                <SelectItem value="inactive">{t("players.inactivePlayers")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -163,32 +165,32 @@ export default function Players() {
             onClick={() => setIsCreateModalOpen(true)}
           >
             <UserPlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            Add Player
+            {t("dashboard.addPlayer")}
           </Button>
         </div>
 
         {/* Player Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <StatCard
-            label="Total Players"
+            label={t("players.totalPlayers")}
             value={players.length}
             icon={Users}
             color="court"
           />
           <StatCard
-            label="Active Players"
+            label={t("players.activePlayers")}
             value={players.filter(p => p.isActive === 1).length}
             icon={CheckCircle2}
             color="success"
           />
           <StatCard
-            label="Positions"
+            label={t("players.positions")}
             value={Object.keys(playersByPosition).length}
             icon={Target}
             color="violet"
           />
           <StatCard
-            label="Active Rate"
+            label={t("players.activeRate")}
             value={`${activeRate}%`}
             icon={PieChart}
             color="orange"
@@ -199,14 +201,14 @@ export default function Players() {
         {filteredPlayers.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="No Players Found"
+            title={t("players.emptyTitle")}
             description={
               searchQuery || filterActive !== "all"
-                ? "No players match your current filters."
-                : "Get started by adding your first player to the team."
+                ? t("players.emptyFilterDescription")
+                : t("players.emptyDescription")
             }
             action={!searchQuery && filterActive === "all" ? {
-              label: "Add First Player",
+              label: t("players.addFirstPlayer"),
               icon: UserPlus,
               onClick: () => setIsCreateModalOpen(true),
             } : undefined}
@@ -218,7 +220,7 @@ export default function Players() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{position}</span>
-                    <Badge variant="secondary">{positionPlayers.length} player{positionPlayers.length !== 1 ? 's' : ''}</Badge>
+                    <Badge variant="secondary">{t("players.playerCount", { count: positionPlayers.length })}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -244,7 +246,7 @@ export default function Players() {
                             }
                           }}
                           className="cursor-pointer mb-2"
-                          aria-label={`View ${player.name}'s profile`}
+                          aria-label={t("players.viewProfile", { name: player.name })}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-display font-semibold uppercase tracking-tight text-foreground">{player.name}</h3>
@@ -252,7 +254,7 @@ export default function Players() {
                               variant={player.isActive === 1 ? "default" : "secondary"}
                               className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
                             >
-                              {player.isActive === 1 ? "Active" : "Inactive"}
+                              {player.isActive === 1 ? t("players.active") : t("players.inactive")}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground truncate">{player.position}</p>
@@ -263,8 +265,8 @@ export default function Players() {
                             size="icon"
                             onClick={() => setPortalPlayer(player)}
                             className="w-8 h-8"
-                            aria-label={`Portal link for ${player.name}`}
-                            title="Portal link"
+                            aria-label={t("players.portalLinkFor", { name: player.name })}
+                            title={t("players.portalLink")}
                           >
                             <Link2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                           </Button>
@@ -275,7 +277,7 @@ export default function Players() {
                             disabled={updatePlayerMutation.isPending}
                             className="text-xs"
                           >
-                            {player.isActive === 1 ? "Deactivate" : "Activate"}
+                            {player.isActive === 1 ? t("players.deactivate") : t("players.activate")}
                           </Button>
                         </div>
                       </div>

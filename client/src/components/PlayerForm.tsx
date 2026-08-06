@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ interface PlayerFormProps {
 }
 
 export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
+  const { t } = useTranslation();
   const restoreFocus = useDialogFocusReturn(isOpen);
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
@@ -44,9 +46,9 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
 
   const createPlayerMutation = useSaveMutation<PlayerFormData>({
     endpoint: "/api/players",
-    successTitle: "Success",
-    successMessage: "Player added successfully",
-    errorMessage: "Failed to add player",
+    successTitle: t("playerForm.success"),
+    successMessage: t("playerForm.addedSuccessfully"),
+    errorMessage: t("playerForm.failedToAdd"),
     onSuccess: () => handleOpenChange(false),
   });
 
@@ -59,9 +61,9 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">Add New Player</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">{t("playerForm.addNewPlayer")}</DialogTitle>
           <DialogDescription className="sr-only">
-            Enter the player's name, position, and whether they're active.
+            {t("playerForm.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -72,9 +74,9 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Player Name</FormLabel>
+                  <FormLabel>{t("playerForm.playerName")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Carlos García" {...field} />
+                    <Input placeholder={t("playerForm.playerNamePlaceholder")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -86,17 +88,17 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Position</FormLabel>
+                  <FormLabel>{t("playerForm.position")}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select position" />
+                        <SelectValue placeholder={t("playerForm.selectPosition")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {positions.map(position => (
                         <SelectItem key={position} value={position}>
-                          {position}
+                          {t(`playerForm.positions.${position}`, position)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -113,10 +115,10 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">
-                      Active Player
+                      {t("playerForm.activePlayer")}
                     </FormLabel>
                     <div className="text-sm text-muted-foreground">
-                      This player will take part in training sessions
+                      {t("playerForm.activePlayerDescription")}
                     </div>
                   </div>
                   <FormControl>
@@ -135,14 +137,14 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
                 className="basketball-orange basketball-orange-hover text-white"
                 disabled={createPlayerMutation.isPending}
               >
-                {createPlayerMutation.isPending ? "Adding..." : "Add Player"}
+                {createPlayerMutation.isPending ? t("playerForm.adding") : t("dashboard.addPlayer")}
               </Button>
             </div>
           </form>

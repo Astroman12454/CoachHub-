@@ -1,12 +1,5 @@
+import { useTranslation } from "react-i18next";
 import { SKILL_CATEGORIES } from "@shared/schema";
-
-const SKILL_LABELS: Record<string, string> = {
-  shooting: "Shooting",
-  dribbling: "Dribbling",
-  defense: "Defense",
-  passing: "Passing",
-  conditioning: "Conditioning",
-};
 
 // Wider than tall: the two side vertices' labels ("Dribbling",
 // "Conditioning") need real horizontal room to avoid clipping against the
@@ -55,6 +48,7 @@ interface SkillRadarChartProps {
 // categories), so a general-purpose charting dependency would be a lot of
 // weight for one shape.
 export default function SkillRadarChart({ ratings }: SkillRadarChartProps) {
+  const { t } = useTranslation();
   const categories = SKILL_CATEGORIES;
   const total = categories.length;
 
@@ -69,7 +63,7 @@ export default function SkillRadarChart({ ratings }: SkillRadarChartProps) {
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       className="w-full h-auto max-w-sm mx-auto"
       role="img"
-      aria-label="Skill radar chart"
+      aria-label={t("skillRadarChart.ariaLabel")}
     >
       {/* Grid rings */}
       {Array.from({ length: RING_COUNT }, (_, i) => {
@@ -136,7 +130,7 @@ export default function SkillRadarChart({ ratings }: SkillRadarChartProps) {
             fill="currentColor"
             className="text-muted-foreground select-none"
           >
-            {SKILL_LABELS[cat] ?? cat}
+            {t(`categories.exercise.${cat}`, cat)}
           </text>
         );
       })}
