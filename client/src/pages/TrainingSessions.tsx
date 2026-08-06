@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays, BellRing, FileDown, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -17,6 +18,7 @@ import { exportSessionPlanPdf } from "@/lib/exportSessionPdf";
 import type { Exercise, Play, TrainingSession } from "@shared/schema";
 
 export default function TrainingSessions() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -37,7 +39,7 @@ export default function TrainingSessions() {
     try {
       await exportSessionPlanPdf(session, exercises, plays);
     } catch (error) {
-      toast({ title: "Couldn't export PDF", description: "Try again.", variant: "destructive" });
+      toast({ title: t("sessions.couldntExportPdf"), description: t("common.tryAgain"), variant: "destructive" });
     } finally {
       setExportingSessionId(null);
     }
@@ -45,7 +47,7 @@ export default function TrainingSessions() {
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/training-sessions",
-    errorMessage: "Failed to delete training session",
+    errorMessage: t("sessions.failedToDelete"),
   });
 
   const notifyMutation = useMutation({
@@ -55,16 +57,16 @@ export default function TrainingSessions() {
     },
     onSuccess: (data) => {
       toast({
-        title: data.sent > 0 ? "Reminder sent" : "No one to notify yet",
+        title: data.sent > 0 ? t("sessions.reminderSent") : t("sessions.noOneToNotify"),
         description: data.sent > 0
-          ? `Notified ${data.sent} player${data.sent === 1 ? "" : "s"} subscribed to their portal.`
-          : "No players have enabled notifications on their portal link yet.",
+          ? t("sessions.notifiedCount", { count: data.sent })
+          : t("sessions.noPlayersNotifications"),
       });
     },
     onError: (error) => {
       toast({
-        title: "Couldn't send reminder",
-        description: extractErrorMessage(error) ?? "Try again.",
+        title: t("sessions.couldntSendReminder"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -85,7 +87,7 @@ export default function TrainingSessions() {
 
   const confirmDeleteSession = () => {
     if (sessionToDelete) {
-      requestDelete(sessionToDelete.id, `"${sessionToDelete.name}" deleted.`);
+      requestDelete(sessionToDelete.id, t("sessions.deletedToast", { name: sessionToDelete.name }));
       setSessionToDelete(null);
     }
   };
@@ -94,11 +96,11 @@ export default function TrainingSessions() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Training Sessions"
-          subtitle="Manage and view all your training sessions"
+          title={t("nav.trainingSessions")}
+          subtitle={t("sessions.subtitle")}
           showNewSessionButton={true}
           onSearch={setSearchQuery}
-          searchPlaceholder="Search sessions..."
+          searchPlaceholder={t("sessions.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -115,11 +117,11 @@ export default function TrainingSessions() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Training Sessions"
-          subtitle="Manage and view all your training sessions"
+          title={t("nav.trainingSessions")}
+          subtitle={t("sessions.subtitle")}
           showNewSessionButton={true}
           onSearch={setSearchQuery}
-          searchPlaceholder="Search sessions..."
+          searchPlaceholder={t("sessions.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <ErrorState onRetry={() => refetch()} />
@@ -131,21 +133,21 @@ export default function TrainingSessions() {
   return (
     <div className="flex flex-col h-full">
       <TopBar
-        title="Training Sessions"
-        subtitle="Manage and view all your training sessions"
+        title={t("nav.trainingSessions")}
+        subtitle={t("sessions.subtitle")}
         showNewSessionButton={true}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search sessions..."
+        searchPlaceholder={t("sessions.searchPlaceholder")}
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {sortedSessions.length === 0 ? (
           <EmptyState
             icon={CalendarDays}
-            title="No Training Sessions"
-            description={searchQuery ? "No sessions match your search criteria." : "Get started by creating your first training session."}
+            title={t("sessions.emptyTitle")}
+            description={searchQuery ? t("sessions.emptySearchDescription") : t("sessions.emptyDescription")}
             action={!searchQuery ? {
-              label: "Create First Session",
+              label: t("sessions.createFirstSession"),
               icon: Plus,
               onClick: () => setIsCreateModalOpen(true),
             } : undefined}
@@ -179,8 +181,8 @@ export default function TrainingSessions() {
                           className="text-muted-foreground hover:text-foreground"
                           onClick={() => notifyMutation.mutate(session.id)}
                           disabled={notifyMutation.isPending}
-                          aria-label={`Notify players about ${session.name}`}
-                          title="Send a reminder to subscribed players"
+                          aria-label={t("sessions.notifyPlayersAbout", { name: session.name })}
+                          title={t("sessions.sendReminderTitle")}
                         >
                           <BellRing className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                         </Button>
@@ -191,8 +193,8 @@ export default function TrainingSessions() {
                         className="text-muted-foreground hover:text-foreground"
                         onClick={() => handleExportPdf(session)}
                         disabled={exportingSessionId === session.id}
-                        aria-label={`Export ${session.name} as PDF`}
-                        title="Export as PDF"
+                        aria-label={t("sessions.exportAsPdf", { name: session.name })}
+                        title={t("sessions.exportPdfTitle")}
                       >
                         {exportingSessionId === session.id
                           ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
@@ -203,7 +205,7 @@ export default function TrainingSessions() {
                         size="icon"
                         className="text-muted-foreground hover:text-foreground"
                         onClick={() => setEditingSession(session)}
-                        aria-label={`Edit ${session.name}`}
+                        aria-label={t("sessions.editName", { name: session.name })}
                       >
                         <Pencil className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
@@ -212,7 +214,7 @@ export default function TrainingSessions() {
                         size="icon"
                         className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
                         onClick={() => setSessionToDelete(session)}
-                        aria-label={`Delete ${session.name}`}
+                        aria-label={t("sessions.deleteName", { name: session.name })}
                       >
                         <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
@@ -222,21 +224,21 @@ export default function TrainingSessions() {
 
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Duration:</span>
-                    <span className="font-medium tabular-nums">{session.duration} minutes</span>
+                    <span className="text-muted-foreground">{t("sessions.duration")}:</span>
+                    <span className="font-medium tabular-nums">{t("sessions.minutesValue", { count: session.duration })}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Attendance:</span>
+                    <span className="text-muted-foreground">{t("sessions.attendance")}:</span>
                     <span className="font-medium tabular-nums">
-                      {session.attendanceCount}/{session.totalPlayers} players
+                      {t("sessions.attendanceCount", { count: session.attendanceCount, total: session.totalPlayers })}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Attendance Rate:</span>
+                    <span className="text-muted-foreground">{t("sessions.attendanceRate")}:</span>
                     {session.status === 'scheduled' || session.status === 'cancelled' ? (
-                      <span className="text-xs text-muted-foreground">Not yet taken</span>
+                      <span className="text-xs text-muted-foreground">{t("sessions.notYetTaken")}</span>
                     ) : (
                       <Badge variant={
                         ((session.attendanceCount ?? 0) / (session.totalPlayers || 1)) * 100 >= 80
@@ -252,12 +254,12 @@ export default function TrainingSessions() {
                     <div className="flex flex-wrap gap-1.5">
                       {session.exerciseIds && session.exerciseIds.length > 0 && (
                         <Badge variant="outline" className="text-xs">
-                          {session.exerciseIds.length} exercise{session.exerciseIds.length !== 1 ? 's' : ''}
+                          {t("sessions.exerciseCount", { count: session.exerciseIds.length })}
                         </Badge>
                       )}
                       {session.playIds && session.playIds.length > 0 && (
                         <Badge variant="outline" className="text-xs">
-                          {session.playIds.length} play{session.playIds.length !== 1 ? 's' : ''}
+                          {t("sessions.playCount", { count: session.playIds.length })}
                         </Badge>
                       )}
                     </div>
@@ -265,7 +267,7 @@ export default function TrainingSessions() {
 
                   {session.notes && (
                     <div>
-                      <span className="text-sm text-muted-foreground">Notes:</span>
+                      <span className="text-sm text-muted-foreground">{t("sessions.notes")}:</span>
                       <p className="text-sm text-foreground mt-1 line-clamp-2">{session.notes}</p>
                     </div>
                   )}
@@ -278,7 +280,7 @@ export default function TrainingSessions() {
                       onClick={() => setEditingSession(session)}
                     >
                       <Pencil className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
-                      Edit Session
+                      {t("sessions.editSession")}
                     </Button>
                   </div>
                 </CardContent>
@@ -306,8 +308,8 @@ export default function TrainingSessions() {
       <ConfirmDialog
         open={!!sessionToDelete}
         onOpenChange={(open) => !open && setSessionToDelete(null)}
-        title="Delete training session?"
-        description={`This will permanently delete "${sessionToDelete?.name}". This can't be undone.`}
+        title={t("sessions.deleteConfirmTitle")}
+        description={t("sessions.deleteConfirmDescription", { name: sessionToDelete?.name })}
         onConfirm={confirmDeleteSession}
       />
     </div>

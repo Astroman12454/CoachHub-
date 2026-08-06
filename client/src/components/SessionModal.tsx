@@ -4,6 +4,7 @@ import { Sparkles, Loader2, Check, BookmarkPlus, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { insertTrainingSessionSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +24,6 @@ import { startCheckout } from "@/lib/billing";
 import type { Exercise, Play, TrainingSession, SessionTemplate } from "@shared/schema";
 import { CATEGORY_COLORS } from "@/lib/types";
 
-const PLAY_CATEGORY_LABEL: Record<string, string> = {
-  offense: "Offense", defense: "Defense", inbound: "Inbound", special: "Special",
-};
-
 interface GeneratedSessionPlan {
   name: string;
   notes: string | null;
@@ -43,6 +40,7 @@ interface SessionModalProps {
 }
 
 export default function SessionModal({ isOpen, onClose, session }: SessionModalProps) {
+  const { t } = useTranslation();
   const isEditing = !!session;
   const restoreFocus = useDialogFocusReturn(isOpen);
   const { account } = useAuth();
@@ -114,10 +112,10 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
       queryClient.invalidateQueries({ queryKey: ["/api/session-templates"] });
       setIsSaveTemplateOpen(false);
       setTemplateName("");
-      toast({ title: "Template saved", description: "You can start a new session from it anytime." });
+      toast({ title: t("sessionModal.templateSaved"), description: t("sessionModal.templateSavedDescription") });
     },
     onError: (error) => {
-      toast({ title: "Couldn't save template", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("sessionModal.couldntSaveTemplate"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -126,10 +124,10 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/session-templates"] });
       setSelectedTemplateId("");
-      toast({ title: "Template deleted" });
+      toast({ title: t("sessionModal.templateDeleted") });
     },
     onError: (error) => {
-      toast({ title: "Couldn't delete template", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("sessionModal.couldntDeleteTemplate"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -156,8 +154,8 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   const saveSessionMutation = useSaveMutation<SessionFormData>({
     endpoint: "/api/training-sessions",
     id: session?.id,
-    successMessage: isEditing ? "Training session updated successfully" : "Training session created successfully",
-    errorMessage: isEditing ? "Failed to update training session" : "Failed to create training session",
+    successMessage: isEditing ? t("sessionModal.updatedSuccessfully") : t("sessionModal.createdSuccessfully"),
+    errorMessage: isEditing ? t("sessionModal.failedToUpdate") : t("sessionModal.failedToCreate"),
     onSuccess: () => {
       restoreFocus();
       onClose();
@@ -179,11 +177,11 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   const handleGeneratePlanClick = () => {
     if (!canGeneratePlan) {
       toast({
-        title: "Free plan",
-        description: "Upgrade to a paid plan to generate a practice plan with AI.",
+        title: t("sessionModal.freePlan"),
+        description: t("sessionModal.upgradeToGenerate"),
         action: (
-          <ToastAction altText="Upgrade" onClick={() => startCheckout()}>
-            Upgrade
+          <ToastAction altText={t("sessionModal.upgrade")} onClick={() => startCheckout()}>
+            {t("sessionModal.upgrade")}
           </ToastAction>
         ),
       });
@@ -207,11 +205,11 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
       setSelectedExerciseIds(plan.exerciseIds);
       setIsAIPanelOpen(false);
       setAiInstructions("");
-      toast({ title: "Plan generated", description: "Review the details below, then adjust anything before saving." });
+      toast({ title: t("sessionModal.planGenerated"), description: t("sessionModal.planGeneratedDescription") });
     } catch (error) {
       toast({
-        title: "Couldn't generate a plan",
-        description: extractErrorMessage(error) ?? "Try again, or build the session by hand.",
+        title: t("sessionModal.couldntGeneratePlan"),
+        description: extractErrorMessage(error) ?? t("sessionModal.tryAgainOrBuildByHand"),
         variant: "destructive",
       });
     } finally {
@@ -235,24 +233,24 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
         <DialogHeader>
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 pr-8 sm:pr-0">
             <DialogTitle className="text-xl font-display uppercase tracking-tight">
-              {isEditing ? "Edit Training Session" : "Create Training Session"}
+              {isEditing ? t("sessionModal.editTitle") : t("sessionModal.createTitle")}
             </DialogTitle>
             <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
               <Button type="button" variant="outline" size="sm" onClick={() => setIsSaveTemplateOpen(true)}>
                 <BookmarkPlus className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
-                Save as Template
+                {t("sessionModal.saveAsTemplate")}
               </Button>
               {!isEditing && !isAIPanelOpen && (
                 <Button type="button" variant="outline" size="sm" onClick={handleGeneratePlanClick}>
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
-                  Generate with AI
-                  {!canGeneratePlan && <Badge variant="secondary" className="ml-2 text-xs">Paid</Badge>}
+                  {t("sessionModal.generateWithAi")}
+                  {!canGeneratePlan && <Badge variant="secondary" className="ml-2 text-xs">{t("sessionModal.paid")}</Badge>}
                 </Button>
               )}
             </div>
           </div>
           <DialogDescription className="sr-only">
-            Set the session's name, date, time and duration, and choose which exercises to include.
+            {t("sessionModal.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -260,21 +258,21 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
           <div className="border border-basketball-orange/40 bg-basketball-orange/5 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-basketball-orange flex-shrink-0" strokeWidth={2} aria-hidden="true" />
-              <h3 className="font-display uppercase tracking-tight text-sm text-foreground">Generate with AI</h3>
+              <h3 className="font-display uppercase tracking-tight text-sm text-foreground">{t("sessionModal.generateWithAi")}</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Picks exercises from your own library based on your recent sessions. Optionally, tell it what to focus on:
+              {t("sessionModal.aiPanelDescription")}
             </p>
             <Textarea
               value={aiInstructions}
               onChange={(e) => setAiInstructions(e.target.value)}
-              placeholder="e.g., Focus on shooting, we have a game Saturday"
+              placeholder={t("sessionModal.aiPanelPlaceholder")}
               rows={2}
-              aria-label="Instructions for the AI-generated plan"
+              aria-label={t("sessionModal.aiPanelAriaLabel")}
             />
             <div className="flex items-center justify-end gap-3">
               <Button type="button" variant="outline" size="sm" onClick={() => setIsAIPanelOpen(false)} disabled={isGeneratingPlan}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="button"
@@ -284,7 +282,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 disabled={isGeneratingPlan}
               >
                 {isGeneratingPlan && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" aria-hidden="true" />}
-                {isGeneratingPlan ? "Generating..." : "Generate Plan"}
+                {isGeneratingPlan ? t("sessionModal.generating") : t("sessionModal.generatePlan")}
               </Button>
             </div>
           </div>
@@ -296,11 +294,11 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <label htmlFor="template-select" className="text-sm font-medium text-foreground mb-2 block">
-                    Start from Template
+                    {t("sessionModal.startFromTemplate")}
                   </label>
                   <Select value={selectedTemplateId} onValueChange={applyTemplate}>
-                    <SelectTrigger id="template-select" aria-label="Start from template">
-                      <SelectValue placeholder="Choose a template (optional)" />
+                    <SelectTrigger id="template-select" aria-label={t("sessionModal.startFromTemplate")}>
+                      <SelectValue placeholder={t("sessionModal.chooseTemplatePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {templates.map(template => (
@@ -316,7 +314,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                     type="button"
                     variant="outline"
                     size="icon"
-                    aria-label="Delete template"
+                    aria-label={t("sessionModal.deleteTemplate")}
                     onClick={() => deleteTemplateMutation.mutate(parseInt(selectedTemplateId))}
                     disabled={deleteTemplateMutation.isPending}
                   >
@@ -333,45 +331,45 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Session Name</FormLabel>
+                    <FormLabel>{t("sessionModal.sessionName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Offensive Fundamentals" {...field} />
+                      <Input placeholder={t("sessionModal.sessionNamePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="duration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration (minutes)</FormLabel>
+                    <FormLabel>{t("sessionModal.durationMinutes")}</FormLabel>
                     <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value?.toString()}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
+                          <SelectValue placeholder={t("sessionModal.selectDuration")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="60">60 minutes</SelectItem>
-                        <SelectItem value="90">90 minutes</SelectItem>
-                        <SelectItem value="120">120 minutes</SelectItem>
-                        <SelectItem value="150">150 minutes</SelectItem>
+                        <SelectItem value="60">{t("sessionModal.minutesOption", { count: 60 })}</SelectItem>
+                        <SelectItem value="90">{t("sessionModal.minutesOption", { count: 90 })}</SelectItem>
+                        <SelectItem value="120">{t("sessionModal.minutesOption", { count: 120 })}</SelectItem>
+                        <SelectItem value="150">{t("sessionModal.minutesOption", { count: 150 })}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>{t("sessionModal.date")}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -379,13 +377,13 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="time"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Time</FormLabel>
+                    <FormLabel>{t("sessionModal.time")}</FormLabel>
                     <FormControl>
                       <Input type="time" {...field} />
                     </FormControl>
@@ -400,9 +398,9 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormLabel>{t("sessionModal.notesOptional")}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Session objectives, special instructions..." {...field} value={field.value ?? ""} />
+                    <Textarea placeholder={t("sessionModal.notesPlaceholder")} {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -411,7 +409,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
 
             {/* Exercise Selection */}
             <div>
-              <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Session Timeline</h3>
+              <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.sessionTimeline")}</h3>
               <div className="border border-border rounded-lg p-4 mb-4">
                 <SessionTimeline
                   selectedIds={selectedExerciseIds}
@@ -423,20 +421,20 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 />
               </div>
 
-              <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Add Exercises</h3>
+              <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.addExercises")}</h3>
               <div className="border border-border rounded-lg p-4">
                 <div className="flex items-center space-x-4 mb-4">
                   <Select value={exerciseCategory} onValueChange={setExerciseCategory}>
-                    <SelectTrigger className="w-48" aria-label="Filter by category">
-                      <SelectValue placeholder="Filter by category" />
+                    <SelectTrigger className="w-48" aria-label={t("sessionModal.filterByCategory")}>
+                      <SelectValue placeholder={t("sessionModal.filterByCategory")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="shooting">Shooting</SelectItem>
-                      <SelectItem value="dribbling">Dribbling</SelectItem>
-                      <SelectItem value="defense">Defense</SelectItem>
-                      <SelectItem value="passing">Passing</SelectItem>
-                      <SelectItem value="conditioning">Conditioning</SelectItem>
+                      <SelectItem value="all">{t("sessionModal.allCategories")}</SelectItem>
+                      <SelectItem value="shooting">{t("categories.exercise.shooting")}</SelectItem>
+                      <SelectItem value="dribbling">{t("categories.exercise.dribbling")}</SelectItem>
+                      <SelectItem value="defense">{t("categories.exercise.defense")}</SelectItem>
+                      <SelectItem value="passing">{t("categories.exercise.passing")}</SelectItem>
+                      <SelectItem value="conditioning">{t("categories.exercise.conditioning")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -446,7 +444,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                   className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto"
                   tabIndex={0}
                   role="region"
-                  aria-label="Available exercises"
+                  aria-label={t("sessionModal.availableExercises")}
                 >
                   {filteredExercises.map(exercise => (
                     <div
@@ -459,9 +457,9 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                           variant="secondary"
                           className={CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS]}
                         >
-                          {exercise.category}
+                          {t(`categories.exercise.${exercise.category}`, exercise.category)}
                         </Badge>
-                        <span className="text-xs tabular-nums text-muted-foreground">{exercise.duration} min</span>
+                        <span className="text-xs tabular-nums text-muted-foreground">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
                       </div>
                       <h4 className="font-medium text-foreground mb-1">{exercise.name}</h4>
                       <p className="text-sm text-muted-foreground line-clamp-2">{exercise.description}</p>
@@ -474,16 +472,16 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
             {/* Plays to Practice */}
             {plays.length > 0 && (
               <div>
-                <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">Plays to Practice</h3>
+                <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.playsToPractice")}</h3>
                 <div className="border border-border rounded-lg p-4">
                   <p className="text-sm text-muted-foreground mb-3">
-                    Tap a play to mark it as practiced this session — see how often each one comes up on the Playbook page.
+                    {t("sessionModal.playsToPracticeDescription")}
                   </p>
                   <div
                     className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto"
                     tabIndex={0}
                     role="region"
-                    aria-label="Plays to practice"
+                    aria-label={t("sessionModal.playsToPracticeAriaLabel")}
                   >
                     {plays.map(play => {
                       const selected = selectedPlayIds.includes(play.id.toString());
@@ -502,7 +500,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                           <div className="min-w-0">
                             <span className="font-medium text-foreground truncate block">{play.name}</span>
                             <Badge variant="secondary" className="mt-1 text-xs">
-                              {PLAY_CATEGORY_LABEL[play.category] ?? play.category}
+                              {t(`categories.play.${play.category}`, play.category)}
                             </Badge>
                           </div>
                           {selected && <Check className="w-4 h-4 text-basketball-orange flex-shrink-0" strokeWidth={2.5} aria-hidden="true" />}
@@ -517,7 +515,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
             {/* Action Buttons */}
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -525,8 +523,8 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 disabled={saveSessionMutation.isPending}
               >
                 {saveSessionMutation.isPending
-                  ? (isEditing ? "Saving..." : "Creating...")
-                  : (isEditing ? "Save Changes" : "Create Session")}
+                  ? (isEditing ? t("common.saving") : t("common.creating"))
+                  : (isEditing ? t("sessionModal.saveChanges") : t("sessionModal.createSession"))}
               </Button>
             </div>
           </form>
@@ -536,9 +534,9 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
       <Dialog open={isSaveTemplateOpen} onOpenChange={setIsSaveTemplateOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Save as Template</DialogTitle>
+            <DialogTitle>{t("sessionModal.saveAsTemplate")}</DialogTitle>
             <DialogDescription>
-              Saves this session's duration, exercises, plays and notes as a reusable starting point. The date and time aren't included.
+              {t("sessionModal.saveTemplateDescription")}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -550,13 +548,13 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
           >
             <div>
               <label htmlFor="template-name" className="text-sm font-medium text-foreground mb-2 block">
-                Template Name
+                {t("sessionModal.templateName")}
               </label>
               <Input
                 id="template-name"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="e.g., Shooting Focus"
+                placeholder={t("sessionModal.templateNamePlaceholder")}
                 autoFocus
               />
             </div>
@@ -567,14 +565,14 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
                 onClick={() => setIsSaveTemplateOpen(false)}
                 disabled={saveTemplateMutation.isPending}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
                 className="basketball-orange basketball-orange-hover text-white"
                 disabled={!templateName.trim() || saveTemplateMutation.isPending}
               >
-                {saveTemplateMutation.isPending ? "Saving..." : "Save Template"}
+                {saveTemplateMutation.isPending ? t("common.saving") : t("sessionModal.saveTemplate")}
               </Button>
             </DialogFooter>
           </form>
