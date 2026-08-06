@@ -1,4 +1,5 @@
 import { Bot, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
@@ -19,6 +20,7 @@ export default function AIRecommendationsModal({
   onViewCategory,
   onCreateSession,
 }: AIRecommendationsModalProps) {
+  const { t } = useTranslation();
   const restoreFocus = useDialogFocusReturn(open);
   const handleOpenChange = (next: boolean) => {
     if (!next) restoreFocus();
@@ -31,24 +33,24 @@ export default function AIRecommendationsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display uppercase tracking-tight">
             <Bot className="w-5 h-5 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
-            AI Training Recommendations
+            {t("dashboard.aiTrainingRecommendations")}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Insights generated from your team's actual session and exercise data.
+            {t("dashboard.aiModalDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="basketball-orange-deep text-white p-4 rounded-lg">
-            <h3 className="font-semibold mb-1">Performance Analysis</h3>
-            <p className="text-sm text-white/90">Generated from your team's actual session and exercise data.</p>
+            <h3 className="font-semibold mb-1">{t("dashboard.performanceAnalysis")}</h3>
+            <p className="text-sm text-white/90">{t("dashboard.aiModalDescription")}</p>
           </div>
 
           {insights.length === 0 ? (
             <div className="border border-dashed border-border rounded-lg p-6 text-center">
               <Sparkles className="w-6 h-6 text-muted-foreground mx-auto mb-2" strokeWidth={1.5} aria-hidden="true" />
               <p className="text-sm text-muted-foreground">
-                Not enough data yet — add exercises and complete a few training sessions to see insights here.
+                {t("dashboard.notEnoughData")}
               </p>
             </div>
           ) : (
@@ -69,7 +71,7 @@ export default function AIRecommendationsModal({
                           className="mt-2"
                           onClick={() => onViewCategory(insight.category!)}
                         >
-                          View {insight.category.charAt(0).toUpperCase() + insight.category.slice(1)} Exercises
+                          {t("dashboard.viewCategoryExercises", { category: t(`categories.exercise.${insight.category}`, insight.category) })}
                         </Button>
                       )}
                     </div>
@@ -85,13 +87,13 @@ export default function AIRecommendationsModal({
               className="flex-1"
               onClick={() => handleOpenChange(false)}
             >
-              Close
+              {t("common.close")}
             </Button>
             <Button
               className="flex-1 basketball-orange basketball-orange-hover text-white"
               onClick={onCreateSession}
             >
-              Create Training Session
+              {t("dashboard.createTrainingSession")}
             </Button>
           </div>
         </div>

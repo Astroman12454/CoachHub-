@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ExerciseCard from "@/components/ExerciseCard";
@@ -10,21 +11,22 @@ interface RecentExercisesCardProps {
 }
 
 export default function RecentExercisesCard({ exercises, onExerciseClick, onBrowseLibrary }: RecentExercisesCardProps) {
+  const { t } = useTranslation();
   return (
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Exercises</CardTitle>
+        <CardTitle>{t("dashboard.recentExercises")}</CardTitle>
         <Button
           variant="link"
           className="text-basketball-orange"
           onClick={onBrowseLibrary}
         >
-          Browse Library
+          {t("dashboard.browseLibrary")}
         </Button>
       </CardHeader>
       <CardContent>
         {exercises.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No exercises in library</p>
+          <p className="text-muted-foreground text-center py-8">{t("dashboard.noExercisesInLibrary")}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {exercises.map((exercise) => (

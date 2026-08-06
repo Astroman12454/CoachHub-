@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import i18n from "@/i18n";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -36,12 +37,12 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
           <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
             <AlertTriangle className="w-6 h-6 text-red-500" strokeWidth={1.75} aria-hidden="true" />
           </div>
-          <h2 className="font-display uppercase tracking-tight text-lg text-foreground mb-2">Something went wrong</h2>
+          <h2 className="font-display uppercase tracking-tight text-lg text-foreground mb-2">{i18n.t("errorBoundary.title")}</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-            This page ran into an unexpected error. Reloading usually fixes it.
+            {i18n.t("errorBoundary.description")}
           </p>
           <Button onClick={this.handleReload} className="basketball-orange basketball-orange-hover text-white">
-            Reload
+            {i18n.t("errorBoundary.reload")}
           </Button>
         </div>
       );

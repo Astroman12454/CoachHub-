@@ -11,22 +11,25 @@ import { useToast } from "@/hooks/use-toast";
 import { startCheckout, openBillingPortal } from "@/lib/billing";
 import { extractErrorMessage } from "@/lib/queryClient";
 import ThemeToggle from "@/components/ThemeToggle";
+import LanguageToggle from "@/components/LanguageToggle";
 import BrandMark from "@/components/BrandMark";
 import NewTeamDialog from "@/components/NewTeamDialog";
+import { useTranslation } from "react-i18next";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Weekly Schedule", href: "/weekly-schedule", icon: CalendarRange },
-  { name: "Training Sessions", href: "/training-sessions", icon: CalendarDays },
-  { name: "Games", href: "/games", icon: Trophy },
-  { name: "Playbook", href: "/playbook", icon: PencilRuler },
-  { name: "Exercise Library", href: "/exercise-library", icon: Dumbbell },
-  { name: "Players", href: "/players", icon: Users },
+  { key: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { key: "nav.weeklySchedule", href: "/weekly-schedule", icon: CalendarRange },
+  { key: "nav.trainingSessions", href: "/training-sessions", icon: CalendarDays },
+  { key: "nav.games", href: "/games", icon: Trophy },
+  { key: "nav.playbook", href: "/playbook", icon: PencilRuler },
+  { key: "nav.exerciseLibrary", href: "/exercise-library", icon: Dumbbell },
+  { key: "nav.players", href: "/players", icon: Users },
 ];
 
 const NEW_TEAM_VALUE = "__new__";
 
 function TeamSwitcher() {
+  const { t } = useTranslation();
   const { teams, currentTeamId, switchTeam } = useAuth();
   const [isNewTeamOpen, setIsNewTeamOpen] = useState(false);
 
@@ -43,11 +46,11 @@ function TeamSwitcher() {
       <Select value={currentTeamId?.toString() ?? ""} onValueChange={handleChange}>
         <SelectTrigger
           className="bg-white/5 border-rail-border text-rail-foreground hover:bg-white/10 focus:ring-basketball-orange"
-          aria-label="Switch team"
+          aria-label={t("sidebar.switchTeam")}
         >
           <div className="flex items-center gap-2 min-w-0">
             <ChevronsUpDown className="w-3.5 h-3.5 flex-shrink-0 text-rail-muted" strokeWidth={1.75} aria-hidden="true" />
-            <SelectValue placeholder="Select team" />
+            <SelectValue placeholder={t("sidebar.selectTeam")} />
           </div>
         </SelectTrigger>
         <SelectContent>
@@ -59,7 +62,7 @@ function TeamSwitcher() {
           <SelectItem value={NEW_TEAM_VALUE}>
             <span className="flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-              New Team
+              {t("sidebar.newTeam")}
             </span>
           </SelectItem>
         </SelectContent>
@@ -70,6 +73,7 @@ function TeamSwitcher() {
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const { t } = useTranslation();
   const [location] = useLocation();
   const { account, logout } = useAuth();
   const { toast } = useToast();
@@ -82,8 +86,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       await (account?.plan === "paid" ? openBillingPortal() : startCheckout());
     } catch (error) {
       toast({
-        title: "Billing",
-        description: extractErrorMessage(error) ?? "Couldn't open billing right now.",
+        title: t("common.billing"),
+        description: extractErrorMessage(error) ?? t("common.couldntOpenBilling"),
         variant: "destructive",
       });
       setIsBillingPending(false);
@@ -101,7 +105,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div className="min-w-0">
           <h1 className="font-display font-bold text-lg leading-tight tracking-tight truncate">Coach Hub</h1>
-          <p className="text-xs text-rail-muted truncate">Basketball Training</p>
+          <p className="text-xs text-rail-muted truncate">{t("sidebar.tagline")}</p>
         </div>
       </div>
 
@@ -115,7 +119,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           const Icon = item.icon;
 
           return (
-            <Link key={item.name} href={item.href} onClick={onNavigate}>
+            <Link key={item.key} href={item.href} onClick={onNavigate}>
               <div
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium border-l-2 transition-colors duration-150",
@@ -125,7 +129,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 )}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                <span className="flex-1 truncate">{item.name}</span>
+                <span className="flex-1 truncate">{t(item.key)}</span>
               </div>
             </Link>
           );
@@ -140,20 +144,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={handlePlanClick}
             disabled={isBillingPending}
             className="mt-1 disabled:opacity-60"
-            title={account?.plan === "paid" ? "Manage billing" : "Upgrade to paid"}
+            title={account?.plan === "paid" ? t("common.manageBilling") : t("common.upgradeToPaid")}
           >
             <Badge variant="secondary" className="text-[10px] uppercase tracking-wide cursor-pointer hover:bg-white/20">
-              {account?.plan === "paid" ? "Paid Plan" : "Free Plan · Upgrade"}
+              {account?.plan === "paid" ? t("common.paidPlan") : t("common.freePlanUpgrade")}
             </Badge>
           </button>
         </div>
+        <LanguageToggle />
         <ThemeToggle />
         <button
           type="button"
           onClick={logout}
           className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
-          aria-label="Log out"
-          title="Log out"
+          aria-label={t("common.logOut")}
+          title={t("common.logOut")}
         >
           <LogOut className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
         </button>
@@ -163,6 +168,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const { isMobileOpen, closeMobile } = useSidebar();
 
   return (
@@ -175,7 +181,7 @@ export default function Sidebar() {
       {/* Mobile sidebar (drawer) */}
       <Sheet open={isMobileOpen} onOpenChange={(open) => !open && closeMobile()}>
         <SheetContent side="left" className="p-0 w-72 border-0 text-rail-foreground">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetTitle className="sr-only">{t("sidebar.navigation")}</SheetTitle>
           <SidebarContent onNavigate={closeMobile} />
         </SheetContent>
       </Sheet>

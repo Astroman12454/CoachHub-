@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_SOLID_COLORS, CATEGORY_ICONS } from "@/lib/types";
 
@@ -7,10 +8,11 @@ interface ExerciseCategoriesCardProps {
 }
 
 export default function ExerciseCategoriesCard({ exercisesByCategory, onCategoryClick }: ExerciseCategoriesCardProps) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Exercise Categories</CardTitle>
+        <CardTitle>{t("dashboard.exerciseCategories")}</CardTitle>
       </CardHeader>
       <div className="px-2 pb-2">
         {Object.entries(exercisesByCategory).map(([category, count]) => {
@@ -26,7 +28,7 @@ export default function ExerciseCategoriesCard({ exercisesByCategory, onCategory
             >
               <span className={`w-2 h-2 rounded-full ${solidColorClass} flex-shrink-0`} aria-hidden="true" />
               <CategoryIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
-              <span className="font-medium capitalize flex-1">{category}</span>
+              <span className="font-medium capitalize flex-1">{t(`categories.exercise.${category}`, category)}</span>
               <span className="font-display font-semibold text-muted-foreground tabular-nums">{count}</span>
             </button>
           );

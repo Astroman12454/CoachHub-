@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, Search, X, Plus, Bell } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SessionModal from "./SessionModal";
@@ -18,8 +19,9 @@ export default function TopBar({
   subtitle,
   showNewSessionButton = false,
   onSearch,
-  searchPlaceholder = "Search..."
+  searchPlaceholder
 }: TopBarProps) {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { openMobile } = useSidebar();
@@ -43,7 +45,7 @@ export default function TopBar({
             <button
               onClick={openMobile}
               className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-              aria-label="Open navigation menu"
+              aria-label={t("common.openNavigationMenu")}
             >
               <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
             </button>
@@ -58,7 +60,7 @@ export default function TopBar({
               <div className="relative flex-1 lg:flex-none">
                 <Input
                   type="text"
-                  placeholder={searchPlaceholder}
+                  placeholder={searchPlaceholder ?? `${t("common.search")}...`}
                   value={searchQuery}
                   onChange={handleSearchChange}
                   className={`pl-10 w-full lg:w-64 ${searchQuery ? "pr-9" : "pr-4"}`}
@@ -69,7 +71,7 @@ export default function TopBar({
                     type="button"
                     onClick={clearSearch}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Clear search"
+                    aria-label={t("topBar.clearSearch")}
                   >
                     <X className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                   </button>
@@ -82,15 +84,15 @@ export default function TopBar({
                 className="basketball-orange basketball-orange-hover text-white whitespace-nowrap"
               >
                 <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-                <span className="hidden sm:inline">New Session</span>
-                <span className="sm:hidden">New</span>
+                <span className="hidden sm:inline">{t("topBar.newSession")}</span>
+                <span className="sm:hidden">{t("topBar.new")}</span>
               </Button>
             )}
 
             <button
               type="button"
               className="hidden lg:flex w-10 h-10 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
-              aria-label="Notifications"
+              aria-label={t("common.notifications")}
             >
               <Bell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
             </button>

@@ -1,4 +1,5 @@
 import { Bot, TrendingUp, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { CoachInsight } from "@/lib/insights";
 
@@ -8,6 +9,7 @@ interface AICoachBannerProps {
 }
 
 export default function AICoachBanner({ insights, onOpenRecommendations }: AICoachBannerProps) {
+  const { t } = useTranslation();
   const preview = insights.slice(0, 2);
 
   return (
@@ -17,14 +19,14 @@ export default function AICoachBanner({ insights, onOpenRecommendations }: AICoa
           <Bot className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
         </div>
         <div>
-          <h3 className="font-display font-bold uppercase tracking-tight text-lg leading-tight">AI Coach Assistant</h3>
-          <p className="text-white/90 text-sm">Smart Training Insights</p>
+          <h3 className="font-display font-bold uppercase tracking-tight text-lg leading-tight">{t("dashboard.aiCoachAssistant")}</h3>
+          <p className="text-white/90 text-sm">{t("dashboard.smartTrainingInsights")}</p>
         </div>
       </div>
 
       {preview.length > 0 ? (
         <>
-          <p className="text-white/90 text-sm mb-4">Based on your team's actual training data:</p>
+          <p className="text-white/90 text-sm mb-4">{t("dashboard.basedOnTrainingData")}</p>
           <div className="space-y-2">
             {preview.map((insight) => (
               <div key={insight.id} className="bg-white/10 rounded-md p-3 border border-white/15">
@@ -40,7 +42,7 @@ export default function AICoachBanner({ insights, onOpenRecommendations }: AICoa
       ) : (
         <div className="bg-white/10 rounded-md p-3 border border-white/15 mb-4 flex items-center gap-2">
           <Sparkles className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
-          <p className="text-sm text-white/90">Add exercises and complete a few sessions to unlock insights.</p>
+          <p className="text-sm text-white/90">{t("dashboard.unlockInsights")}</p>
         </div>
       )}
 
@@ -49,7 +51,7 @@ export default function AICoachBanner({ insights, onOpenRecommendations }: AICoa
         onClick={onOpenRecommendations}
       >
         <TrendingUp className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-        View AI Recommendations
+        {t("dashboard.viewAiRecommendations")}
       </Button>
     </div>
   );

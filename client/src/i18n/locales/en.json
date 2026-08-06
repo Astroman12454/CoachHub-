@@ -1,0 +1,151 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "edit": "Edit",
+    "create": "Create",
+    "creating": "Creating...",
+    "close": "Close",
+    "loading": "Loading...",
+    "search": "Search",
+    "notifications": "Notifications",
+    "openNavigationMenu": "Open navigation menu",
+    "logOut": "Log out",
+    "manageBilling": "Manage billing",
+    "upgradeToPaid": "Upgrade to paid",
+    "paidPlan": "Paid Plan",
+    "freePlanUpgrade": "Free Plan · Upgrade",
+    "billing": "Billing",
+    "couldntOpenBilling": "Couldn't open billing right now.",
+    "tryAgain": "Try again.",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "language": "Language",
+    "switchToSpanish": "Switch to Spanish",
+    "switchToEnglish": "Switch to English"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "weeklySchedule": "Weekly Schedule",
+    "trainingSessions": "Training Sessions",
+    "games": "Games",
+    "playbook": "Playbook",
+    "exerciseLibrary": "Exercise Library",
+    "players": "Players"
+  },
+  "sidebar": {
+    "tagline": "Basketball Training",
+    "switchTeam": "Switch team",
+    "selectTeam": "Select team",
+    "newTeam": "New Team",
+    "navigation": "Navigation"
+  },
+  "login": {
+    "email": "Email",
+    "password": "Password",
+    "passwordPlaceholderSignup": "At least 8 characters",
+    "passwordPlaceholderLogin": "Your password",
+    "loggingIn": "Logging in...",
+    "creatingAccount": "Creating account...",
+    "logIn": "Log In",
+    "createAccount": "Create Account",
+    "newToCoachHub": "New to Coach Hub?",
+    "alreadyHaveAccount": "Already have an account?",
+    "createAnAccount": "Create an account",
+    "logInAction": "Log in",
+    "agreeToTermsPrefix": "By creating an account you agree to our",
+    "and": "and",
+    "termsOfUse": "Terms of Use",
+    "privacyPolicy": "Privacy Policy",
+    "support": "Support"
+  },
+  "topBar": {
+    "clearSearch": "Clear search",
+    "newSession": "New Session",
+    "new": "New"
+  },
+  "errorState": {
+    "title": "Couldn't load this",
+    "description": "Something went wrong while fetching this data. Check your connection and try again.",
+    "tryAgain": "Try Again"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "This page ran into an unexpected error. Reloading usually fixes it.",
+    "reload": "Reload"
+  },
+  "notFound": {
+    "title": "404 Page Not Found",
+    "description": "Did you forget to add the page to the router?"
+  },
+  "categories": {
+    "exercise": {
+      "shooting": "Shooting",
+      "dribbling": "Dribbling",
+      "defense": "Defense",
+      "passing": "Passing",
+      "conditioning": "Conditioning"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "play": {
+      "offense": "Offense",
+      "defense": "Defense",
+      "inbound": "Inbound",
+      "special": "Special"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome back! Here's what's happening with your team.",
+    "totalSessions": "Total Sessions",
+    "activePlayers": "Active Players",
+    "exerciseLibrary": "Exercise Library",
+    "avgAttendance": "Avg Attendance",
+    "quickActions": "Quick Actions",
+    "createTrainingSession": "Create Training Session",
+    "addNewExercise": "Add New Exercise",
+    "addPlayer": "Add Player",
+    "recentExercises": "Recent Exercises",
+    "browseLibrary": "Browse Library",
+    "noExercisesInLibrary": "No exercises in library",
+    "upcomingTrainingSessions": "Upcoming Training Sessions",
+    "viewAll": "View All",
+    "noUpcomingSessions": "No upcoming sessions scheduled",
+    "exerciseCategories": "Exercise Categories",
+    "aiCoachAssistant": "AI Coach Assistant",
+    "smartTrainingInsights": "Smart Training Insights",
+    "basedOnTrainingData": "Based on your team's actual training data:",
+    "unlockInsights": "Add exercises and complete a few sessions to unlock insights.",
+    "viewAiRecommendations": "View AI Recommendations",
+    "aiTrainingRecommendations": "AI Training Recommendations",
+    "aiModalDescription": "Generated from your team's actual session and exercise data.",
+    "performanceAnalysis": "Performance Analysis",
+    "notEnoughData": "Not enough data yet — add exercises and complete a few training sessions to see insights here.",
+    "viewCategoryExercises": "View {{category}} Exercises"
+  },
+  "insights": {
+    "thinCategory": {
+      "title": "Light on {{category}} Drills",
+      "description_one": "Your library has only {{count}} {{category}} exercise — the fewest of any category. Consider adding more variety.",
+      "description_other": "Your library has only {{count}} {{category}} exercises — the fewest of any category. Consider adding more variety."
+    },
+    "attendanceRate": {
+      "title": "Attendance Trend",
+      "description_one": "Average attendance across your {{count}} completed session is {{avgRate}}%.",
+      "description_other": "Average attendance across your {{count}} completed sessions is {{avgRate}}%."
+    },
+    "missingExercises": {
+      "title": "Sessions Missing Exercises",
+      "description_one": "{{count}} upcoming session has no exercises assigned yet.",
+      "description_other": "{{count}} upcoming sessions have no exercises assigned yet."
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +17,7 @@ import { computeInsights } from "@/lib/insights";
 import type { Exercise, TrainingSession } from "@shared/schema";
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -46,7 +48,7 @@ export default function Dashboard() {
     }, {} as Record<string, number>);
   }, [exercises]);
 
-  const insights = useMemo(() => computeInsights(sessions, exercises), [sessions, exercises]);
+  const insights = useMemo(() => computeInsights(sessions, exercises, t), [sessions, exercises, t]);
 
   // Navigation functions
   const navigateToPage = (path: string) => {
@@ -69,8 +71,8 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Dashboard"
-          subtitle="Welcome back! Here's what's happening with your team."
+          title={t("dashboard.title")}
+          subtitle={t("dashboard.subtitle")}
           showNewSessionButton={true}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -88,8 +90,8 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Dashboard"
-          subtitle="Welcome back! Here's what's happening with your team."
+          title={t("dashboard.title")}
+          subtitle={t("dashboard.subtitle")}
           showNewSessionButton={true}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -102,8 +104,8 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col h-full">
       <TopBar
-        title="Dashboard"
-        subtitle="Welcome back! Here's what's happening with your team."
+        title={t("dashboard.title")}
+        subtitle={t("dashboard.subtitle")}
         showNewSessionButton={true}
       />
 

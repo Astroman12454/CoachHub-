@@ -1,0 +1,151 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "edit": "Editar",
+    "create": "Crear",
+    "creating": "Creando...",
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "search": "Buscar",
+    "notifications": "Notificaciones",
+    "openNavigationMenu": "Abrir menú de navegación",
+    "logOut": "Cerrar sesión",
+    "manageBilling": "Gestionar facturación",
+    "upgradeToPaid": "Mejorar a plan de pago",
+    "paidPlan": "Plan de Pago",
+    "freePlanUpgrade": "Plan Gratis · Mejorar",
+    "billing": "Facturación",
+    "couldntOpenBilling": "No se pudo abrir la facturación en este momento.",
+    "tryAgain": "Inténtalo de nuevo.",
+    "optional": "Opcional",
+    "yes": "Sí",
+    "no": "No",
+    "language": "Idioma",
+    "switchToSpanish": "Cambiar a español",
+    "switchToEnglish": "Cambiar a inglés"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "weeklySchedule": "Horario Semanal",
+    "trainingSessions": "Entrenamientos",
+    "games": "Partidos",
+    "playbook": "Jugadas",
+    "exerciseLibrary": "Biblioteca de Ejercicios",
+    "players": "Jugadores"
+  },
+  "sidebar": {
+    "tagline": "Entrenamiento de Baloncesto",
+    "switchTeam": "Cambiar equipo",
+    "selectTeam": "Seleccionar equipo",
+    "newTeam": "Nuevo Equipo",
+    "navigation": "Navegación"
+  },
+  "login": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "passwordPlaceholderSignup": "Al menos 8 caracteres",
+    "passwordPlaceholderLogin": "Tu contraseña",
+    "loggingIn": "Iniciando sesión...",
+    "creatingAccount": "Creando cuenta...",
+    "logIn": "Iniciar Sesión",
+    "createAccount": "Crear Cuenta",
+    "newToCoachHub": "¿Nuevo en Coach Hub?",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "createAnAccount": "Crear una cuenta",
+    "logInAction": "Iniciar sesión",
+    "agreeToTermsPrefix": "Al crear una cuenta aceptas nuestros",
+    "and": "y",
+    "termsOfUse": "Términos de Uso",
+    "privacyPolicy": "Política de Privacidad",
+    "support": "Soporte"
+  },
+  "topBar": {
+    "clearSearch": "Limpiar búsqueda",
+    "newSession": "Nueva Sesión",
+    "new": "Nueva"
+  },
+  "errorState": {
+    "title": "No se pudo cargar esto",
+    "description": "Algo salió mal al obtener estos datos. Verifica tu conexión e inténtalo de nuevo.",
+    "tryAgain": "Intentar de Nuevo"
+  },
+  "errorBoundary": {
+    "title": "Algo salió mal",
+    "description": "Esta página encontró un error inesperado. Recargar suele solucionarlo.",
+    "reload": "Recargar"
+  },
+  "notFound": {
+    "title": "404 Página No Encontrada",
+    "description": "¿Olvidaste agregar la página al enrutador?"
+  },
+  "categories": {
+    "exercise": {
+      "shooting": "Tiro",
+      "dribbling": "Bote",
+      "defense": "Defensa",
+      "passing": "Pase",
+      "conditioning": "Preparación Física"
+    },
+    "difficulty": {
+      "easy": "Fácil",
+      "medium": "Media",
+      "hard": "Difícil"
+    },
+    "play": {
+      "offense": "Ataque",
+      "defense": "Defensa",
+      "inbound": "Saque",
+      "special": "Especial"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "subtitle": "¡Bienvenido de nuevo! Esto es lo que pasa con tu equipo.",
+    "totalSessions": "Sesiones Totales",
+    "activePlayers": "Jugadores Activos",
+    "exerciseLibrary": "Biblioteca de Ejercicios",
+    "avgAttendance": "Asistencia Media",
+    "quickActions": "Acciones Rápidas",
+    "createTrainingSession": "Crear Sesión de Entrenamiento",
+    "addNewExercise": "Añadir Nuevo Ejercicio",
+    "addPlayer": "Añadir Jugador",
+    "recentExercises": "Ejercicios Recientes",
+    "browseLibrary": "Ver Biblioteca",
+    "noExercisesInLibrary": "No hay ejercicios en la biblioteca",
+    "upcomingTrainingSessions": "Próximos Entrenamientos",
+    "viewAll": "Ver Todos",
+    "noUpcomingSessions": "No hay sesiones próximas programadas",
+    "exerciseCategories": "Categorías de Ejercicios",
+    "aiCoachAssistant": "Asistente de IA",
+    "smartTrainingInsights": "Información Inteligente de Entrenamiento",
+    "basedOnTrainingData": "Según los datos reales de entrenamiento de tu equipo:",
+    "unlockInsights": "Añade ejercicios y completa algunas sesiones para desbloquear información.",
+    "viewAiRecommendations": "Ver Recomendaciones de IA",
+    "aiTrainingRecommendations": "Recomendaciones de Entrenamiento con IA",
+    "aiModalDescription": "Generado a partir de los datos reales de sesiones y ejercicios de tu equipo.",
+    "performanceAnalysis": "Análisis de Rendimiento",
+    "notEnoughData": "Aún no hay suficientes datos — añade ejercicios y completa algunas sesiones de entrenamiento para ver información aquí.",
+    "viewCategoryExercises": "Ver Ejercicios de {{category}}"
+  },
+  "insights": {
+    "thinCategory": {
+      "title": "Pocos Ejercicios de {{category}}",
+      "description_one": "Tu biblioteca solo tiene {{count}} ejercicio de {{category}} — el menor número de cualquier categoría. Considera añadir más variedad.",
+      "description_other": "Tu biblioteca solo tiene {{count}} ejercicios de {{category}} — el menor número de cualquier categoría. Considera añadir más variedad."
+    },
+    "attendanceRate": {
+      "title": "Tendencia de Asistencia",
+      "description_one": "La asistencia promedio en tu {{count}} sesión completada es del {{avgRate}}%.",
+      "description_other": "La asistencia promedio en tus {{count}} sesiones completadas es del {{avgRate}}%."
+    },
+    "missingExercises": {
+      "title": "Sesiones Sin Ejercicios",
+      "description_one": "{{count}} sesión próxima no tiene ejercicios asignados todavía.",
+      "description_other": "{{count}} sesiones próximas no tienen ejercicios asignados todavía."
+    }
+  }
+}

@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BrandMark from "@/components/BrandMark";
+import LanguageToggle from "@/components/LanguageToggle";
 
 export default function Login() {
+  const { t } = useTranslation();
   const { login, isLoggingIn, loginError, signup, isSigningUp, signupError } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -23,20 +26,23 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-rail p-4">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-rail p-4 relative">
+      <div className="absolute top-4 right-4">
+        <LanguageToggle />
+      </div>
       <div className="w-full max-w-sm bg-card rounded-lg shadow-2xl p-8 fade-in">
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 basketball-orange rounded-lg flex items-center justify-center mb-4">
             <BrandMark className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-display font-bold uppercase tracking-tight text-2xl text-foreground">Coach Hub</h1>
-          <p className="text-muted-foreground text-sm">Basketball Training</p>
+          <p className="text-muted-foreground text-sm">{t("sidebar.tagline")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-              Email
+              {t("login.email")}
             </label>
             <Input
               id="email"
@@ -52,7 +58,7 @@ export default function Login() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-              Password
+              {t("login.password")}
             </label>
             <Input
               id="password"
@@ -60,7 +66,7 @@ export default function Login() {
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
+              placeholder={mode === "signup" ? t("login.passwordPlaceholderSignup") : t("login.passwordPlaceholderLogin")}
               className="focus:border-basketball-orange"
             />
             {error && (
@@ -76,31 +82,31 @@ export default function Login() {
             className="w-full basketball-orange basketball-orange-hover text-white"
           >
             {isPending
-              ? (mode === "login" ? "Logging in..." : "Creating account...")
-              : (mode === "login" ? "Log In" : "Create Account")}
+              ? (mode === "login" ? t("login.loggingIn") : t("login.creatingAccount"))
+              : (mode === "login" ? t("login.logIn") : t("login.createAccount"))}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          {mode === "login" ? "New to Coach Hub?" : "Already have an account?"}{" "}
+          {mode === "login" ? t("login.newToCoachHub") : t("login.alreadyHaveAccount")}{" "}
           <button
             type="button"
             onClick={() => setMode(mode === "login" ? "signup" : "login")}
             className="text-basketball-orange font-medium hover:underline"
           >
-            {mode === "login" ? "Create an account" : "Log in"}
+            {mode === "login" ? t("login.createAnAccount") : t("login.logInAction")}
           </button>
         </p>
 
         {mode === "signup" && (
           <p className="text-center text-xs text-muted-foreground mt-3">
-            By creating an account you agree to our{" "}
+            {t("login.agreeToTermsPrefix")}{" "}
             <Link href="/terms" className="text-basketball-orange hover:underline">
-              Terms of Use
+              {t("login.termsOfUse")}
             </Link>{" "}
-            and{" "}
+            {t("login.and")}{" "}
             <Link href="/privacy" className="text-basketball-orange hover:underline">
-              Privacy Policy
+              {t("login.privacyPolicy")}
             </Link>
             .
           </p>
@@ -109,15 +115,15 @@ export default function Login() {
 
       <p className="text-center text-xs text-muted-foreground mt-4">
         <Link href="/privacy" className="hover:underline">
-          Privacy Policy
+          {t("login.privacyPolicy")}
         </Link>
         {" · "}
         <Link href="/terms" className="hover:underline">
-          Terms of Use
+          {t("login.termsOfUse")}
         </Link>
         {" · "}
         <Link href="/support" className="hover:underline">
-          Support
+          {t("login.support")}
         </Link>
       </p>
     </main>

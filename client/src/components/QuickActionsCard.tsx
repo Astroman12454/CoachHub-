@@ -1,4 +1,5 @@
 import { Plus, Dumbbell, UserPlus, CalendarRange } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -8,10 +9,11 @@ interface QuickActionsCardProps {
 }
 
 export default function QuickActionsCard({ onCreateSession, onNavigate }: QuickActionsCardProps) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
+        <CardTitle>{t("dashboard.quickActions")}</CardTitle>
       </CardHeader>
       <div className="px-4 pb-4 space-y-2">
         <Button
@@ -19,7 +21,7 @@ export default function QuickActionsCard({ onCreateSession, onNavigate }: QuickA
           onClick={onCreateSession}
         >
           <Plus className="w-4 h-4 mr-2" strokeWidth={2} aria-hidden="true" />
-          Create Training Session
+          {t("dashboard.createTrainingSession")}
         </Button>
         <Button
           variant="outline"
@@ -27,7 +29,7 @@ export default function QuickActionsCard({ onCreateSession, onNavigate }: QuickA
           onClick={() => onNavigate('/exercise-library')}
         >
           <Dumbbell className="w-4 h-4 mr-2" strokeWidth={1.75} aria-hidden="true" />
-          Add New Exercise
+          {t("dashboard.addNewExercise")}
         </Button>
         <Button
           variant="outline"
@@ -35,7 +37,7 @@ export default function QuickActionsCard({ onCreateSession, onNavigate }: QuickA
           onClick={() => onNavigate('/players')}
         >
           <UserPlus className="w-4 h-4 mr-2" strokeWidth={1.75} aria-hidden="true" />
-          Add Player
+          {t("dashboard.addPlayer")}
         </Button>
         <Button
           variant="outline"
@@ -43,7 +45,7 @@ export default function QuickActionsCard({ onCreateSession, onNavigate }: QuickA
           onClick={() => onNavigate('/weekly-schedule')}
         >
           <CalendarRange className="w-4 h-4 mr-2" strokeWidth={1.75} aria-hidden="true" />
-          Weekly Schedule
+          {t("nav.weeklySchedule")}
         </Button>
       </div>
     </Card>

@@ -1,4 +1,5 @@
 import { CalendarRange, Calendar, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { TrainingSession } from "@shared/schema";
@@ -10,24 +11,25 @@ interface UpcomingSessionsCardProps {
 }
 
 export default function UpcomingSessionsCard({ sessions, onSessionClick, onViewAll }: UpcomingSessionsCardProps) {
+  const { t } = useTranslation();
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between border-b border-border">
         <div className="flex items-center gap-2.5">
           <CalendarRange className="w-4.5 h-4.5 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
-          <CardTitle className="text-base">Upcoming Training Sessions</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.upcomingTrainingSessions")}</CardTitle>
         </div>
         <Button
           variant="link"
           className="text-basketball-orange hover:text-basketball-orange-hover font-semibold"
           onClick={onViewAll}
         >
-          View All →
+          {t("dashboard.viewAll")} →
         </Button>
       </CardHeader>
       <div>
         {sessions.length === 0 ? (
-          <p className="text-muted-foreground text-center py-10 text-sm">No upcoming sessions scheduled</p>
+          <p className="text-muted-foreground text-center py-10 text-sm">{t("dashboard.noUpcomingSessions")}</p>
         ) : (
           sessions.map((session) => {
             const attendanceCount = session.attendanceCount ?? 0;

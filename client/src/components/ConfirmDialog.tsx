@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -26,9 +27,10 @@ export default function ConfirmDialog({
   title,
   description,
   onConfirm,
-  confirmLabel = "Delete",
+  confirmLabel,
   isPending = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   const restoreFocus = useDialogFocusReturn(open);
   const handleOpenChange = (next: boolean) => {
     if (!next) restoreFocus();
@@ -43,13 +45,13 @@ export default function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isPending}
             className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-600"
           >
-            {isPending ? "Deleting..." : confirmLabel}
+            {isPending ? t("common.deleting") : (confirmLabel ?? t("common.delete"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

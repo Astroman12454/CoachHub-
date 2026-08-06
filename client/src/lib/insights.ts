@@ -1,4 +1,5 @@
 import { Layers, Users, CalendarX2, type LucideIcon } from "lucide-react";
+import type { TFunction } from "i18next";
 import type { TrainingSession, Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, type ExerciseCategory } from "@/lib/types";
 
@@ -13,14 +14,12 @@ export interface CoachInsight {
   category?: ExerciseCategory;
 }
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
 // Every insight here is derived directly from the coach's own exercises and
 // training-session data — no fabricated stats (no "15% more points allowed
 // in the paint", no invented percentages). An insight is only included when
 // there's enough real data behind it; a thin dataset simply yields fewer
 // (or zero) insights rather than a placeholder number.
-export function computeInsights(sessions: TrainingSession[], exercises: Exercise[]): CoachInsight[] {
+export function computeInsights(sessions: TrainingSession[], exercises: Exercise[], t: TFunction): CoachInsight[] {
   const insights: CoachInsight[] = [];
 
   if (exercises.length > 0) {
@@ -31,13 +30,14 @@ export function computeInsights(sessions: TrainingSession[], exercises: Exercise
     const thinnest = counts.reduce((a, b) => (b.count < a.count ? b : a));
     const fullest = counts.reduce((a, b) => (b.count > a.count ? b : a));
     if (thinnest.count < fullest.count) {
+      const categoryLabel = t(`categories.exercise.${thinnest.category}`, thinnest.category);
       insights.push({
         id: "thin-category",
         icon: Layers,
         iconBg: "bg-blue-50 dark:bg-blue-950/40",
         iconColor: "text-blue-600",
-        title: `Light on ${capitalize(thinnest.category)} Drills`,
-        description: `Your library has only ${thinnest.count} ${thinnest.category} exercise${thinnest.count === 1 ? "" : "s"} — the fewest of any category. Consider adding more variety.`,
+        title: t("insights.thinCategory.title", { category: categoryLabel }),
+        description: t("insights.thinCategory.description", { count: thinnest.count, category: categoryLabel }),
         category: thinnest.category,
       });
     }
@@ -53,8 +53,8 @@ export function computeInsights(sessions: TrainingSession[], exercises: Exercise
       icon: Users,
       iconBg: "bg-success-tint",
       iconColor: "text-success",
-      title: "Attendance Trend",
-      description: `Average attendance across your ${completed.length} completed session${completed.length === 1 ? "" : "s"} is ${avgRate}%.`,
+      title: t("insights.attendanceRate.title"),
+      description: t("insights.attendanceRate.description", { count: completed.length, avgRate }),
     });
   }
 
@@ -67,8 +67,8 @@ export function computeInsights(sessions: TrainingSession[], exercises: Exercise
       icon: CalendarX2,
       iconBg: "bg-amber-50 dark:bg-amber-950/40",
       iconColor: "text-amber-600",
-      title: "Sessions Missing Exercises",
-      description: `${missingExercises.length} upcoming session${missingExercises.length === 1 ? " has" : "s have"} no exercises assigned yet.`,
+      title: t("insights.missingExercises.title"),
+      description: t("insights.missingExercises.description", { count: missingExercises.length }),
     });
   }
 
