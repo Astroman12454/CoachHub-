@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, Clock, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
@@ -12,6 +13,7 @@ interface ExerciseCardProps {
 }
 
 export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: ExerciseCardProps) {
+  const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
   const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
@@ -29,10 +31,10 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
             <CategoryIcon className="w-4 h-4 text-white" strokeWidth={2} />
           </div>
           <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 dark:border-orange-900/40 dark:text-orange-300 dark:bg-orange-950/40">
-            {exercise.category}
+            {t(`categories.exercise.${exercise.category}`, exercise.category).toLowerCase()}
           </Badge>
           <Badge className={`${difficultyColorClass} shadow-sm`}>
-            {exercise.difficulty}
+            {t(`categories.difficulty.${exercise.difficulty}`, exercise.difficulty).toLowerCase()}
           </Badge>
         </div>
 
@@ -46,7 +48,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
                 className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                aria-label={`Edit ${exercise.name}`}
+                aria-label={t("exerciseCard.editName", { name: exercise.name })}
               >
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
               </button>
@@ -56,7 +58,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
                 className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
-                aria-label={`Delete ${exercise.name}`}
+                aria-label={t("exerciseCard.deleteName", { name: exercise.name })}
               >
                 <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
               </button>
@@ -91,7 +93,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
 
       <div className="flex items-center gap-1.5 text-muted-foreground">
         <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-        <span className="text-xs font-medium">{exercise.duration} min</span>
+        <span className="text-xs font-medium">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
       </div>
     </div>
   );

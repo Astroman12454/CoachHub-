@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Dumbbell } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
 import ExerciseForm from "@/components/ExerciseForm";
@@ -20,6 +21,7 @@ import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 
 export default function ExerciseLibrary() {
+  const { t } = useTranslation();
   const search = useSearch();
   const initialCategory = new URLSearchParams(search).get("category") ?? "all";
   const { account } = useAuth();
@@ -39,12 +41,12 @@ export default function ExerciseLibrary() {
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/exercises",
-    errorMessage: "Failed to delete exercise",
+    errorMessage: t("exerciseLibrary.failedToDelete"),
   });
 
   const confirmDeleteExercise = () => {
     if (exerciseToDelete) {
-      requestDelete(exerciseToDelete.id, `"${exerciseToDelete.name}" deleted.`);
+      requestDelete(exerciseToDelete.id, t("exerciseLibrary.deletedToast", { name: exerciseToDelete.name }));
       setExerciseToDelete(null);
     }
   };
@@ -52,11 +54,11 @@ export default function ExerciseLibrary() {
   const handleAddExerciseClick = () => {
     if (!canEditExercises) {
       toast({
-        title: "Free plan",
-        description: "Upgrade to a paid plan to create custom exercises.",
+        title: t("sessionModal.freePlan"),
+        description: t("exerciseLibrary.upgradeToCreate"),
         action: (
-          <ToastAction altText="Upgrade" onClick={() => startCheckout()}>
-            Upgrade
+          <ToastAction altText={t("sessionModal.upgrade")} onClick={() => startCheckout()}>
+            {t("sessionModal.upgrade")}
           </ToastAction>
         ),
       });
@@ -84,10 +86,10 @@ export default function ExerciseLibrary() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Exercise Library"
-          subtitle="Browse and manage your basketball training exercises"
+          title={t("nav.exerciseLibrary")}
+          subtitle={t("exerciseLibrary.subtitle")}
           onSearch={setSearchQuery}
-          searchPlaceholder="Search exercises..."
+          searchPlaceholder={t("exerciseLibrary.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -104,10 +106,10 @@ export default function ExerciseLibrary() {
     return (
       <div className="flex flex-col h-full">
         <TopBar
-          title="Exercise Library"
-          subtitle="Browse and manage your basketball training exercises"
+          title={t("nav.exerciseLibrary")}
+          subtitle={t("exerciseLibrary.subtitle")}
           onSearch={setSearchQuery}
-          searchPlaceholder="Search exercises..."
+          searchPlaceholder={t("exerciseLibrary.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <ErrorState onRetry={() => refetch()} />
@@ -119,10 +121,10 @@ export default function ExerciseLibrary() {
   return (
     <div className="flex flex-col h-full">
       <TopBar
-        title="Exercise Library"
-        subtitle="Browse and manage your basketball training exercises"
+        title={t("nav.exerciseLibrary")}
+        subtitle={t("exerciseLibrary.subtitle")}
         onSearch={setSearchQuery}
-        searchPlaceholder="Search exercises..."
+        searchPlaceholder={t("exerciseLibrary.searchPlaceholder")}
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -130,28 +132,28 @@ export default function ExerciseLibrary() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filter by category">
-                <SelectValue placeholder="Filter by category" />
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("sessionModal.filterByCategory")}>
+                <SelectValue placeholder={t("sessionModal.filterByCategory")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{t("sessionModal.allCategories")}</SelectItem>
                 {EXERCISE_CATEGORIES.map(category => (
                   <SelectItem key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                    {t(`categories.exercise.${category}`, category)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-              <SelectTrigger className="w-full sm:w-48" aria-label="Filter by difficulty">
-                <SelectValue placeholder="Filter by difficulty" />
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("exerciseLibrary.filterByDifficulty")}>
+                <SelectValue placeholder={t("exerciseLibrary.filterByDifficulty")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Difficulties</SelectItem>
+                <SelectItem value="all">{t("exerciseLibrary.allDifficulties")}</SelectItem>
                 {DIFFICULTY_LEVELS.map(difficulty => (
                   <SelectItem key={difficulty} value={difficulty}>
-                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                    {t(`categories.difficulty.${difficulty}`, difficulty)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -163,7 +165,7 @@ export default function ExerciseLibrary() {
             onClick={handleAddExerciseClick}
           >
             <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            Add Exercise
+            {t("exerciseLibrary.addExercise")}
           </Button>
         </div>
 
@@ -171,14 +173,14 @@ export default function ExerciseLibrary() {
         {filteredExercises.length === 0 ? (
           <EmptyState
             icon={Dumbbell}
-            title="No Exercises Found"
+            title={t("exerciseLibrary.emptyTitle")}
             description={
               searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
-                ? "No exercises match your current filters."
-                : "Get started by adding your first exercise to the library."
+                ? t("exerciseLibrary.emptyFilterDescription")
+                : t("exerciseLibrary.emptyDescription")
             }
             action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" ? {
-              label: "Add First Exercise",
+              label: t("exerciseLibrary.addFirstExercise"),
               icon: Plus,
               onClick: handleAddExerciseClick,
             } : undefined}
@@ -215,8 +217,8 @@ export default function ExerciseLibrary() {
       <ConfirmDialog
         open={!!exerciseToDelete}
         onOpenChange={(open) => !open && setExerciseToDelete(null)}
-        title="Delete exercise?"
-        description={`This will permanently delete "${exerciseToDelete?.name}". This can't be undone.`}
+        title={t("exerciseLibrary.deleteConfirmTitle")}
+        description={t("exerciseLibrary.deleteConfirmDescription", { name: exerciseToDelete?.name })}
         onConfirm={confirmDeleteExercise}
       />
     </div>

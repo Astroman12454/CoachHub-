@@ -5,6 +5,7 @@ import {
   MousePointer2, Circle, X as XIcon, CircleDot as BallIcon, ArrowRight, MoveRight,
   Waves, Shield, Type, Eraser, Plus, Play as PlayIcon, Pause, Trash2, Menu, FileDown, Loader2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import BasketballCourt from "@/components/BasketballCourt";
 import { exportPlayPdf } from "@/lib/exportPlayPdf";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ function emptyStep(): EditorStep {
 }
 
 export default function PlayEditor() {
+  const { t } = useTranslation();
   const params = useParams<{ id?: string }>();
   const isEditing = !!params.id && params.id !== "new";
   const playId = isEditing ? parseInt(params.id!, 10) : null;
@@ -333,7 +335,7 @@ export default function PlayEditor() {
   const handleSave = async () => {
     if (isSaving) return;
     if (!name.trim()) {
-      toast({ title: "Name required", description: "Give the play a name before saving.", variant: "destructive" });
+      toast({ title: t("playEditor.nameRequired"), description: t("playEditor.nameRequiredDescription"), variant: "destructive" });
       return;
     }
     setIsSaving(true);
@@ -345,10 +347,10 @@ export default function PlayEditor() {
       const saved = await res.json();
       queryClient.invalidateQueries({ queryKey: ["/api/plays"] });
       queryClient.invalidateQueries({ queryKey: [`/api/plays/${saved.id}`] });
-      toast({ title: "Saved", description: `"${saved.name}" is saved.` });
+      toast({ title: t("playEditor.saved"), description: t("playEditor.savedDescription", { name: saved.name }) });
       setLocation("/playbook");
     } catch (error) {
-      toast({ title: "Couldn't save", description: extractErrorMessage(error) ?? "Try again.", variant: "destructive" });
+      toast({ title: t("playEditor.couldntSave"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -359,11 +361,11 @@ export default function PlayEditor() {
     setIsExportingPdf(true);
     try {
       await exportPlayPdf(
-        { name: name.trim() || "Untitled Play", category, courtType, notes },
+        { name: name.trim() || t("playEditor.untitledPlay"), category, courtType, notes },
         steps,
       );
     } catch (error) {
-      toast({ title: "Couldn't export PDF", description: "Try again.", variant: "destructive" });
+      toast({ title: t("playEditor.couldntExportPdf"), description: t("common.tryAgain"), variant: "destructive" });
     } finally {
       setIsExportingPdf(false);
     }
@@ -373,20 +375,20 @@ export default function PlayEditor() {
   const displayDrawings = isPlaying ? [] : currentStep.drawings;
 
   const toolButtons: { tool: Tool; label: string; icon: typeof MousePointer2 }[] = useMemo(() => [
-    { tool: "select", label: "Move", icon: MousePointer2 },
-    { tool: "offense", label: "Offense", icon: Circle },
-    { tool: "defense", label: "Defense", icon: XIcon },
-    { tool: "ball", label: "Ball", icon: BallIcon },
-    { tool: "move", label: "Move Arrow", icon: ArrowRight },
-    { tool: "pass", label: "Pass", icon: MoveRight },
-    { tool: "dribble", label: "Dribble", icon: Waves },
-    { tool: "screen", label: "Screen", icon: Shield },
-    { tool: "text", label: "Text", icon: Type },
-    { tool: "erase", label: "Erase", icon: Eraser },
-  ], []);
+    { tool: "select", label: t("playEditor.tools.move"), icon: MousePointer2 },
+    { tool: "offense", label: t("categories.play.offense"), icon: Circle },
+    { tool: "defense", label: t("categories.play.defense"), icon: XIcon },
+    { tool: "ball", label: t("playEditor.tools.ball"), icon: BallIcon },
+    { tool: "move", label: t("playEditor.tools.moveArrow"), icon: ArrowRight },
+    { tool: "pass", label: t("playEditor.tools.pass"), icon: MoveRight },
+    { tool: "dribble", label: t("playEditor.tools.dribble"), icon: Waves },
+    { tool: "screen", label: t("playEditor.tools.screen"), icon: Shield },
+    { tool: "text", label: t("playEditor.tools.text"), icon: Type },
+    { tool: "erase", label: t("playEditor.tools.erase"), icon: Eraser },
+  ], [t]);
 
   if (isEditing && isLoading) {
-    return <main className="flex items-center justify-center h-full text-muted-foreground">Loading play…</main>;
+    return <main className="flex items-center justify-center h-full text-muted-foreground">{t("playEditor.loadingPlay")}</main>;
   }
 
   return (
@@ -396,30 +398,30 @@ export default function PlayEditor() {
           <button
             onClick={openMobile}
             className="lg:hidden w-10 h-10 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-            aria-label="Open navigation menu"
+            aria-label={t("common.openNavigationMenu")}
           >
             <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
           </button>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Play name"
-            aria-label="Play name"
+            placeholder={t("playEditor.playName")}
+            aria-label={t("playEditor.playName")}
             className="max-w-[220px] font-display uppercase tracking-tight"
           />
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-36" aria-label="Category"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36" aria-label={t("playEditor.category")}><SelectValue /></SelectTrigger>
             <SelectContent>
               {PLAY_CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
+                <SelectItem key={c} value={c}>{t(`categories.play.${c}`, c)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={courtType} onValueChange={setCourtType}>
-            <SelectTrigger className="w-32" aria-label="Court"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-32" aria-label={t("playEditor.court")}><SelectValue /></SelectTrigger>
             <SelectContent>
               {COURT_TYPES.map((c) => (
-                <SelectItem key={c} value={c}>{c === "half" ? "Half Court" : "Full Court"}</SelectItem>
+                <SelectItem key={c} value={c}>{c === "half" ? t("playEditor.halfCourt") : t("playEditor.fullCourt")}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -433,10 +435,10 @@ export default function PlayEditor() {
             {isExportingPdf
               ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
               : <FileDown className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />}
-            {isExportingPdf ? "Exporting…" : "Export PDF"}
+            {isExportingPdf ? t("playEditor.exportingEllipsis") : t("playEditor.exportPdf")}
           </Button>
           <Button type="button" variant="outline" onClick={() => setLocation("/playbook")}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -444,14 +446,14 @@ export default function PlayEditor() {
             onClick={handleSave}
             disabled={isSaving}
           >
-            {isSaving ? "Saving…" : "Save Play"}
+            {isSaving ? t("playEditor.savingEllipsis") : t("playEditor.savePlay")}
           </Button>
         </div>
         <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Explain the play: reads, timing, what triggers each option…"
-          aria-label="Play explanation"
+          placeholder={t("playEditor.explanationPlaceholder")}
+          aria-label={t("playEditor.playExplanation")}
           rows={2}
           className="resize-none text-sm"
         />
@@ -459,16 +461,16 @@ export default function PlayEditor() {
 
       {/* Tool palette */}
       <div className="bg-card border-b border-border px-4 py-2 flex items-center gap-2 overflow-x-auto">
-        {toolButtons.map(({ tool: t, label, icon: Icon }) => (
+        {toolButtons.map(({ tool: toolValue, label, icon: Icon }) => (
           <button
-            key={t}
+            key={toolValue}
             type="button"
-            onClick={() => setTool(t)}
+            onClick={() => setTool(toolValue)}
             aria-label={label}
-            aria-pressed={tool === t}
+            aria-pressed={tool === toolValue}
             title={label}
             className={`flex-shrink-0 w-10 h-10 rounded-md flex items-center justify-center border transition-colors ${
-              tool === t
+              tool === toolValue
                 ? "basketball-orange text-white border-transparent"
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
@@ -482,7 +484,7 @@ export default function PlayEditor() {
             key={c}
             type="button"
             onClick={() => setColor(c)}
-            aria-label={`Color ${c}`}
+            aria-label={t("playEditor.colorSwatch", { color: c })}
             aria-pressed={color === c}
             className={`flex-shrink-0 w-7 h-7 rounded-full border-2 ${color === c ? "border-foreground" : "border-border"}`}
             style={{ backgroundColor: c }}
@@ -491,7 +493,7 @@ export default function PlayEditor() {
       </div>
 
       {/* Canvas */}
-      <main className="flex-1 overflow-auto p-4 flex items-start justify-center bg-muted/30" tabIndex={0} aria-label="Play canvas">
+      <main className="flex-1 overflow-auto p-4 flex items-start justify-center bg-muted/30" tabIndex={0} aria-label={t("playEditor.playCanvas")}>
         <div className={`w-full max-w-xl ${courtType === "full" ? "aspect-[100/188]" : "aspect-[100/94]"}`}>
           <div className="relative w-full h-full bg-card rounded-lg shadow-sm border border-border overflow-hidden">
             <div className="absolute inset-0">
@@ -506,7 +508,7 @@ export default function PlayEditor() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               role="img"
-              aria-label={`${courtType === "full" ? "Full" : "Half"} court play diagram editor`}
+              aria-label={courtType === "full" ? t("playEditor.fullCourtDiagramEditor") : t("playEditor.halfCourtDiagramEditor")}
             >
               <defs>
                 <marker id="play-arrowhead" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
@@ -538,7 +540,7 @@ export default function PlayEditor() {
                   onChange={(e) => setTextDraft((d) => (d ? { ...d, value: e.target.value } : d))}
                   onKeyDown={(e) => { if (e.key === "Enter") commitTextDraft(); if (e.key === "Escape") setTextDraft(null); }}
                   onBlur={commitTextDraft}
-                  aria-label="Annotation text"
+                  aria-label={t("playEditor.annotationText")}
                   className="text-xs px-1.5 py-0.5 rounded border border-basketball-orange bg-card text-foreground w-28"
                 />
               </div>
@@ -555,7 +557,7 @@ export default function PlayEditor() {
           size="icon"
           onClick={isPlaying ? stopPlayback : startPlayback}
           disabled={steps.length < 2}
-          aria-label={isPlaying ? "Stop playback" : "Play animation"}
+          aria-label={isPlaying ? t("playEditor.stopPlayback") : t("playEditor.playAnimation")}
           className="flex-shrink-0"
         >
           {isPlaying ? <Pause className="w-4 h-4" aria-hidden="true" /> : <PlayIcon className="w-4 h-4" aria-hidden="true" />}
@@ -573,13 +575,13 @@ export default function PlayEditor() {
                   : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
-              Step {i + 1}
+              {t("playEditor.stepNumber", { number: i + 1 })}
             </button>
             {steps.length > 1 && (
               <button
                 type="button"
                 onClick={() => setStepToDelete(i)}
-                aria-label={`Delete step ${i + 1}`}
+                aria-label={t("playEditor.deleteStep", { number: i + 1 })}
                 className="ml-0.5 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-red-600"
               >
                 <Trash2 className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
@@ -589,15 +591,15 @@ export default function PlayEditor() {
         ))}
         <Button type="button" variant="outline" size="sm" onClick={addStep} className="flex-shrink-0">
           <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} aria-hidden="true" />
-          Step
+          {t("playEditor.step")}
         </Button>
       </div>
 
       <ConfirmDialog
         open={stepToDelete !== null}
         onOpenChange={(open) => !open && setStepToDelete(null)}
-        title="Delete this step?"
-        description="This removes it from the play's sequence. This can't be undone."
+        title={t("playEditor.deleteStepConfirmTitle")}
+        description={t("playEditor.deleteStepConfirmDescription")}
         onConfirm={confirmDeleteStep}
       />
     </div>

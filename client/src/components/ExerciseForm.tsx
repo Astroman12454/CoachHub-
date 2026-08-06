@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ interface ExerciseFormProps {
 }
 
 export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseFormProps) {
+  const { t } = useTranslation();
   const isEditing = !!exercise;
   const restoreFocus = useDialogFocusReturn(isOpen);
   const handleOpenChange = (open: boolean) => {
@@ -45,8 +47,8 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
   const saveExerciseMutation = useSaveMutation<ExerciseFormData>({
     endpoint: "/api/exercises",
     id: exercise?.id,
-    successMessage: isEditing ? "Exercise updated successfully" : "Exercise created successfully",
-    errorMessage: isEditing ? "Failed to update exercise" : "Failed to create exercise",
+    successMessage: isEditing ? t("exerciseForm.updatedSuccessfully") : t("exerciseForm.createdSuccessfully"),
+    errorMessage: isEditing ? t("exerciseForm.failedToUpdate") : t("exerciseForm.failedToCreate"),
     onSuccess: () => handleOpenChange(false),
   });
 
@@ -59,9 +61,9 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">{isEditing ? "Edit Exercise" : "Create New Exercise"}</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">{isEditing ? t("exerciseForm.editExercise") : t("exerciseForm.createNewExercise")}</DialogTitle>
           <DialogDescription className="sr-only">
-            Set the exercise's name, category, difficulty, duration and description.
+            {t("exerciseForm.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -73,9 +75,9 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Exercise Name</FormLabel>
+                    <FormLabel>{t("exerciseForm.exerciseName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Free Throw Form Drill" {...field} />
+                      <Input placeholder={t("exerciseForm.exerciseNamePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -87,7 +89,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 name="duration"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration (minutes)</FormLabel>
+                    <FormLabel>{t("sessionModal.durationMinutes")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -106,17 +108,17 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>{t("playEditor.category")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder={t("exerciseForm.selectCategory")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {EXERCISE_CATEGORIES.map(category => (
                           <SelectItem key={category} value={category}>
-                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                            {t(`categories.exercise.${category}`, category)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -131,17 +133,17 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 name="difficulty"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Difficulty</FormLabel>
+                    <FormLabel>{t("exerciseForm.difficulty")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select difficulty" />
+                          <SelectValue placeholder={t("exerciseForm.selectDifficulty")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {DIFFICULTY_LEVELS.map(difficulty => (
                           <SelectItem key={difficulty} value={difficulty}>
-                            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                            {t(`categories.difficulty.${difficulty}`, difficulty)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -157,10 +159,10 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t("exerciseForm.description")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Brief description of the exercise..."
+                      placeholder={t("exerciseForm.descriptionPlaceholder")}
                       className="min-h-20"
                       {...field}
                     />
@@ -175,10 +177,10 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
               name="instructions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Instructions (Optional)</FormLabel>
+                  <FormLabel>{t("exerciseForm.instructionsOptional")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Detailed instructions for the exercise..."
+                      placeholder={t("exerciseForm.instructionsPlaceholder")}
                       className="min-h-32"
                       {...field}
                       value={field.value ?? ""}
@@ -194,7 +196,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL (Optional)</FormLabel>
+                  <FormLabel>{t("exerciseForm.imageUrlOptional")}</FormLabel>
                   <FormControl>
                     <Input
                       type="url"
@@ -214,7 +216,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -222,8 +224,8 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
                 disabled={saveExerciseMutation.isPending}
               >
                 {saveExerciseMutation.isPending
-                  ? (isEditing ? "Saving..." : "Creating...")
-                  : (isEditing ? "Save Changes" : "Create Exercise")}
+                  ? (isEditing ? t("common.saving") : t("common.creating"))
+                  : (isEditing ? t("sessionModal.saveChanges") : t("exerciseForm.createExercise"))}
               </Button>
             </div>
           </form>

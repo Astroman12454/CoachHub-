@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Trash2, Plus, ClipboardList, Menu, Layers, Flame } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -14,10 +15,6 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import type { Play, PlayPracticeStats } from "@shared/schema";
 
-const CATEGORY_LABEL: Record<string, string> = {
-  offense: "Offense", defense: "Defense", inbound: "Inbound", special: "Special",
-};
-
 type SortMode = "name" | "most-practiced" | "least-practiced";
 
 function formatLastPracticed(date: string): string {
@@ -25,6 +22,7 @@ function formatLastPracticed(date: string): string {
 }
 
 export default function Playbook() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { openMobile } = useSidebar();
   const [playToDelete, setPlayToDelete] = useState<Play | null>(null);
@@ -46,7 +44,7 @@ export default function Playbook() {
 
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/plays",
-    errorMessage: "Failed to delete play",
+    errorMessage: t("playbook.failedToDelete"),
   });
 
   const visiblePlays = useMemo(() => {
@@ -65,7 +63,7 @@ export default function Playbook() {
 
   const confirmDelete = () => {
     if (playToDelete) {
-      requestDelete(playToDelete.id, `"${playToDelete.name}" deleted.`);
+      requestDelete(playToDelete.id, t("playbook.deletedToast", { name: playToDelete.name }));
       setPlayToDelete(null);
     }
   };
@@ -77,30 +75,30 @@ export default function Playbook() {
           <button
             onClick={openMobile}
             className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-            aria-label="Open navigation menu"
+            aria-label={t("common.openNavigationMenu")}
           >
             <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
           </button>
           <div>
-            <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">Playbook</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Draw and animate your plays</p>
+            <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">{t("nav.playbook")}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">{t("playbook.subtitle")}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-            <SelectTrigger className="w-44" aria-label="Sort plays">
+            <SelectTrigger className="w-44" aria-label={t("playbook.sortPlays")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="name">Name (A–Z)</SelectItem>
-              <SelectItem value="most-practiced">Most practiced</SelectItem>
-              <SelectItem value="least-practiced">Least practiced</SelectItem>
+              <SelectItem value="name">{t("playbook.sortName")}</SelectItem>
+              <SelectItem value="most-practiced">{t("playbook.sortMostPracticed")}</SelectItem>
+              <SelectItem value="least-practiced">{t("playbook.sortLeastPracticed")}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setLocation("/playbook/new")} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
             <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            <span className="hidden sm:inline">New Play</span>
-            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">{t("playbook.newPlay")}</span>
+            <span className="sm:hidden">{t("topBar.new")}</span>
           </Button>
         </div>
       </div>
@@ -139,9 +137,9 @@ export default function Playbook() {
         {visiblePlays.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
-            title="No Plays Yet"
-            description="Draw your first play on a basketball court — set up your players, draw the movement, and animate it step by step."
-            action={{ label: "Draw First Play", icon: Plus, onClick: () => setLocation("/playbook/new") }}
+            title={t("playbook.emptyTitle")}
+            description={t("playbook.emptyDescription")}
+            action={{ label: t("playbook.drawFirstPlay"), icon: Plus, onClick: () => setLocation("/playbook/new") }}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -161,7 +159,7 @@ export default function Playbook() {
                       size="icon"
                       className="text-red-500 hover:text-red-700 dark:hover:text-red-400 -mt-1 -mr-1"
                       onClick={(e) => { e.stopPropagation(); setPlayToDelete(play); }}
-                      aria-label={`Delete ${play.name}`}
+                      aria-label={t("playbook.deleteName", { name: play.name })}
                     >
                       <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                     </Button>
@@ -169,8 +167,8 @@ export default function Playbook() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{CATEGORY_LABEL[play.category] ?? play.category}</Badge>
-                    <Badge variant="outline" className="capitalize">{play.courtType} court</Badge>
+                    <Badge variant="secondary">{t(`categories.play.${play.category}`, play.category)}</Badge>
+                    <Badge variant="outline" className="capitalize">{t(`playbook.courtType.${play.courtType}`, play.courtType)}</Badge>
                   </div>
                   {play.notes && (
                     <p className="text-sm text-muted-foreground line-clamp-2">{play.notes}</p>
@@ -179,18 +177,18 @@ export default function Playbook() {
                     <Flame className={`w-3.5 h-3.5 flex-shrink-0 ${statsByPlayId.get(play.id) ? "text-basketball-orange" : "text-muted-foreground"}`} strokeWidth={1.75} aria-hidden="true" />
                     {statsByPlayId.get(play.id) ? (
                       <span className="text-foreground">
-                        Practiced {statsByPlayId.get(play.id)!.timesPracticed}x
+                        {t("playbook.practicedX", { count: statsByPlayId.get(play.id)!.timesPracticed })}
                         {statsByPlayId.get(play.id)!.lastPracticedDate && (
-                          <span className="text-muted-foreground"> · last {formatLastPracticed(statsByPlayId.get(play.id)!.lastPracticedDate!)}</span>
+                          <span className="text-muted-foreground"> · {t("playbook.lastPracticed", { date: formatLastPracticed(statsByPlayId.get(play.id)!.lastPracticedDate!) })}</span>
                         )}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">Not practiced yet</span>
+                      <span className="text-muted-foreground">{t("playbook.notPracticedYet")}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Layers className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-                    Tap to view or edit
+                    {t("playbook.tapToViewOrEdit")}
                   </div>
                 </CardContent>
               </Card>
@@ -202,8 +200,8 @@ export default function Playbook() {
       <ConfirmDialog
         open={!!playToDelete}
         onOpenChange={(open) => !open && setPlayToDelete(null)}
-        title="Delete play?"
-        description={`This will permanently delete "${playToDelete?.name}". This can't be undone.`}
+        title={t("playbook.deleteConfirmTitle")}
+        description={t("playbook.deleteConfirmDescription", { name: playToDelete?.name })}
         onConfirm={confirmDelete}
       />
     </div>
