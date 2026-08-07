@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, json, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, json, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -161,6 +161,11 @@ export const drillAttempts = pgTable("drill_attempts", {
   drillName: text("drill_name").notNull(),
   date: text("date").notNull(),
   made: integer("made").notNull(), // 1 = made, 0 = missed
+  // Percent-of-court-width/height (0-100, same convention as a play's Token
+  // x/y — see PlayEditor's toSVGPoint), null when the shot's location
+  // wasn't recorded (the fast team-wide tracker doesn't ask for one).
+  x: real("x"),
+  y: real("y"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -277,6 +282,8 @@ export const logDrillAttemptSchema = z.object({
   drillName: z.string().min(1, "Drill name is required").max(100),
   date: z.string().min(1, "Date is required"),
   made: z.union([z.literal(0), z.literal(1)]),
+  x: z.number().min(0).max(100).optional(),
+  y: z.number().min(0).max(100).optional(),
 });
 export type LogDrillAttempt = z.infer<typeof logDrillAttemptSchema>;
 

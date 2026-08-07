@@ -90,6 +90,28 @@ describe("drill attempts", () => {
     expect(invalidMade.status).toBe(400);
   });
 
+  it("optionally records a shot location, staying null when omitted", async () => {
+    const agent = await signedInAgent(app);
+    const player = await agent.post("/api/players").send({ name: "Jordan" });
+
+    const withLocation = await agent
+      .post(`/api/players/${player.body.id}/drill-attempts`)
+      .send(oneAttempt({ x: 42.5, y: 87 }));
+    expect(withLocation.status).toBe(201);
+    expect(withLocation.body.x).toBe(42.5);
+    expect(withLocation.body.y).toBe(87);
+
+    const withoutLocation = await agent.post(`/api/players/${player.body.id}/drill-attempts`).send(oneAttempt());
+    expect(withoutLocation.status).toBe(201);
+    expect(withoutLocation.body.x).toBeNull();
+    expect(withoutLocation.body.y).toBeNull();
+
+    const outOfRange = await agent
+      .post(`/api/players/${player.body.id}/drill-attempts`)
+      .send(oneAttempt({ x: 150, y: 50 }));
+    expect(outOfRange.status).toBe(400);
+  });
+
   it("undoes an attempt by deleting the row it returned", async () => {
     const agent = await signedInAgent(app);
     const player = await agent.post("/api/players").send({ name: "Casey" });

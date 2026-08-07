@@ -5,6 +5,7 @@ import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, Trendin
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
+import ShotChart from "@/components/ShotChart";
 import RatePlayerDialog from "@/components/RatePlayerDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorState from "@/components/ErrorState";
@@ -85,16 +86,20 @@ export default function PlayerProfile() {
     queryKey: [`/api/players/${playerId}/drill-attempts`],
     enabled: !isNaN(playerId),
   });
+  const [expandedDrill, setExpandedDrill] = useState<string | null>(null);
   const drillSummary = useMemo(() => {
-    const byDrill = new Map<string, { made: number; total: number }>();
+    const byDrill = new Map<string, { made: number; total: number; shots: { id: number; x: number; y: number; made: number }[] }>();
     for (const attempt of drillAttempts) {
-      const entry = byDrill.get(attempt.drillName) ?? { made: 0, total: 0 };
+      const entry = byDrill.get(attempt.drillName) ?? { made: 0, total: 0, shots: [] };
       entry.total += 1;
       if (attempt.made === 1) entry.made += 1;
+      if (attempt.x !== null && attempt.y !== null) {
+        entry.shots.push({ id: attempt.id, x: attempt.x, y: attempt.y, made: attempt.made });
+      }
       byDrill.set(attempt.drillName, entry);
     }
     return Array.from(byDrill.entries())
-      .map(([drillName, { made, total }]) => ({ drillName, made, total, pct: total > 0 ? Math.round((made / total) * 100) : 0 }))
+      .map(([drillName, { made, total, shots }]) => ({ drillName, made, total, shots, pct: total > 0 ? Math.round((made / total) * 100) : 0 }))
       .sort((a, b) => b.total - a.total);
   }, [drillAttempts]);
 
@@ -386,11 +391,29 @@ export default function PlayerProfile() {
             {drillSummary.length > 0 ? (
               <ul className="space-y-2.5">
                 {drillSummary.map((row) => (
-                  <li key={row.drillName} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="font-medium text-foreground truncate">{row.drillName}</span>
-                    <span className="text-muted-foreground tabular-nums flex-shrink-0">
-                      {t("drillTracker.tally", { made: row.made, total: row.total, pct: row.pct })}
-                    </span>
+                  <li key={row.drillName}>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      {row.shots.length > 0 ? (
+                        <button
+                          type="button"
+                          className="font-medium text-foreground truncate underline decoration-dotted underline-offset-2 text-left"
+                          onClick={() => setExpandedDrill(expandedDrill === row.drillName ? null : row.drillName)}
+                          aria-expanded={expandedDrill === row.drillName}
+                        >
+                          {row.drillName}
+                        </button>
+                      ) : (
+                        <span className="font-medium text-foreground truncate">{row.drillName}</span>
+                      )}
+                      <span className="text-muted-foreground tabular-nums flex-shrink-0">
+                        {t("drillTracker.tally", { made: row.made, total: row.total, pct: row.pct })}
+                      </span>
+                    </div>
+                    {expandedDrill === row.drillName && row.shots.length > 0 && (
+                      <div className="mt-2 max-w-xs">
+                        <ShotChart shots={row.shots} ariaLabel={t("playerProfile.shotChartFor", { drillName: row.drillName })} />
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

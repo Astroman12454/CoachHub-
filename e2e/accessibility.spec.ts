@@ -266,6 +266,23 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("weekly schedule — drill tracker shot chart with a shot logged", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
+    await sessionCard.click();
+    await page.waitForSelector("text=/Attendance - /");
+    await page.click('button:has-text("Drills")');
+    await page.fill("#drill-tracker-name", "Jump shots");
+    await page.click('button:has-text("Shot Chart")');
+    await page.locator('svg[aria-label^="Shot chart for"]').click({ position: { x: 100, y: 80 } });
+    await page.waitForTimeout(300);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("games", async ({ page }) => {
     await login(page);
     await page.goto("/games");

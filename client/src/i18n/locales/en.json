@@ -326,7 +326,8 @@
     "deleteInjuryConfirmTitle": "Delete this injury record?",
     "deleteInjuryConfirmDescription": "This can't be undone.",
     "drillStats": "Drill Stats",
-    "noDrillStatsYet": "No drills logged yet — track attempts from a session's attendance screen."
+    "noDrillStatsYet": "No drills logged yet — track attempts from a session's attendance screen.",
+    "shotChartFor": "Shot chart for {{drillName}}"
   },
   "playerForm": {
     "success": "Success",
@@ -622,7 +623,14 @@
     "undoLastFor": "Undo last attempt for {{name}}",
     "undo": "Undo",
     "couldntLogAttempt": "Couldn't log attempt",
-    "couldntUndo": "Couldn't undo attempt"
+    "couldntUndo": "Couldn't undo attempt",
+    "listView": "List",
+    "chartView": "Shot Chart",
+    "selectPlayer": "Select player",
+    "made": "Made",
+    "missed": "Missed",
+    "tapCourtHint": "Tap the court where the shot was taken.",
+    "shotChartFor": "Shot chart for {{name}}"
   },
   "portal": {
     "linkNotAvailable": "Link not available",

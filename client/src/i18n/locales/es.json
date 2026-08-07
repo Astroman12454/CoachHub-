@@ -326,7 +326,8 @@
     "deleteInjuryConfirmTitle": "¿Eliminar este registro de lesión?",
     "deleteInjuryConfirmDescription": "Esto no se puede deshacer.",
     "drillStats": "Estadísticas de Ejercicios",
-    "noDrillStatsYet": "Aún no hay ejercicios registrados — registra intentos desde la pantalla de asistencia de una sesión."
+    "noDrillStatsYet": "Aún no hay ejercicios registrados — registra intentos desde la pantalla de asistencia de una sesión.",
+    "shotChartFor": "Mapa de tiros de {{drillName}}"
   },
   "playerForm": {
     "success": "Éxito",
@@ -622,7 +623,14 @@
     "undoLastFor": "Deshacer último intento de {{name}}",
     "undo": "Deshacer",
     "couldntLogAttempt": "No se pudo registrar el intento",
-    "couldntUndo": "No se pudo deshacer el intento"
+    "couldntUndo": "No se pudo deshacer el intento",
+    "listView": "Lista",
+    "chartView": "Mapa de Tiros",
+    "selectPlayer": "Seleccionar jugador",
+    "made": "Anotó",
+    "missed": "Falló",
+    "tapCourtHint": "Toca la cancha en el lugar donde se realizó el tiro.",
+    "shotChartFor": "Mapa de tiros de {{name}}"
   },
   "portal": {
     "linkNotAvailable": "Enlace no disponible",
