@@ -59,6 +59,9 @@ export interface IStorage {
   getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined>;
   setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void>;
   setAccountSubscription(id: number, plan: "free" | "paid", stripeSubscriptionId: string | null): Promise<void>;
+  setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void>;
+  getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined>;
+  resetPassword(id: number, passwordHash: string): Promise<void>;
 
   // Team methods
   createTeam(accountId: number, name: string): Promise<Team>;
@@ -200,6 +203,22 @@ export class DatabaseStorage implements IStorage {
 
   async setAccountSubscription(id: number, plan: "free" | "paid", stripeSubscriptionId: string | null): Promise<void> {
     await db.update(accounts).set({ plan, stripeSubscriptionId }).where(eq(accounts.id, id));
+  }
+
+  async setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void> {
+    await db.update(accounts).set({ resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt }).where(eq(accounts.id, id));
+  }
+
+  async getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined> {
+    const [account] = await db
+      .select()
+      .from(accounts)
+      .where(and(eq(accounts.resetTokenHash, tokenHash), sql`${accounts.resetTokenExpiresAt} > now()`));
+    return account || undefined;
+  }
+
+  async resetPassword(id: number, passwordHash: string): Promise<void> {
+    await db.update(accounts).set({ passwordHash, resetTokenHash: null, resetTokenExpiresAt: null }).where(eq(accounts.id, id));
   }
 
   // Team methods

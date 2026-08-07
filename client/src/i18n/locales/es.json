@@ -64,7 +64,22 @@
     "and": "y",
     "termsOfUse": "Términos de Uso",
     "privacyPolicy": "Política de Privacidad",
-    "support": "Soporte"
+    "support": "Soporte",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "forgotPasswordSent": "Si ese correo tiene una cuenta, te enviamos un link para restablecer tu contraseña. Revisá tu bandeja de entrada.",
+    "forgotPasswordFailed": "No se pudo enviar el correo. Intentá de nuevo.",
+    "sendResetLink": "Enviar Link de Recuperación",
+    "sendingResetLink": "Enviando...",
+    "backToLogIn": "Volver a iniciar sesión"
+  },
+  "resetPassword": {
+    "title": "Restablecer Contraseña",
+    "newPassword": "Nueva Contraseña",
+    "save": "Guardar Nueva Contraseña",
+    "saving": "Guardando...",
+    "success": "Tu contraseña fue actualizada. Ya podés iniciar sesión.",
+    "failed": "No se pudo restablecer tu contraseña. El link puede haber expirado — pedí uno nuevo.",
+    "missingToken": "A este link de recuperación le falta el token. Pedí uno nuevo desde la pantalla de inicio de sesión."
   },
   "topBar": {
     "clearSearch": "Limpiar búsqueda",

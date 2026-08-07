@@ -64,7 +64,22 @@
     "and": "and",
     "termsOfUse": "Terms of Use",
     "privacyPolicy": "Privacy Policy",
-    "support": "Support"
+    "support": "Support",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordSent": "If that email has an account, we've sent a link to reset your password. Check your inbox.",
+    "forgotPasswordFailed": "Couldn't send the reset email. Try again.",
+    "sendResetLink": "Send Reset Link",
+    "sendingResetLink": "Sending...",
+    "backToLogIn": "Back to log in"
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "newPassword": "New Password",
+    "save": "Save New Password",
+    "saving": "Saving...",
+    "success": "Your password has been updated. You can log in now.",
+    "failed": "Couldn't reset your password. The link may have expired — request a new one.",
+    "missingToken": "This reset link is missing its token. Request a new one from the login page."
   },
   "topBar": {
     "clearSearch": "Clear search",

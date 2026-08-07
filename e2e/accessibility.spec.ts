@@ -19,11 +19,39 @@ function summarize(violations: Awaited<ReturnType<typeof scan>>["violations"]) {
 }
 
 test.describe("accessibility (axe)", () => {
-  test("login page", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
-    const results = await scan(page);
-    expect(summarize(results.violations)).toEqual([]);
+  // The suite's shared storageState is already logged in (see
+  // e2e/global-setup.ts), which would just bounce "/" straight to the
+  // dashboard — these three need a genuinely logged-out context instead.
+  // (This used to be a top-level "login page" test with no storageState
+  // override, which meant it silently scanned the dashboard, not the
+  // login page — a false positive that hid a real color-contrast bug in
+  // Login.tsx's footer for who knows how long.)
+  test.describe("logged out", () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    test("login page", async ({ page }) => {
+      await page.goto("/");
+      await page.waitForLoadState("networkidle");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
+
+    test("login page — forgot password mode", async ({ page }) => {
+      await page.goto("/");
+      await page.waitForLoadState("networkidle");
+      await page.click('button:has-text("Forgot password?")');
+      await page.waitForSelector('button:has-text("Send Reset Link")');
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
+
+    test("reset password page (no token)", async ({ page }) => {
+      await page.goto("/reset-password");
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector("text=Reset Password");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
   });
 
   test("dashboard", async ({ page }) => {

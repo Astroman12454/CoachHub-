@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp, json, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, json, unique, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -11,6 +11,18 @@ export const FREE_PLAN_PLAYER_LIMIT = 15;
 export const FREE_PLAN_TEAM_LIMIT = 1;
 export const FREE_PLAN_PLAY_LIMIT = 3;
 
+// Owned and shaped by connect-pg-simple (server/auth.ts), not application
+// code — declared here only so `drizzle-kit push` recognizes the table and
+// doesn't try to drop it as "extra" on every push. Never read or written
+// directly; express-session is the only thing that touches it.
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+}, (table) => ({
+  expireIdx: index("IDX_session_expire").on(table.expire),
+}));
+
 export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -18,6 +30,11 @@ export const accounts = pgTable("accounts", {
   plan: text("plan").notNull().default("free"), // 'free' | 'paid'
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  // A sha256 hash of the one-time reset token (never the raw token — a DB
+  // leak shouldn't hand out working reset links), cleared once used or once
+  // resetTokenExpiresAt passes. Null when no reset is in flight.
+  resetTokenHash: text("reset_token_hash"),
+  resetTokenExpiresAt: timestamp("reset_token_expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -320,6 +337,15 @@ export const insertAccountSchema = createInsertSchema(accounts).omit({
 export const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
   password: z.string().min(1, "Password is required"),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Missing reset token"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export const insertTeamSchema = createInsertSchema(teams).omit({

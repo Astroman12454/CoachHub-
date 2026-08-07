@@ -29,6 +29,7 @@ const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 const Portal = lazy(() => import("@/pages/Portal"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 
 function PageLoadingFallback() {
   return (
@@ -106,6 +107,14 @@ function App() {
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/terms" component={Terms} />
                 <Route path="/support" component={Support} />
+                <Route
+                  path="/reset-password"
+                  component={() => (
+                    <Suspense fallback={<PageLoadingFallback />}>
+                      <ResetPassword />
+                    </Suspense>
+                  )}
+                />
                 <Route
                   path="/portal/:token"
                   component={() => (

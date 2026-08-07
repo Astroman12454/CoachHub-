@@ -6,8 +6,9 @@ import rateLimit from "express-rate-limit";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { seedDefaultExercises } from "./seed";
-import { insertAccountSchema, loginSchema } from "@shared/schema";
+import { insertAccountSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "@shared/schema";
 import { pool } from "./db";
+import { isEmailConfigured, sendPasswordResetEmail } from "./email";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 
@@ -52,6 +53,17 @@ export function setupAuth(app: Express) {
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true,
+    message: { message: "Too many attempts. Please try again later." },
+  });
+
+  // Deliberately does NOT skipSuccessfulRequests — every call sends (or
+  // pretends to send) an email, so a "successful" request is exactly what
+  // needs throttling here, unlike login where only failures are the risk.
+  const resetRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
     message: { message: "Too many attempts. Please try again later." },
   });
 
@@ -133,6 +145,53 @@ export function setupAuth(app: Express) {
     req.session.accountId = account.id;
     req.session.currentTeamId = accountTeams[0]?.id;
     res.json(await sessionPayload(account.id, req.session.currentTeamId));
+  });
+
+  app.post("/api/forgot-password", resetRateLimiter, async (req: Request, res: Response) => {
+    if (!isEmailConfigured()) {
+      return res.status(503).json({ message: "Password reset isn't configured yet." });
+    }
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+
+    const account = await storage.getAccountByEmail(parsed.data.email);
+    // Same response whether or not the account exists, so this endpoint
+    // can't be used to discover which emails are registered.
+    if (account) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+      await storage.setPasswordResetToken(account.id, tokenHash, expiresAt);
+
+      const origin = `${req.protocol}://${req.get("host")}`;
+      try {
+        await sendPasswordResetEmail(account.email, `${origin}/reset-password?token=${token}`);
+      } catch {
+        // Delivery failures aren't surfaced here — the response below stays
+        // generic either way, matching the anti-enumeration behavior above.
+      }
+    }
+
+    res.json({ message: "If that email has an account, we've sent a reset link." });
+  });
+
+  app.post("/api/reset-password", resetRateLimiter, async (req: Request, res: Response) => {
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid request" });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
+    const account = await storage.getAccountByValidResetTokenHash(tokenHash);
+    if (!account) {
+      return res.status(400).json({ message: "This reset link is invalid or has expired." });
+    }
+
+    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    await storage.resetPassword(account.id, passwordHash);
+    res.json({ message: "Password updated. You can log in now." });
   });
 
   app.post("/api/logout", (req: Request, res: Response) => {

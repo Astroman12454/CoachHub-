@@ -54,3 +54,10 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
+      # "Forgot password" emails (Resend) — optional. Leave unset and the
+      # reset-password request returns a 503 instead of sending an email.
+      # Create an API key at resend.com and verify a sending domain there.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
