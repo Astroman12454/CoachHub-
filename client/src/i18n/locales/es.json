@@ -227,7 +227,7 @@
     "generateWithAi": "Generar con IA",
     "paid": "De Pago",
     "dialogDescription": "Define el nombre, fecha, hora y duración de la sesión, y elige qué ejercicios incluir.",
-    "aiPanelDescription": "Elige ejercicios de tu propia biblioteca según tus sesiones recientes. Opcionalmente, indica en qué enfocarse:",
+    "aiPanelDescription": "Elige ejercicios de tu propia biblioteca según tus sesiones recientes, lesiones activas, puntos débiles del seguimiento de tiros y jugadas que necesitan más práctica. Opcionalmente, indica en qué enfocarse:",
     "aiPanelPlaceholder": "ej., Enfocarse en tiro, tenemos partido el sábado",
     "aiPanelAriaLabel": "Instrucciones para el plan generado con IA",
     "generating": "Generando...",

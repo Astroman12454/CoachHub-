@@ -227,7 +227,7 @@
     "generateWithAi": "Generate with AI",
     "paid": "Paid",
     "dialogDescription": "Set the session's name, date, time and duration, and choose which exercises to include.",
-    "aiPanelDescription": "Picks exercises from your own library based on your recent sessions. Optionally, tell it what to focus on:",
+    "aiPanelDescription": "Picks exercises from your own library based on your recent sessions, current injuries, weak spots from drill tracking, and plays that need more reps. Optionally, tell it what to focus on:",
     "aiPanelPlaceholder": "e.g., Focus on shooting, we have a game Saturday",
     "aiPanelAriaLabel": "Instructions for the AI-generated plan",
     "generating": "Generating...",

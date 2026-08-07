@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
-import { generateSessionPlan } from "./ai-session-plan";
+import { generateSessionPlan, type SessionPlanContext } from "./ai-session-plan";
 import { isPushConfigured, getVapidPublicKey, sendPushNotifications } from "./push";
 import { z } from "zod";
 import {
@@ -126,6 +126,55 @@ function parseId(req: Request, res: Response, param = "id"): number | null {
 // the request body or query params — a coach can't access another coach's
 // data by guessing/passing a different id. requireTeam (server/auth.ts)
 // guarantees both are present before these run.
+// Only a drill with a real sample size is worth steering a whole session
+// around — a single missed rep is noise, not a weak spot.
+const MIN_ATTEMPTS_FOR_WEAK_DRILL = 3;
+const WEAK_DRILL_THRESHOLD_PCT = 60;
+
+// Everything the AI session-plan generator knows about the team beyond
+// the exercise library itself — pulls from injury tracking, drill/shot
+// logging, and playbook practice stats, all already collected elsewhere
+// in the app for their own features. Keeping this assembly here (not in
+// storage.ts) keeps the AI-specific shaping out of the plain data layer.
+// Exported (module scope, not a closure inside registerRoutes) so it's
+// testable directly against real storage data without needing an
+// ANTHROPIC_API_KEY or mocking the AI client.
+export async function buildSessionPlanContext(teamId: number): Promise<SessionPlanContext> {
+  const [injuries, players, attempts, plays, playStats] = await Promise.all([
+    storage.getActiveInjuriesForTeam(teamId),
+    storage.getAllPlayers(teamId),
+    storage.getTeamDrillAttempts(teamId),
+    storage.getAllPlays(teamId),
+    storage.getPlayPracticeStats(teamId),
+  ]);
+
+  const playerNameById = new Map(players.map((p) => [p.id, p.name]));
+  const injuredPlayerNames = injuries
+    .map((i) => playerNameById.get(i.playerId))
+    .filter((name): name is string => !!name);
+
+  const drillTally = new Map<string, { made: number; total: number }>();
+  for (const attempt of attempts) {
+    const entry = drillTally.get(attempt.drillName) ?? { made: 0, total: 0 };
+    entry.total++;
+    if (attempt.made) entry.made++;
+    drillTally.set(attempt.drillName, entry);
+  }
+  const weakDrills = Array.from(drillTally.entries())
+    .map(([drillName, { made, total }]) => ({ drillName, percentage: Math.round((made / total) * 100), attempts: total }))
+    .filter((d) => d.attempts >= MIN_ATTEMPTS_FOR_WEAK_DRILL && d.percentage < WEAK_DRILL_THRESHOLD_PCT)
+    .sort((a, b) => a.percentage - b.percentage)
+    .slice(0, 3);
+
+  const practiceCountByPlayId = new Map(playStats.map((s) => [s.playId, s.timesPracticed]));
+  const neglectedPlays = plays
+    .map((play) => ({ name: play.name, category: play.category, timesPracticed: practiceCountByPlayId.get(play.id) ?? 0 }))
+    .sort((a, b) => a.timesPracticed - b.timesPracticed)
+    .slice(0, 3);
+
+  return { injuredPlayerNames, weakDrills, neglectedPlays };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   registerBillingRoutes(app);
 
@@ -332,9 +381,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const recentSessions = (await storage.getAllTrainingSessions(teamId))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const context = await buildSessionPlanContext(teamId);
 
     try {
-      const plan = await generateSessionPlan(exercises, recentSessions, instructions);
+      const plan = await generateSessionPlan(exercises, recentSessions, instructions, context);
       plan.exerciseIds = (await sanitizeExerciseIds(accountId, plan.exerciseIds)) ?? [];
       res.json(plan);
     } catch (error) {

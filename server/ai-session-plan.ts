@@ -10,15 +10,29 @@ export interface GeneratedSessionPlan {
   exerciseIds: string[];
 }
 
+// Everything the generator knows about the team beyond the exercise library
+// and recent sessions — the difference between "picks drills" and "knows
+// this team". All three come from data the app already collects elsewhere
+// (injury tracking, drill/shot-chart logging, playbook practice stats); this
+// is purely about feeding it into the one prompt that acts on it.
+export interface SessionPlanContext {
+  injuredPlayerNames: string[];
+  weakDrills: { drillName: string; percentage: number; attempts: number }[];
+  neglectedPlays: { name: string; category: string; timesPracticed: number }[];
+}
+
 const SYSTEM_PROMPT = `You help a basketball coach plan one training session by choosing drills from their own exercise library.
 
-You will be given a numbered list of the team's exercises (id, name, category, difficulty, duration in minutes, description), a summary of their recent sessions, and optionally the coach's own instructions for this session.
+You will be given a numbered list of the team's exercises (id, name, category, difficulty, duration in minutes, description), a summary of their recent sessions, optionally some team context (currently injured players, drills the team has been weak at, plays that haven't been practiced recently), and optionally the coach's own instructions for this session.
 
 Rules:
 - Only use exercise ids from the list you were given. Never invent a drill, and never use an id that isn't in the list.
 - Pick 3 to 6 exercises that make sense together for one practice.
 - Prefer variety across categories unless the coach's instructions say otherwise (e.g. "just shooting today").
 - If recent sessions leaned heavily on a category, favor other categories unless the coach asked for that one specifically.
+- If any players are listed as currently injured, avoid exercises whose name or description suggests they'd aggravate that injury (e.g. skip jump-heavy or high-impact conditioning drills for a listed ankle/knee/foot injury) — you don't need to name the player, just steer around it.
+- If weak drills are listed, prefer exercises in the same category so the session addresses them.
+- Mention in "notes" any injury, weak-area, or neglected-play consideration that actually shaped your choices, in plain language a coach would say out loud — one short clause is enough, don't write a report. Skip it entirely if none of that context changed your picks.
 
 Respond with ONLY a JSON object, no markdown fences, no commentary, matching exactly this shape:
 {
@@ -35,6 +49,7 @@ export async function generateSessionPlan(
   exercises: Exercise[],
   recentSessions: TrainingSession[],
   instructions: string | undefined,
+  context?: SessionPlanContext,
 ): Promise<GeneratedSessionPlan> {
   const anthropic = getAIClient();
 
@@ -49,11 +64,27 @@ export async function generateSessionPlan(
         .join("\n")
     : "No past sessions yet.";
 
+  const contextLines: string[] = [];
+  if (context?.injuredPlayerNames.length) {
+    contextLines.push(`Currently injured (avoid aggravating, no need to name them in your output): ${context.injuredPlayerNames.join(", ")}.`);
+  }
+  if (context?.weakDrills.length) {
+    contextLines.push(
+      `Drills the team has struggled with recently: ${context.weakDrills.map((d) => `${d.drillName} (${d.percentage}% over ${d.attempts} attempts)`).join("; ")}.`,
+    );
+  }
+  if (context?.neglectedPlays.length) {
+    contextLines.push(
+      `Playbook plays that haven't been practiced in a while: ${context.neglectedPlays.map((p) => `${p.name} (${p.category})`).join(", ")}. There's no drill for "running a play" in the library, so just note it if relevant — don't invent an exercise for it.`,
+    );
+  }
+
   const userText = [
     `Exercise library:\n${library}`,
     `Recent sessions:\n${recentSummary}`,
+    contextLines.length ? `Team context:\n${contextLines.join("\n")}` : null,
     instructions?.trim() ? `Coach's instructions for this session: ${instructions.trim()}` : "The coach gave no specific instructions — use your judgment.",
-  ].join("\n\n");
+  ].filter((section): section is string => section !== null).join("\n\n");
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-5",
