@@ -276,7 +276,6 @@ export type CreatePlayerInjury = z.infer<typeof createPlayerInjurySchema>;
 export const recoverInjurySchema = z.object({
   recoveredDate: z.string().min(1, "Date is required"),
 });
-export type RecoverInjury = z.infer<typeof recoverInjurySchema>;
 
 export const logDrillAttemptSchema = z.object({
   drillName: z.string().min(1, "Drill name is required").max(100),
@@ -463,8 +462,6 @@ export interface PlayPracticeStats {
   timesPracticed: number;
   lastPracticedDate: string | null;
 }
-
-export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;
 
 // Season totals for one player, aggregated across every game they have a
 // stat line in — computed in Postgres (see getPlayerGameStatsSummary), not

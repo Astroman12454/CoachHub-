@@ -26,7 +26,9 @@
     "no": "No",
     "language": "Language",
     "switchToSpanish": "Switch to Spanish",
-    "switchToEnglish": "Switch to English"
+    "switchToEnglish": "Switch to English",
+    "error": "Error",
+    "undo": "Undo"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -42,7 +44,8 @@
     "switchTeam": "Switch team",
     "selectTeam": "Select team",
     "newTeam": "New Team",
-    "navigation": "Navigation"
+    "navigation": "Navigation",
+    "mainNavigation": "Main"
   },
   "login": {
     "email": "Email",
@@ -463,6 +466,7 @@
   "playbook": {
     "failedToDelete": "Failed to delete play",
     "deletedToast": "\"{{name}}\" deleted.",
+    "playDiagram": "Play diagram",
     "subtitle": "Draw and animate your plays",
     "sortPlays": "Sort plays",
     "sortName": "Name (A–Z)",

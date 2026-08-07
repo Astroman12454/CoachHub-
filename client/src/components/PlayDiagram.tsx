@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import BasketballCourt from "@/components/BasketballCourt";
 import PlayStepMarks from "@/components/PlayStepMarks";
 import type { Token, Drawing } from "@shared/schema";
@@ -14,6 +15,7 @@ interface PlayDiagramProps {
 // preview. Used for the PDF export (captured via html2canvas) and anywhere
 // else a play needs to be shown read-only.
 export default function PlayDiagram({ courtType, tokens, drawings, className }: PlayDiagramProps) {
+  const { t } = useTranslation();
   const viewBoxHeight = courtType === "full" ? 188 : 94;
   const toViewBoxY = (percentY: number) => (percentY / 100) * viewBoxHeight;
 
@@ -27,7 +29,7 @@ export default function PlayDiagram({ courtType, tokens, drawings, className }: 
           viewBox={`0 0 100 ${viewBoxHeight}`}
           className="absolute inset-0 w-full h-full"
           role="img"
-          aria-label="Play diagram"
+          aria-label={t("playbook.playDiagram")}
         >
           <defs>
             <marker id="play-arrowhead" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">

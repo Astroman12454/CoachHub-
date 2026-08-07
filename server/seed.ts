@@ -431,9 +431,3 @@ export const DEFAULT_PLAYS: CreatePlay[] = [
     ],
   },
 ];
-
-export async function seedDefaultPlays(teamId: number): Promise<void> {
-  for (const play of DEFAULT_PLAYS) {
-    await storage.createPlayWithSteps(teamId, play);
-  }
-}

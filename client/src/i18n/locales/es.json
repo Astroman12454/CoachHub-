@@ -26,7 +26,9 @@
     "no": "No",
     "language": "Idioma",
     "switchToSpanish": "Cambiar a español",
-    "switchToEnglish": "Cambiar a inglés"
+    "switchToEnglish": "Cambiar a inglés",
+    "error": "Error",
+    "undo": "Deshacer"
   },
   "nav": {
     "dashboard": "Panel",
@@ -42,7 +44,8 @@
     "switchTeam": "Cambiar equipo",
     "selectTeam": "Seleccionar equipo",
     "newTeam": "Nuevo Equipo",
-    "navigation": "Navegación"
+    "navigation": "Navegación",
+    "mainNavigation": "Principal"
   },
   "login": {
     "email": "Correo electrónico",
@@ -463,6 +466,7 @@
   "playbook": {
     "failedToDelete": "No se pudo eliminar la jugada",
     "deletedToast": "\"{{name}}\" eliminada.",
+    "playDiagram": "Diagrama de la jugada",
     "subtitle": "Dibuja y anima tus jugadas",
     "sortPlays": "Ordenar jugadas",
     "sortName": "Nombre (A–Z)",

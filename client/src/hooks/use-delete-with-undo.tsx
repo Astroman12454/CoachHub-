@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -20,6 +21,7 @@ export function useDeleteWithUndo({
   extraInvalidateKeys = [],
   undoWindowMs = 5000,
 }: UseDeleteWithUndoOptions) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
@@ -44,11 +46,11 @@ export function useDeleteWithUndo({
         queryClient.invalidateQueries({ queryKey: [key] });
       }
     } catch {
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+      toast({ title: t("common.error"), description: errorMessage, variant: "destructive" });
     } finally {
       clearPending(id);
     }
-  }, [endpoint, extraInvalidateKeys, queryClient, toast, errorMessage, clearPending]);
+  }, [endpoint, extraInvalidateKeys, queryClient, toast, errorMessage, clearPending, t]);
 
   const undoDelete = useCallback((id: number) => {
     const timer = timers.current.get(id);
@@ -67,12 +69,12 @@ export function useDeleteWithUndo({
     toast({
       description,
       action: (
-        <ToastAction altText="Undo" onClick={() => undoDelete(id)}>
-          Undo
+        <ToastAction altText={t("common.undo")} onClick={() => undoDelete(id)}>
+          {t("common.undo")}
         </ToastAction>
       ),
     });
-  }, [finalizeDelete, undoWindowMs, toast, undoDelete]);
+  }, [finalizeDelete, undoWindowMs, toast, undoDelete, t]);
 
   const isPendingDelete = useCallback(
     (id: number) => pendingDeleteIds.has(id),
