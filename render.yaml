@@ -13,7 +13,13 @@ services:
     # already set below by the time this runs), only downside is it
     # can't run in parallel with the previous instance staying up during
     # a paid-plan zero-downtime deploy. Fine for a single free instance.
-    buildCommand: npm install && npm run build && npm run db:push
+    #
+    # --include=dev is required: with NODE_ENV=production set below, a
+    # plain `npm install` silently skips devDependencies — which is
+    # where vite, esbuild, and drizzle-kit live, all needed right here
+    # to build and migrate (only the built output needs to run without
+    # them, at startCommand time).
+    buildCommand: npm install --include=dev && npm run build && npm run db:push
     startCommand: npm start
     envVars:
       - key: NODE_ENV
