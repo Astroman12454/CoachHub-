@@ -84,6 +84,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     setIsBillingPending(true);
     try {
       await (account?.plan === "paid" ? openBillingPortal() : startCheckout());
+      // Both normally navigate away (window.location.href = ...), so this
+      // line never runs — except startCheckout's native-app path, which
+      // resolves without redirecting (see client/src/lib/billing.ts), so
+      // the button needs resetting here or it'd stay disabled forever.
+      setIsBillingPending(false);
     } catch (error) {
       toast({
         title: t("common.billing"),

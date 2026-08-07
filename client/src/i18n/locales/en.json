@@ -658,6 +658,10 @@
     "creatingEllipsis": "Creating...",
     "createTeam": "Create Team"
   },
+  "billing": {
+    "nativeUpgradeTitle": "Upgrade from a browser",
+    "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."
+  },
   "billingStatus": {
     "upgraded": "You're Upgraded!",
     "canceled": "Checkout Canceled",

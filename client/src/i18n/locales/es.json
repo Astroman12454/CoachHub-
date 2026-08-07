@@ -658,6 +658,10 @@
     "creatingEllipsis": "Creando...",
     "createTeam": "Crear Equipo"
   },
+  "billing": {
+    "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
+    "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
+  },
   "billingStatus": {
     "upgraded": "¡Tu Cuenta Está Mejorada!",
     "canceled": "Pago Cancelado",
