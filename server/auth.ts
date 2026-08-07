@@ -1,16 +1,23 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import session from "express-session";
-import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import rateLimit from "express-rate-limit";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { seedDefaultExercises } from "./seed";
 import { insertAccountSchema, loginSchema } from "@shared/schema";
+import { pool } from "./db";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 
-const SessionStore = MemoryStore(session);
+// Persisted in Postgres (the same pool Drizzle uses) instead of process
+// memory — a MemoryStore loses every logged-in coach on every restart/
+// redeploy, which on Render's free tier (frequent restarts, sleep-on-idle)
+// happens constantly. createTableIfMissing provisions the "session" table
+// itself on first boot; it's deliberately outside the Drizzle schema since
+// connect-pg-simple owns its own shape and migrations for it.
+const PgSessionStore = connectPgSimple(session);
 
 declare module "express-session" {
   interface SessionData {
@@ -50,7 +57,7 @@ export function setupAuth(app: Express) {
 
   app.use(
     session({
-      store: new SessionStore({ checkPeriod: 24 * 60 * 60 * 1000 }),
+      store: new PgSessionStore({ pool, tableName: "session", createTableIfMissing: true }),
       secret: SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
