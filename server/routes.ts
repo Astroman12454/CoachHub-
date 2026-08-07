@@ -24,6 +24,8 @@ import {
   recoverInjurySchema,
   logDrillAttemptSchema,
   insertSessionTemplateSchema,
+  insertRecurringPracticeSlotSchema,
+  generateSessionsFromSlotsSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
@@ -427,6 +429,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete session template" });
+    }
+  });
+
+  // Recurring practice slots — a saved weekly pattern ("Tuesdays at 5:30pm")
+  // a coach sets up once at the start of a season. Slots by themselves don't
+  // appear on the calendar; /generate below is what turns them into real
+  // training_sessions rows.
+  app.get("/api/recurring-slots", requireTeam, async (req, res) => {
+    try {
+      const slots = await storage.getAllRecurringPracticeSlots(req.session.currentTeamId!);
+      res.json(slots);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recurring practice slots" });
+    }
+  });
+
+  app.post("/api/recurring-slots", requireTeam, async (req, res) => {
+    try {
+      const data = insertRecurringPracticeSlotSchema.parse(req.body);
+      const slot = await storage.createRecurringPracticeSlot(req.session.currentTeamId!, data);
+      res.status(201).json(slot);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid recurring practice slot data" });
+    }
+  });
+
+  app.delete("/api/recurring-slots/:id", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const deleted = await storage.deleteRecurringPracticeSlot(id, req.session.currentTeamId!);
+      if (!deleted) {
+        return res.status(404).json({ message: "Recurring practice slot not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete recurring practice slot" });
+    }
+  });
+
+  app.post("/api/recurring-slots/generate", requireTeam, async (req, res) => {
+    try {
+      const { startDate, weeks } = generateSessionsFromSlotsSchema.parse(req.body);
+      const created = await storage.generateSessionsFromSlots(req.session.currentTeamId!, startDate, weeks);
+      res.json({ created });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
     }
   });
 

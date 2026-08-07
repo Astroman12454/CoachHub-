@@ -283,6 +283,29 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("weekly schedule — recurring schedule dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Weekly Times")');
+    await page.waitForSelector("text=Weekly Practice Schedule");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule — recurring schedule dialog with a slot added", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Weekly Times")');
+    await page.waitForSelector("text=Weekly Practice Schedule");
+    await page.fill("#recurring-slot-name", "Tuesday Practice");
+    await page.click('button:has-text("Add Practice Time")');
+    await page.waitForSelector("text=Tuesday Practice");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("games", async ({ page }) => {
     await login(page);
     await page.goto("/games");

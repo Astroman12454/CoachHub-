@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import AttendanceModal from "@/components/AttendanceModal";
+import RecurringScheduleDialog from "@/components/RecurringScheduleDialog";
 import StatCard from "@/components/StatCard";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export default function WeeklySchedule() {
   });
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -200,6 +202,13 @@ export default function WeeklySchedule() {
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => setIsRecurringDialogOpen(true)}>
+            <Repeat className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            {t("recurringSchedule.openButton")}
+          </Button>
+        </div>
+
         {/* Header with Week Navigation */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-4">
           <div className="col-span-2 text-center sm:col-span-1 sm:order-2">
@@ -323,6 +332,8 @@ export default function WeeklySchedule() {
           onToggleAttendance={handleAttendanceToggle}
           pendingPlayerId={markAttendanceMutation.isPending ? markAttendanceMutation.variables?.playerId : undefined}
         />
+
+        <RecurringScheduleDialog open={isRecurringDialogOpen} onOpenChange={setIsRecurringDialogOpen} />
       </main>
     </div>
   );

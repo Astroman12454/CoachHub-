@@ -602,6 +602,33 @@
       "cancelled": "cancelada"
     }
   },
+  "recurringSchedule": {
+    "openButton": "Horarios semanales",
+    "title": "Horario Semanal de Entrenamientos",
+    "description": "Configurá una sola vez los horarios semanales recurrentes de entrenamiento de tu equipo, y después generá sesiones reales en el calendario para tantas semanas como necesites.",
+    "noSlots": "Todavía no hay horarios recurrentes. Agregá uno abajo.",
+    "slotName": "Nombre",
+    "slotNamePlaceholder": "ej. Entrenamiento del equipo",
+    "day": "Día",
+    "time": "Hora",
+    "duration": "Duración (min)",
+    "add": "Agregar Horario",
+    "addingEllipsis": "Agregando…",
+    "addFailed": "No se pudo agregar el horario. Intentá de nuevo.",
+    "deleteFailed": "No se pudo eliminar el horario. Intentá de nuevo.",
+    "deleteSlotAriaLabel": "Eliminar {{name}}",
+    "deletedToast": "Se eliminó {{name}}",
+    "generateSection": "Generar Sesiones",
+    "generateDescription": "Creá sesiones reales en el calendario a partir de tus horarios guardados.",
+    "startDate": "Fecha de Inicio",
+    "weeks": "Cantidad de Semanas",
+    "generate": "Generar Sesiones",
+    "generatingEllipsis": "Generando…",
+    "generateFailed": "No se pudieron generar las sesiones. Intentá de nuevo.",
+    "generatedToastTitle": "Sesiones generadas",
+    "generatedToastDescription_one": "Se creó {{count}} sesión.",
+    "generatedToastDescription_other": "Se crearon {{count}} sesiones."
+  },
   "attendanceModal": {
     "present": "Presente",
     "absent": "Ausente",

@@ -71,6 +71,21 @@ export const sessionTemplates = pgTable("session_templates", {
 });
 
 
+// A saved weekly pattern ("Tuesdays and Thursdays at 5:30pm") a coach sets
+// up once at the start of a season. Never read directly by the calendar —
+// generateSessionsFromSlots (server/storage.ts) is the only thing that
+// turns a slot into real training_sessions rows, so the calendar's single
+// source of truth stays trainingSessions.
+export const recurringPracticeSlots = pgTable("recurring_practice_slots", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  dayOfWeek: integer("day_of_week").notNull(), // 0-6, matches JS Date#getDay() (0 = Sunday)
+  time: text("time").notNull(),
+  duration: integer("duration").notNull(), // in minutes
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const attendance = pgTable("attendance", {
   id: serial("id").primaryKey(),
   sessionId: integer("session_id").notNull().references(() => trainingSessions.id, { onDelete: "cascade" }),
@@ -349,6 +364,25 @@ export const insertSessionTemplateSchema = createInsertSchema(sessionTemplates).
   duration: z.number().int().min(1, "Duration must be at least 1 minute"),
 });
 
+export const insertRecurringPracticeSlotSchema = createInsertSchema(recurringPracticeSlots).omit({
+  id: true,
+  teamId: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Slot name is required"),
+  dayOfWeek: z.number().int().min(0).max(6),
+  time: z.string().min(1, "Time is required"),
+  duration: z.number().int().min(1, "Duration must be at least 1 minute"),
+});
+
+// What a coach submits to turn saved slots into real calendar sessions:
+// a starting Monday and how many weeks out to materialize them for.
+export const generateSessionsFromSlotsSchema = z.object({
+  startDate: z.string().min(1, "Start date is required"),
+  weeks: z.number().int().min(1).max(52),
+});
+export type GenerateSessionsFromSlots = z.infer<typeof generateSessionsFromSlotsSchema>;
+
 export const insertPlayerSchema = createInsertSchema(players).omit({
   id: true,
   teamId: true,
@@ -424,6 +458,9 @@ export type TrainingSession = typeof trainingSessions.$inferSelect;
 
 export type InsertSessionTemplate = z.infer<typeof insertSessionTemplateSchema>;
 export type SessionTemplate = typeof sessionTemplates.$inferSelect;
+
+export type InsertRecurringPracticeSlot = z.infer<typeof insertRecurringPracticeSlotSchema>;
+export type RecurringPracticeSlot = typeof recurringPracticeSlots.$inferSelect;
 
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
 export type Player = typeof players.$inferSelect;

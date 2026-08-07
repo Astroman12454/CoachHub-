@@ -15,6 +15,7 @@ import {
   playerInjuries,
   drillAttempts,
   sessionTemplates,
+  recurringPracticeSlots,
   type Account,
   type Team,
   type Exercise,
@@ -42,7 +43,9 @@ import {
   type PlayerDevelopment,
   type PlayPracticeStats,
   type InsertSessionTemplate,
-  type SessionTemplate
+  type SessionTemplate,
+  type InsertRecurringPracticeSlot,
+  type RecurringPracticeSlot
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -82,6 +85,13 @@ export interface IStorage {
   getAllSessionTemplates(teamId: number): Promise<SessionTemplate[]>;
   createSessionTemplate(teamId: number, template: InsertSessionTemplate): Promise<SessionTemplate>;
   deleteSessionTemplate(id: number, teamId: number): Promise<boolean>;
+
+  // Recurring practice slot methods (scoped by team) — a saved weekly
+  // pattern; generateSessionsFromSlots is what turns it into real sessions.
+  getAllRecurringPracticeSlots(teamId: number): Promise<RecurringPracticeSlot[]>;
+  createRecurringPracticeSlot(teamId: number, slot: InsertRecurringPracticeSlot): Promise<RecurringPracticeSlot>;
+  deleteRecurringPracticeSlot(id: number, teamId: number): Promise<boolean>;
+  generateSessionsFromSlots(teamId: number, startDate: string, weeks: number): Promise<number>;
 
   // Player methods (scoped by team)
   getAllPlayers(teamId: number): Promise<Player[]>;
@@ -334,6 +344,68 @@ export class DatabaseStorage implements IStorage {
       .delete(sessionTemplates)
       .where(and(eq(sessionTemplates.id, id), eq(sessionTemplates.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getAllRecurringPracticeSlots(teamId: number): Promise<RecurringPracticeSlot[]> {
+    return await db.select().from(recurringPracticeSlots).where(eq(recurringPracticeSlots.teamId, teamId));
+  }
+
+  async createRecurringPracticeSlot(teamId: number, slot: InsertRecurringPracticeSlot): Promise<RecurringPracticeSlot> {
+    const [row] = await db
+      .insert(recurringPracticeSlots)
+      .values({ ...slot, teamId })
+      .returning();
+    return row;
+  }
+
+  async deleteRecurringPracticeSlot(id: number, teamId: number): Promise<boolean> {
+    const result = await db
+      .delete(recurringPracticeSlots)
+      .where(and(eq(recurringPracticeSlots.id, id), eq(recurringPracticeSlots.teamId, teamId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Materializes real training_sessions rows from the team's saved weekly
+  // slots, one per (slot, matching calendar date) pair across the requested
+  // range. Skips any date+time that already has a session — so re-running
+  // this for an overlapping range (e.g. extending the season) never
+  // duplicates a session a coach may have already edited by hand.
+  async generateSessionsFromSlots(teamId: number, startDate: string, weeks: number): Promise<number> {
+    const slots = await this.getAllRecurringPracticeSlots(teamId);
+    if (slots.length === 0) return 0;
+
+    const totalDays = weeks * 7;
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(start);
+    end.setUTCDate(start.getUTCDate() + totalDays - 1);
+    const endDateStr = end.toISOString().split("T")[0];
+
+    const existing = await this.getTrainingSessionsByDateRange(teamId, startDate, endDateStr);
+    const existingKeys = new Set(existing.map((s) => `${s.date}|${s.time}`));
+
+    let created = 0;
+    for (let i = 0; i < totalDays; i++) {
+      const date = new Date(start);
+      date.setUTCDate(start.getUTCDate() + i);
+      const dayOfWeek = date.getUTCDay();
+      const dateStr = date.toISOString().split("T")[0];
+
+      for (const slot of slots) {
+        if (slot.dayOfWeek !== dayOfWeek) continue;
+        const key = `${dateStr}|${slot.time}`;
+        if (existingKeys.has(key)) continue;
+
+        await this.createTrainingSession(teamId, {
+          name: slot.name,
+          date: dateStr,
+          time: slot.time,
+          duration: slot.duration,
+        });
+        existingKeys.add(key);
+        created++;
+      }
+    }
+    return created;
   }
 
   // Player methods

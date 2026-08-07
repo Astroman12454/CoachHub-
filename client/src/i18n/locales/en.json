@@ -602,6 +602,33 @@
       "cancelled": "cancelled"
     }
   },
+  "recurringSchedule": {
+    "openButton": "Weekly Times",
+    "title": "Weekly Practice Schedule",
+    "description": "Set up your team's recurring weekly practice times once, then generate real sessions on the calendar for as many weeks as you need.",
+    "noSlots": "No recurring practice times yet. Add one below.",
+    "slotName": "Name",
+    "slotNamePlaceholder": "e.g. Team Practice",
+    "day": "Day",
+    "time": "Time",
+    "duration": "Duration (min)",
+    "add": "Add Practice Time",
+    "addingEllipsis": "Adding…",
+    "addFailed": "Couldn't add practice time. Try again.",
+    "deleteFailed": "Couldn't delete practice time. Try again.",
+    "deleteSlotAriaLabel": "Delete {{name}}",
+    "deletedToast": "Deleted {{name}}",
+    "generateSection": "Generate Sessions",
+    "generateDescription": "Create real sessions on the calendar from your saved practice times.",
+    "startDate": "Start Date",
+    "weeks": "Number of Weeks",
+    "generate": "Generate Sessions",
+    "generatingEllipsis": "Generating…",
+    "generateFailed": "Couldn't generate sessions. Try again.",
+    "generatedToastTitle": "Sessions generated",
+    "generatedToastDescription_one": "{{count}} session created.",
+    "generatedToastDescription_other": "{{count}} sessions created."
+  },
   "attendanceModal": {
     "present": "Present",
     "absent": "Absent",
