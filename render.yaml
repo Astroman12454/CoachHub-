@@ -31,3 +31,15 @@ services:
       # still works; only the photo/PDF import button is disabled.
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Push notifications (session/game reminders to players who opted in
+      # from their portal link) — optional. Leave unset and the app runs
+      # fine; the "enable notifications" button just stays hidden on the
+      # portal. Generate a key pair once with:
+      #   npx web-push generate-vapid-keys
+      # VAPID_SUBJECT must be a mailto: address or https:// URL.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
