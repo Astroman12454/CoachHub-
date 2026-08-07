@@ -1,4 +1,4 @@
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarClock, Trophy, ClipboardCheck, BarChart3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import PortalNotificationsToggle from "@/components/PortalNotificationsToggle";
 import LanguageToggle from "@/components/LanguageToggle";
+import BrandMark from "@/components/BrandMark";
 import type { PortalData } from "@shared/schema";
 
 type PortalResponse = PortalData & { vapidPublicKey: string | null };
@@ -202,6 +203,27 @@ export default function Portal() {
             )}
           </CardContent>
         </Card>
+
+        {/* The only outward-facing surface of the app that a non-coach ever
+            sees — every visit here is a free, already-warm lead. A quiet
+            footer instead of a banner: it should read as a credit line, not
+            an ad, so it doesn't undercut the "this is my kid's coach's app"
+            trust this page runs on. */}
+        <footer className="pt-2 text-center space-y-1">
+          <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+            {t("portal.poweredByPrefix")}
+            <span className="inline-flex items-center gap-1 font-medium text-foreground">
+              <BrandMark className="w-3 h-3" />
+              Coach Hub
+            </span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("portal.areYouACoach")}{" "}
+            <Link href="/?signup=1" className="text-basketball-orange font-medium hover:underline">
+              {t("portal.createYourTeam")}
+            </Link>
+          </p>
+        </footer>
       </div>
     </main>
   );

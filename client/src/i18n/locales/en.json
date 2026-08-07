@@ -688,7 +688,10 @@
     "noUpcomingGames": "No upcoming games scheduled.",
     "vsOpponent": "vs {{opponent}}",
     "recentAttendance": "Recent Attendance",
-    "noAttendanceRecorded": "No attendance recorded yet."
+    "noAttendanceRecorded": "No attendance recorded yet.",
+    "poweredByPrefix": "Powered by",
+    "areYouACoach": "Are you a coach?",
+    "createYourTeam": "Create your team free"
   },
   "newTeamDialog": {
     "createdToast": "\"{{name}}\" created",

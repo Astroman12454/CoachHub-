@@ -12,7 +12,12 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 export default function Login() {
   const { t } = useTranslation();
   const { login, isLoggingIn, loginError, signup, isSigningUp, signupError } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  // A link from outside the app (e.g. the "create your team" CTA on the
+  // read-only player/parent portal) can land straight on the signup form
+  // instead of making a visitor find and click the toggle themselves.
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(
+    () => (new URLSearchParams(window.location.search).get("signup") ? "signup" : "login"),
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -164,11 +169,15 @@ export default function Login() {
         {mode === "signup" && (
           <p className="text-center text-xs text-muted-foreground mt-3">
             {t("login.agreeToTermsPrefix")}{" "}
-            <Link href="/terms" className="text-basketball-orange hover:underline">
+            {/* underline, not hover:underline: a link inline with body text
+                needs a non-color cue at rest, not just on hover — color
+                alone fails WCAG 1.4.1 for anyone who can't distinguish the
+                orange from the surrounding gray. */}
+            <Link href="/terms" className="text-basketball-orange underline">
               {t("login.termsOfUse")}
             </Link>{" "}
             {t("login.and")}{" "}
-            <Link href="/privacy" className="text-basketball-orange hover:underline">
+            <Link href="/privacy" className="text-basketball-orange underline">
               {t("login.privacyPolicy")}
             </Link>
             .

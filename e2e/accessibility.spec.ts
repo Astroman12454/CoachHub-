@@ -52,6 +52,14 @@ test.describe("accessibility (axe)", () => {
       const results = await scan(page);
       expect(summarize(results.violations)).toEqual([]);
     });
+
+    test("login page — signup mode via ?signup=1 (portal CTA deep link)", async ({ page }) => {
+      await page.goto("/?signup=1");
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector('button:has-text("Create Account")');
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
   });
 
   test("dashboard", async ({ page }) => {
@@ -217,6 +225,10 @@ test.describe("accessibility (axe)", () => {
 
     await page.goto(url);
     await page.waitForLoadState("networkidle");
+    // The portal is the app's only surface a non-coach ever sees, so it
+    // carries the one conversion CTA in the whole product — a link back to
+    // signup, prefilled to skip straight past the login form.
+    await expect(page.locator('a[href="/?signup=1"]')).toBeVisible();
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });

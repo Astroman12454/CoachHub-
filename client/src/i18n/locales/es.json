@@ -688,7 +688,10 @@
     "noUpcomingGames": "No hay partidos próximos programados.",
     "vsOpponent": "vs {{opponent}}",
     "recentAttendance": "Asistencia Reciente",
-    "noAttendanceRecorded": "Aún no hay asistencia registrada."
+    "noAttendanceRecorded": "Aún no hay asistencia registrada.",
+    "poweredByPrefix": "Con la tecnología de",
+    "areYouACoach": "¿Sos entrenador/a?",
+    "createYourTeam": "Creá tu equipo gratis"
   },
   "newTeamDialog": {
     "createdToast": "\"{{name}}\" creado",
