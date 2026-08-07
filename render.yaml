@@ -7,8 +7,13 @@ services:
     name: coach-hub
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    preDeployCommand: npm run db:push
+    # preDeployCommand isn't available on the free plan, so the schema
+    # push runs as the last build step instead — same effect (it just
+    # applies any pending table/column changes against DATABASE_URL,
+    # already set below by the time this runs), only downside is it
+    # can't run in parallel with the previous instance staying up during
+    # a paid-plan zero-downtime deploy. Fine for a single free instance.
+    buildCommand: npm install && npm run build && npm run db:push
     startCommand: npm start
     envVars:
       - key: NODE_ENV
