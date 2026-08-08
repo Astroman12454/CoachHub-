@@ -190,6 +190,10 @@ export default function Login() {
           muted-foreground is tuned for a light surface — same token bug
           Sidebar.tsx already avoids by using the rail-* set throughout. */}
       <p className="text-center text-xs text-rail-muted mt-4">
+        <Link href="/pricing" className="hover:text-rail-foreground hover:underline">
+          {t("login.pricing")}
+        </Link>
+        {" · "}
         <Link href="/privacy" className="hover:text-rail-foreground hover:underline">
           {t("login.privacyPolicy")}
         </Link>

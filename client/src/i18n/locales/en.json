@@ -65,6 +65,7 @@
     "termsOfUse": "Terms of Use",
     "privacyPolicy": "Privacy Policy",
     "support": "Support",
+    "pricing": "Pricing",
     "forgotPassword": "Forgot password?",
     "forgotPasswordSent": "If that email has an account, we've sent a link to reset your password. Check your inbox.",
     "forgotPasswordFailed": "Couldn't send the reset email. Try again.",
@@ -725,6 +726,52 @@
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
     "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."
+  },
+  "pricing": {
+    "title": "Plans & Pricing",
+    "subtitle": "Start free. Upgrade whenever your team outgrows it.",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "annualSavings": "(save 15%)",
+    "perMonth": "/month",
+    "perYear": "/year",
+    "getStarted": "Get Started",
+    "upgradeTo": "Upgrade to {{plan}}",
+    "backToApp": "Back to Coach Hub",
+    "free": {
+      "name": "Free",
+      "price": "$0",
+      "tagline": "Everything you need to run one team.",
+      "features": [
+        "1 team",
+        "Up to 15 players",
+        "Up to 3 saved plays",
+        "Read-only exercise library",
+        "Attendance & season history"
+      ]
+    },
+    "paid": {
+      "name": "Paid",
+      "tagline": "For a coach who wants the full toolkit.",
+      "features": [
+        "Unlimited teams and players",
+        "Unlimited saved plays",
+        "Create and edit your own exercises",
+        "AI practice-plan generation",
+        "AI box score import",
+        "Season report PDFs"
+      ]
+    },
+    "club": {
+      "name": "Club",
+      "tagline": "For a club or program with more than one coach.",
+      "features": [
+        "Everything in Paid",
+        "Invite up to 3 coaches to your teams",
+        "Shared exercise library and playbook",
+        "One bill for the whole coaching staff"
+      ]
+    }
   },
   "billingStatus": {
     "upgraded": "You're Upgraded!",

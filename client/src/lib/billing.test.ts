@@ -40,7 +40,7 @@ describe("startCheckout", () => {
     expect(result.current.toasts[0]?.title).toBe("Upgrade from a browser");
   });
 
-  it("starts real Stripe Checkout on the web", async () => {
+  it("starts real Stripe Checkout on the web, defaulting to the Paid monthly plan", async () => {
     isNativePlatformMock.mockReturnValue(false);
     apiRequestMock.mockResolvedValue({ json: async () => ({ url: "https://checkout.stripe.com/session123" }) });
     // jsdom logs (but doesn't throw on) unimplemented navigation when code
@@ -51,7 +51,17 @@ describe("startCheckout", () => {
 
     await startCheckout();
 
-    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/billing/checkout");
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/billing/checkout", { plan: "paid", interval: "monthly" });
     expect(locationStub.href).toBe("https://checkout.stripe.com/session123");
+  });
+
+  it("passes an explicit plan and interval through to checkout, for the pricing page's Club/annual options", async () => {
+    isNativePlatformMock.mockReturnValue(false);
+    apiRequestMock.mockResolvedValue({ json: async () => ({ url: "https://checkout.stripe.com/session456" }) });
+    vi.stubGlobal("location", { href: "" });
+
+    await startCheckout("club", "annual");
+
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/billing/checkout", { plan: "club", interval: "annual" });
   });
 });

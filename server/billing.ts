@@ -1,7 +1,8 @@
 import express, { type Express, type Request, type Response } from "express";
 import type Stripe from "stripe";
+import { z } from "zod";
 import { storage } from "./storage";
-import { getStripe, isStripeConfigured, STRIPE_PRICE_ID } from "./stripe";
+import { getStripe, isStripeConfigured, priceIdFor, planForPriceId, type PurchasablePlan, type BillingInterval } from "./stripe";
 
 function requireStripeConfigured(_req: Request, res: Response, next: express.NextFunction) {
   if (!isStripeConfigured()) {
@@ -9,6 +10,11 @@ function requireStripeConfigured(_req: Request, res: Response, next: express.Nex
   }
   next();
 }
+
+const checkoutBodySchema = z.object({
+  plan: z.enum(["paid", "club"]).default("paid"),
+  interval: z.enum(["monthly", "annual"]).default("monthly"),
+});
 
 function originOf(req: Request): string {
   return `${req.protocol}://${req.get("host")}`;
@@ -20,6 +26,16 @@ function originOf(req: Request): string {
 export function registerBillingRoutes(app: Express) {
   app.post("/api/billing/checkout", requireStripeConfigured, async (req: Request, res: Response) => {
     try {
+      const parsed = checkoutBodySchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid plan or billing interval." });
+      }
+      const { plan, interval }: { plan: PurchasablePlan; interval: BillingInterval } = parsed.data;
+      const priceId = priceIdFor(plan, interval);
+      if (!priceId) {
+        return res.status(503).json({ message: "That plan isn't available yet." });
+      }
+
       const accountId = req.session.accountId!;
       const account = await storage.getAccountById(accountId);
       if (!account) return res.status(404).json({ message: "Account not found" });
@@ -36,13 +52,19 @@ export function registerBillingRoutes(app: Express) {
       }
 
       const origin = originOf(req);
+      // plan travels in both session and subscription metadata: the
+      // "completed" webhook only sees the Checkout Session, while
+      // "updated"/"deleted" later on only see the Subscription — each needs
+      // its own copy to know which plan to apply without re-deriving it
+      // from a price id.
       const session = await stripe.checkout.sessions.create({
         mode: "subscription",
         customer: customerId,
-        line_items: [{ price: STRIPE_PRICE_ID!, quantity: 1 }],
+        line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${origin}/billing/success`,
         cancel_url: `${origin}/billing/cancel`,
-        metadata: { accountId: account.id.toString() },
+        metadata: { accountId: account.id.toString(), plan },
+        subscription_data: { metadata: { accountId: account.id.toString(), plan } },
       });
 
       res.json({ url: session.url });
@@ -102,8 +124,9 @@ export function setupStripeWebhook(app: Express) {
         case "checkout.session.completed": {
           const session = event.data.object as Stripe.Checkout.Session;
           const accountId = parseInt(session.metadata?.accountId ?? "");
+          const plan = session.metadata?.plan === "club" ? "club" : "paid";
           if (!isNaN(accountId) && session.subscription) {
-            await storage.setAccountSubscription(accountId, "paid", session.subscription as string);
+            await storage.setAccountSubscription(accountId, plan, session.subscription as string);
           }
           break;
         }
@@ -113,9 +136,13 @@ export function setupStripeWebhook(app: Express) {
           const account = await storage.getAccountByStripeCustomerId(subscription.customer as string);
           if (account) {
             const isActive = subscription.status === "active" || subscription.status === "trialing";
+            const plan =
+              subscription.metadata?.plan === "club" || subscription.metadata?.plan === "paid"
+                ? subscription.metadata.plan
+                : planForPriceId(subscription.items.data[0]?.price.id) ?? "paid";
             await storage.setAccountSubscription(
               account.id,
-              isActive ? "paid" : "free",
+              isActive ? plan : "free",
               isActive ? subscription.id : null,
             );
           }

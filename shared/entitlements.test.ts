@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   isPaidPlan,
+  isClubPlan,
   canCreateTeam,
   canCreatePlayer,
   canCreatePlay,
@@ -11,9 +12,18 @@ import {
 import { FREE_PLAN_PLAYER_LIMIT, FREE_PLAN_TEAM_LIMIT, FREE_PLAN_PLAY_LIMIT } from "./schema";
 
 describe("isPaidPlan", () => {
-  it("is true only for paid", () => {
+  it("is true for paid and club, false for free", () => {
     expect(isPaidPlan("paid")).toBe(true);
+    expect(isPaidPlan("club")).toBe(true);
     expect(isPaidPlan("free")).toBe(false);
+  });
+});
+
+describe("isClubPlan", () => {
+  it("is true only for club", () => {
+    expect(isClubPlan("club")).toBe(true);
+    expect(isClubPlan("paid")).toBe(false);
+    expect(isClubPlan("free")).toBe(false);
   });
 });
 
@@ -23,9 +33,10 @@ describe("canCreateTeam", () => {
     expect(canCreateTeam("free", FREE_PLAN_TEAM_LIMIT)).toBe(false);
   });
 
-  it("never blocks a paid account, regardless of count", () => {
+  it("never blocks a paid or club account, regardless of count", () => {
     expect(canCreateTeam("paid", FREE_PLAN_TEAM_LIMIT)).toBe(true);
     expect(canCreateTeam("paid", 999)).toBe(true);
+    expect(canCreateTeam("club", 999)).toBe(true);
   });
 });
 
@@ -52,18 +63,21 @@ describe("canCreatePlay", () => {
 });
 
 describe("plan-only feature gates", () => {
-  it("canUseCustomExercises is paid-only", () => {
+  it("canUseCustomExercises excludes only free", () => {
     expect(canUseCustomExercises("free")).toBe(false);
     expect(canUseCustomExercises("paid")).toBe(true);
+    expect(canUseCustomExercises("club")).toBe(true);
   });
 
-  it("canGenerateAiSessionPlan is paid-only", () => {
+  it("canGenerateAiSessionPlan excludes only free", () => {
     expect(canGenerateAiSessionPlan("free")).toBe(false);
     expect(canGenerateAiSessionPlan("paid")).toBe(true);
+    expect(canGenerateAiSessionPlan("club")).toBe(true);
   });
 
-  it("canImportBoxScore is paid-only", () => {
+  it("canImportBoxScore excludes only free", () => {
     expect(canImportBoxScore("free")).toBe(false);
     expect(canImportBoxScore("paid")).toBe(true);
+    expect(canImportBoxScore("club")).toBe(true);
   });
 });

@@ -19,7 +19,10 @@ function isNativeApp(): boolean {
 // Both redirect the whole page to Stripe-hosted UI (Checkout / the Billing
 // Portal) rather than embedding anything — no Stripe.js/publishable key
 // needed client-side, and it's Stripe's own PCI-compliant surface, not ours.
-export async function startCheckout(): Promise<void> {
+// Defaults match the single "Upgrade" button most call sites use (feature
+// gates, the sidebar badge); the pricing page passes an explicit plan/
+// interval for its Club and annual options.
+export async function startCheckout(plan: "paid" | "club" = "paid", interval: "monthly" | "annual" = "monthly"): Promise<void> {
   if (isNativeApp()) {
     toast({
       title: i18n.t("billing.nativeUpgradeTitle"),
@@ -27,7 +30,7 @@ export async function startCheckout(): Promise<void> {
     });
     return;
   }
-  const res = await apiRequest("POST", "/api/billing/checkout");
+  const res = await apiRequest("POST", "/api/billing/checkout", { plan, interval });
   const { url } = (await res.json()) as CheckoutResponse;
   window.location.href = url;
 }

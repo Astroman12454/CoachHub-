@@ -34,7 +34,13 @@ services:
       # the free plan only; see server/scripts/setup-stripe.ts.
       - key: STRIPE_SECRET_KEY
         sync: false
-      - key: STRIPE_PRICE_ID
+      - key: STRIPE_PRICE_ID_PAID_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_ID_PAID_ANNUAL
+        sync: false
+      - key: STRIPE_PRICE_ID_CLUB_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_ID_CLUB_ANNUAL
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false

@@ -2,15 +2,18 @@ import { pgTable, text, serial, integer, real, timestamp, json, unique, varchar,
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const PLANS = ["free", "paid"] as const;
+export const PLANS = ["free", "paid", "club"] as const;
 export type Plan = (typeof PLANS)[number];
 
 // Free plan: 1 team, up to 15 players, read-only exercise library, up to 3
 // saved plays. Paid plan: unlimited teams/players/plays, can create/edit
-// exercises, full history.
+// exercises, full history. Club plan: everything Paid has, plus up to
+// CLUB_PLAN_SEAT_LIMIT coaches sharing access to the same teams (invited
+// from the account that holds the Club subscription).
 export const FREE_PLAN_PLAYER_LIMIT = 15;
 export const FREE_PLAN_TEAM_LIMIT = 1;
 export const FREE_PLAN_PLAY_LIMIT = 3;
+export const CLUB_PLAN_SEAT_LIMIT = 3;
 
 // Owned and shaped by connect-pg-simple (server/auth.ts), not application
 // code — declared here only so `drizzle-kit push` recognizes the table and

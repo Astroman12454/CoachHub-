@@ -60,6 +60,37 @@ test.describe("accessibility (axe)", () => {
       const results = await scan(page);
       expect(summarize(results.violations)).toEqual([]);
     });
+
+    test("pricing page, logged out", async ({ page }) => {
+      await page.goto("/pricing");
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector("text=Plans & Pricing");
+      // Logged out, every tier's CTA links to signup rather than checkout.
+      await expect(page.locator('a[href="/?signup=1"]')).toHaveCount(3);
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
+
+    test("pricing page — annual toggle switches to Club's annual price", async ({ page }) => {
+      await page.goto("/pricing");
+      await page.waitForLoadState("networkidle");
+      await page.click('button:has-text("Annual")');
+      await page.waitForSelector("text=$203.90");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
+  });
+
+  test("pricing page, logged in", async ({ page }) => {
+    await login(page);
+    await page.goto("/pricing");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Plans & Pricing");
+    // Logged in, Paid/Club check out directly instead of linking to signup.
+    await expect(page.locator('button:has-text("Upgrade to Paid")')).toBeVisible();
+    await expect(page.locator('button:has-text("Upgrade to Club")')).toBeVisible();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
   });
 
   test("dashboard", async ({ page }) => {

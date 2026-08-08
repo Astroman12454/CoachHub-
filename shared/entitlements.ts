@@ -9,8 +9,15 @@ import {
   type Plan,
 } from "./schema";
 
+// Club is a superset of Paid (unlimited teams/players/plays, custom
+// exercises, AI features) plus multi-coach seats — so everywhere "paid
+// features" are gated, Club qualifies too.
 export function isPaidPlan(plan: Plan): boolean {
-  return plan === "paid";
+  return plan === "paid" || plan === "club";
+}
+
+export function isClubPlan(plan: Plan): boolean {
+  return plan === "club";
 }
 
 export function canCreateTeam(plan: Plan, currentTeamCount: number): boolean {

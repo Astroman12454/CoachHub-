@@ -65,6 +65,7 @@
     "termsOfUse": "Términos de Uso",
     "privacyPolicy": "Política de Privacidad",
     "support": "Soporte",
+    "pricing": "Precios",
     "forgotPassword": "¿Olvidaste tu contraseña?",
     "forgotPasswordSent": "Si ese correo tiene una cuenta, te enviamos un link para restablecer tu contraseña. Revisá tu bandeja de entrada.",
     "forgotPasswordFailed": "No se pudo enviar el correo. Intentá de nuevo.",
@@ -725,6 +726,52 @@
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
     "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
+  },
+  "pricing": {
+    "title": "Planes y Precios",
+    "subtitle": "Empezá gratis. Mejorá cuando tu equipo lo necesite.",
+    "monthly": "Mensual",
+    "annual": "Anual",
+    "annualSavings": "(ahorrá 15%)",
+    "perMonth": "/mes",
+    "perYear": "/año",
+    "getStarted": "Empezar",
+    "upgradeTo": "Mejorar a {{plan}}",
+    "backToApp": "Volver a Coach Hub",
+    "free": {
+      "name": "Gratis",
+      "price": "$0",
+      "tagline": "Todo lo necesario para manejar un equipo.",
+      "features": [
+        "1 equipo",
+        "Hasta 15 jugadores",
+        "Hasta 3 jugadas guardadas",
+        "Biblioteca de ejercicios de solo lectura",
+        "Asistencia e historial de temporada"
+      ]
+    },
+    "paid": {
+      "name": "Pago",
+      "tagline": "Para un entrenador que quiere todas las herramientas.",
+      "features": [
+        "Equipos y jugadores ilimitados",
+        "Jugadas guardadas ilimitadas",
+        "Creá y editá tus propios ejercicios",
+        "Generación de planes de entrenamiento con IA",
+        "Importación de estadísticas con IA",
+        "PDFs de reporte de temporada"
+      ]
+    },
+    "club": {
+      "name": "Club",
+      "tagline": "Para un club o programa con más de un entrenador.",
+      "features": [
+        "Todo lo de Paid",
+        "Invitá hasta 3 entrenadores a tus equipos",
+        "Biblioteca de ejercicios y jugadas compartida",
+        "Una sola factura para todo el cuerpo técnico"
+      ]
+    }
   },
   "billingStatus": {
     "upgraded": "¡Tu Cuenta Está Mejorada!",

@@ -45,7 +45,8 @@ import {
   type InsertSessionTemplate,
   type SessionTemplate,
   type InsertRecurringPracticeSlot,
-  type RecurringPracticeSlot
+  type RecurringPracticeSlot,
+  type Plan,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -58,7 +59,7 @@ export interface IStorage {
   getAccountById(id: number): Promise<Account | undefined>;
   getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined>;
   setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void>;
-  setAccountSubscription(id: number, plan: "free" | "paid", stripeSubscriptionId: string | null): Promise<void>;
+  setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void>;
   setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void>;
   getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined>;
   resetPassword(id: number, passwordHash: string): Promise<void>;
@@ -214,7 +215,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(accounts).set({ stripeCustomerId }).where(eq(accounts.id, id));
   }
 
-  async setAccountSubscription(id: number, plan: "free" | "paid", stripeSubscriptionId: string | null): Promise<void> {
+  async setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void> {
     await db.update(accounts).set({ plan, stripeSubscriptionId }).where(eq(accounts.id, id));
   }
 

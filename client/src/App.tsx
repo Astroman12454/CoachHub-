@@ -9,6 +9,7 @@ import Login from "@/pages/Login";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Support from "@/pages/Support";
+import Pricing from "@/pages/Pricing";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/Sidebar";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -107,6 +108,7 @@ function App() {
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/terms" component={Terms} />
                 <Route path="/support" component={Support} />
+                <Route path="/pricing" component={Pricing} />
                 <Route
                   path="/reset-password"
                   component={() => (
