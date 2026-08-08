@@ -256,6 +256,18 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("player profile — export season report PDF", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('[role="button"][aria-label^="View "]').first().click();
+    await page.waitForSelector("text=Rate Player");
+    const downloadPromise = page.waitForEvent("download");
+    await page.click('button:has-text("Season Report")');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/season-report\.pdf$/);
+  });
+
   test("player profile — injury reported", async ({ page }) => {
     await login(page);
     await page.goto("/players");

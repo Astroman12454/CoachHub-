@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
 import { SKILL_CATEGORIES } from "@shared/schema";
 import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt } from "@shared/schema";
 
@@ -54,6 +55,7 @@ export default function PlayerProfile() {
   const queryClient = useQueryClient();
 
   const [isRateOpen, setIsRateOpen] = useState(false);
+  const [isExportingReport, setIsExportingReport] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
   const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
   const [injuryDescription, setInjuryDescription] = useState("");
@@ -102,6 +104,18 @@ export default function PlayerProfile() {
       .map(([drillName, { made, total, shots }]) => ({ drillName, made, total, shots, pct: total > 0 ? Math.round((made / total) * 100) : 0 }))
       .sort((a, b) => b.total - a.total);
   }, [drillAttempts]);
+
+  const handleExportSeasonReport = async () => {
+    if (!player || !development || !attendanceStats || isExportingReport) return;
+    setIsExportingReport(true);
+    try {
+      await exportSeasonReportPdf(player, attendanceStats, development, gameStats, drillAttempts);
+    } catch (error) {
+      toast({ title: t("playerProfile.couldntExportReport"), description: t("common.tryAgain"), variant: "destructive" });
+    } finally {
+      setIsExportingReport(false);
+    }
+  };
 
   const addNoteMutation = useMutation({
     mutationFn: async () => apiRequest("POST", `/api/players/${playerId}/notes`, { content: noteDraft.trim() }),
@@ -223,6 +237,20 @@ export default function PlayerProfile() {
             </div>
             {player.position && <p className="text-sm text-muted-foreground mt-0.5">{player.position}</p>}
           </div>
+          <Button
+            variant="outline"
+            onClick={handleExportSeasonReport}
+            disabled={isExportingReport || !development || !attendanceStats}
+            className="whitespace-nowrap"
+          >
+            {isExportingReport ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <FileDown className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+            )}
+            <span className="hidden sm:inline">{t("playerProfile.seasonReport")}</span>
+            <span className="sm:hidden">{t("playerProfile.report")}</span>
+          </Button>
           <Button onClick={() => setIsRateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
             <Star className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
             <span className="hidden sm:inline">{t("playerProfile.ratePlayer")}</span>
