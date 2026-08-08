@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { startCheckout, openBillingPortal } from "@/lib/billing";
 import { extractErrorMessage } from "@/lib/queryClient";
+import { isPaidPlan } from "@shared/entitlements";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandMark from "@/components/BrandMark";
@@ -83,7 +84,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     if (isBillingPending) return;
     setIsBillingPending(true);
     try {
-      await (account?.plan === "paid" ? openBillingPortal() : startCheckout());
+      await (isPaidPlan(account?.plan ?? "free") ? openBillingPortal() : startCheckout());
       // Both normally navigate away (window.location.href = ...), so this
       // line never runs — except startCheckout's native-app path, which
       // resolves without redirecting (see client/src/lib/billing.ts), so
@@ -149,10 +150,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={handlePlanClick}
             disabled={isBillingPending}
             className="mt-1 disabled:opacity-60"
-            title={account?.plan === "paid" ? t("common.manageBilling") : t("common.upgradeToPaid")}
+            title={isPaidPlan(account?.plan ?? "free") ? t("common.manageBilling") : t("common.upgradeToPaid")}
           >
             <Badge variant="secondary" className="text-[10px] uppercase tracking-wide cursor-pointer hover:bg-white/20">
-              {account?.plan === "paid" ? t("common.paidPlan") : t("common.freePlanUpgrade")}
+              {isPaidPlan(account?.plan ?? "free") ? t("common.paidPlan") : t("common.freePlanUpgrade")}
             </Badge>
           </button>
         </div>

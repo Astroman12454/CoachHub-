@@ -16,6 +16,7 @@ import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import type { Player } from "@shared/schema";
+import { canImportBoxScore } from "@shared/entitlements";
 
 interface GameModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ export default function GameModal({ isOpen, onClose }: GameModalProps) {
   const { toast } = useToast();
   const { account } = useAuth();
   const queryClient = useQueryClient();
-  const canImport = account?.plan === "paid";
+  const canImport = canImportBoxScore(account?.plan ?? "free");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: roster = [] } = useQuery<Player[]>({ queryKey: ["/api/players"] });

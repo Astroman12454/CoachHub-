@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import type { Exercise, Play, TrainingSession, SessionTemplate } from "@shared/schema";
+import { canGenerateAiSessionPlan } from "@shared/entitlements";
 import { CATEGORY_COLORS } from "@/lib/types";
 
 interface GeneratedSessionPlan {
@@ -45,7 +46,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   const restoreFocus = useDialogFocusReturn(isOpen);
   const { account } = useAuth();
   const { toast } = useToast();
-  const canGeneratePlan = account?.plan === "paid";
+  const canGeneratePlan = canGenerateAiSessionPlan(account?.plan ?? "free");
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
     onClose();

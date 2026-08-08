@@ -1,12 +1,12 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
-import type { Team } from "@shared/schema";
+import type { Team, Plan } from "@shared/schema";
 
 interface AccountInfo {
   id: number;
   email: string;
-  plan: "free" | "paid";
+  plan: Plan;
 }
 
 interface SessionResponse {

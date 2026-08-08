@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const PLANS = ["free", "paid"] as const;
+export type Plan = (typeof PLANS)[number];
 
 // Free plan: 1 team, up to 15 players, read-only exercise library, up to 3
 // saved plays. Paid plan: unlimited teams/players/plays, can create/edit
@@ -27,7 +28,7 @@ export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  plan: text("plan").notNull().default("free"), // 'free' | 'paid'
+  plan: text("plan").notNull().default("free").$type<Plan>(),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   // A sha256 hash of the one-time reset token (never the raw token — a DB

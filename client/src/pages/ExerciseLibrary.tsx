@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { startCheckout } from "@/lib/billing";
 import type { Exercise } from "@shared/schema";
+import { canUseCustomExercises } from "@shared/entitlements";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 
 export default function ExerciseLibrary() {
@@ -26,7 +27,7 @@ export default function ExerciseLibrary() {
   const initialCategory = new URLSearchParams(search).get("category") ?? "all";
   const { account } = useAuth();
   const { toast } = useToast();
-  const canEditExercises = account?.plan === "paid";
+  const canEditExercises = canUseCustomExercises(account?.plan ?? "free");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);

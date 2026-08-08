@@ -29,10 +29,17 @@ import {
   insertRecurringPracticeSlotSchema,
   generateSessionsFromSlotsSchema,
   FREE_PLAN_PLAYER_LIMIT,
-  FREE_PLAN_TEAM_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
 } from "@shared/schema";
+import {
+  canCreateTeam,
+  canCreatePlayer,
+  canCreatePlay,
+  canUseCustomExercises,
+  canGenerateAiSessionPlan,
+  canImportBoxScore,
+} from "@shared/entitlements";
 
 const ACCEPTED_BOX_SCORE_TYPES = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",
@@ -170,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const account = await storage.getAccountById(accountId);
       const existingTeams = await storage.getTeamsByAccount(accountId);
 
-      if (account?.plan === "free" && existingTeams.length >= FREE_PLAN_TEAM_LIMIT) {
+      if (!canCreateTeam(account?.plan ?? "free", existingTeams.length)) {
         return res.status(403).json({ message: "Upgrade to a paid plan to manage more than one team." });
       }
 
@@ -217,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = req.session.accountId!;
       const account = await storage.getAccountById(accountId);
-      if (account?.plan === "free") {
+      if (!canUseCustomExercises(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to add custom exercises." });
       }
 
@@ -233,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = req.session.accountId!;
       const account = await storage.getAccountById(accountId);
-      if (account?.plan === "free") {
+      if (!canUseCustomExercises(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to edit exercises." });
       }
 
@@ -256,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const accountId = req.session.accountId!;
       const account = await storage.getAccountById(accountId);
-      if (account?.plan === "free") {
+      if (!canUseCustomExercises(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to delete exercises." });
       }
 
@@ -336,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/training-sessions/generate-plan", requireTeam, sessionPlanRateLimiter, async (req, res) => {
     const accountId = req.session.accountId!;
     const account = await storage.getAccountById(accountId);
-    if (account?.plan === "free") {
+    if (!canGenerateAiSessionPlan(account?.plan ?? "free")) {
       return res.status(403).json({ message: "Upgrade to a paid plan to generate a practice plan with AI." });
     }
 
@@ -555,13 +562,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const teamId = req.session.currentTeamId!;
       const account = await storage.getAccountById(req.session.accountId!);
 
-      if (account?.plan === "free") {
-        const currentCount = await storage.getPlayerCount(teamId);
-        if (currentCount >= FREE_PLAN_PLAYER_LIMIT) {
-          return res.status(403).json({
-            message: `Free plan is limited to ${FREE_PLAN_PLAYER_LIMIT} players. Upgrade to add more.`,
-          });
-        }
+      const currentPlayerCount = await storage.getPlayerCount(teamId);
+      if (!canCreatePlayer(account?.plan ?? "free", currentPlayerCount)) {
+        return res.status(403).json({
+          message: `Free plan is limited to ${FREE_PLAN_PLAYER_LIMIT} players. Upgrade to add more.`,
+        });
       }
 
       const playerData = insertPlayerSchema.parse(req.body);
@@ -1185,13 +1190,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const teamId = req.session.currentTeamId!;
       const account = await storage.getAccountById(req.session.accountId!);
-      if (account?.plan === "free") {
-        const currentCount = await storage.getPlayCount(teamId);
-        if (currentCount >= FREE_PLAN_PLAY_LIMIT) {
-          return res.status(403).json({
-            message: `Free plan is limited to ${FREE_PLAN_PLAY_LIMIT} saved plays. Upgrade to save more.`,
-          });
-        }
+      const currentPlayCount = await storage.getPlayCount(teamId);
+      if (!canCreatePlay(account?.plan ?? "free", currentPlayCount)) {
+        return res.status(403).json({
+          message: `Free plan is limited to ${FREE_PLAN_PLAY_LIMIT} saved plays. Upgrade to save more.`,
+        });
       }
 
       const data = createPlaySchema.parse(req.body);
@@ -1245,7 +1248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // configured — not a confusing "not configured" error that implies
       // it's a temporary outage rather than a plan limit.
       const account = await storage.getAccountById(req.session.accountId!);
-      if (account?.plan === "free") {
+      if (!canImportBoxScore(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to import box scores automatically." });
       }
 
