@@ -17,7 +17,9 @@
     "manageBilling": "Gestionar facturación",
     "upgradeToPaid": "Mejorar a plan de pago",
     "paidPlan": "Plan de Pago",
+    "clubPlan": "Plan Club",
     "freePlanUpgrade": "Plan Gratis · Mejorar",
+    "managedByOwner": "La facturación la gestiona {{email}}",
     "billing": "Facturación",
     "couldntOpenBilling": "No se pudo abrir la facturación en este momento.",
     "tryAgain": "Inténtalo de nuevo.",
@@ -37,7 +39,8 @@
     "games": "Partidos",
     "playbook": "Jugadas",
     "exerciseLibrary": "Biblioteca de Ejercicios",
-    "players": "Jugadores"
+    "players": "Jugadores",
+    "coaches": "Entrenadores"
   },
   "sidebar": {
     "tagline": "Entrenamiento de Baloncesto",
@@ -726,6 +729,36 @@
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
     "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
+  },
+  "coachSettings": {
+    "title": "Gestionar Entrenadores",
+    "subtitle": "Invitá a otros entrenadores a los equipos de tu club.",
+    "inviteACoach": "Invitar a un Entrenador",
+    "seatsUsed": "{{used}} / {{limit}} cupos",
+    "emailPlaceholder": "entrenador@ejemplo.com",
+    "sendInvite": "Enviar Invitación",
+    "sendingEllipsis": "Enviando…",
+    "inviteSent": "Invitación enviada",
+    "couldntSendInvite": "No se pudo enviar la invitación",
+    "atSeatLimit": "Usaste todos los cupos de entrenador de tu plan Club. Quitá a un entrenador para invitar a alguien nuevo.",
+    "pendingInvites": "Invitaciones Pendientes",
+    "revokeInvite": "Revocar invitación",
+    "revokeInviteFor": "Revocar invitación de {{email}}",
+    "coaches": "Entrenadores",
+    "noCoachesYet": "Todavía no hay entrenadores — invitá a uno arriba.",
+    "remove": "Quitar",
+    "removeCoachTitle": "¿Quitar a este entrenador?",
+    "removeCoachDescription": "{{email}} perderá acceso a tus equipos de inmediato."
+  },
+  "acceptInvite": {
+    "title": "Unirte como Entrenador",
+    "invalidInvite": "Esta invitación no es válida o expiró.",
+    "invitedBy": "{{email}} te invitó a entrenar en sus equipos.",
+    "createAccountAndJoin": "Crear Cuenta y Unirme",
+    "logInAndJoin": "Iniciar Sesión y Unirme",
+    "joining": "Uniéndote…",
+    "joined": "¡Listo! Redirigiendo a tu panel…",
+    "couldntJoin": "No se pudo aceptar la invitación"
   },
   "pricing": {
     "title": "Planes y Precios",

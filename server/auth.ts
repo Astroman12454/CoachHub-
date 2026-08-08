@@ -31,10 +31,24 @@ async function sessionPayload(accountId: number, currentTeamId?: number) {
   const account = await storage.getAccountById(accountId);
   if (!account) return { authenticated: false as const };
 
-  const accountTeams = await storage.getTeamsByAccount(account.id);
+  // A coach who accepted a Club invite operates entirely on the club
+  // owner's account: their teams, their plan (so the UI shows "Club", not
+  // this login's own free plan), everything. effectiveAccountId is that
+  // owner's id for a member, or just accountId itself otherwise.
+  const effectiveAccountId = await storage.resolveEffectiveAccountId(accountId);
+  const isClubMember = effectiveAccountId !== accountId;
+  const effectiveAccount = isClubMember ? await storage.getAccountById(effectiveAccountId) : account;
+
+  const accountTeams = await storage.getTeamsByAccount(effectiveAccountId);
   return {
     authenticated: true as const,
-    account: { id: account.id, email: account.email, plan: account.plan },
+    account: {
+      id: account.id,
+      email: account.email,
+      plan: effectiveAccount?.plan ?? account.plan,
+      isClubMember,
+      ownerEmail: isClubMember ? effectiveAccount?.email : undefined,
+    },
     teams: accountTeams,
     currentTeamId: currentTeamId ?? accountTeams[0]?.id,
   };
@@ -141,7 +155,8 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: "Incorrect email or password" });
     }
 
-    const accountTeams = await storage.getTeamsByAccount(account.id);
+    const effectiveAccountId = await storage.resolveEffectiveAccountId(account.id);
+    const accountTeams = await storage.getTeamsByAccount(effectiveAccountId);
     req.session.accountId = account.id;
     req.session.currentTeamId = accountTeams[0]?.id;
     res.json(await sessionPayload(account.id, req.session.currentTeamId));
@@ -208,7 +223,8 @@ export function setupAuth(app: Express) {
     if (isNaN(teamId)) {
       return res.status(400).json({ message: "Invalid teamId" });
     }
-    const team = await storage.getTeamById(teamId, req.session.accountId);
+    const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId);
+    const team = await storage.getTeamById(teamId, effectiveAccountId);
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
@@ -227,7 +243,7 @@ export function setupAuth(app: Express) {
 // hit by an external scheduler (no coach session at all, possibly not even
 // a browser), and is protected by its own CRON_SECRET check inside the
 // route handler instead — see server/routes.ts.
-const PUBLIC_API_PREFIXES = ["/portal/", "/cron/"];
+const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/"];
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (PUBLIC_API_PREFIXES.some((prefix) => req.path.startsWith(prefix))) return next();

@@ -61,6 +61,14 @@ test.describe("accessibility (axe)", () => {
       expect(summarize(results.violations)).toEqual([]);
     });
 
+    test("accept-invite page with an invalid token", async ({ page }) => {
+      await page.goto("/accept-invite?token=not-a-real-token");
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector("text=invalid or has expired");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
+
     test("pricing page, logged out", async ({ page }) => {
       await page.goto("/pricing");
       await page.waitForLoadState("networkidle");
@@ -474,6 +482,38 @@ test.describe("accessibility (axe)", () => {
     await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("coach settings page (Club plan)", async ({ page }) => {
+    await login(page);
+    await page.goto("/settings/coaches");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Manage Coaches");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("coach settings page — invite sent, shows in pending list", async ({ page }) => {
+    await login(page);
+    await page.goto("/settings/coaches");
+    await page.waitForLoadState("networkidle");
+    const email = `e2e-invite-${Date.now()}@example.com`;
+    await page.fill('input[type="email"]', email);
+    await page.click('button:has-text("Send Invite")');
+    await page.waitForSelector(`text=${email}`);
+    // Dismiss the confirmation toast before scanning — Radix's own toast
+    // viewport (an <ol> with a portal wrapper between it and its <li>) trips
+    // axe's list-nesting rule regardless of what page it's shown on, a
+    // pre-existing upstream quirk unrelated to what this test is checking.
+    await page.click('button[aria-label="Close"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Revoke what this test just created — the shared test account only has
+    // 3 Club coach seats, and re-running this test against the same dev DB
+    // would otherwise pile up pending invites until every seat is used and
+    // the invite field stops accepting new addresses.
+    await page.click(`button[aria-label="Revoke invite for ${email}"]`);
   });
 
   test("billing success page", async ({ page }) => {

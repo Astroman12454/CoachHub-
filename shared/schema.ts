@@ -42,6 +42,30 @@ export const accounts = pgTable("accounts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// A pending invitation to join a Club account as a coach — consumed (row
+// deleted) the moment it's accepted, turning into an accountMemberships row.
+// Mirrors accounts' password-reset token fields: a sha256 hash of the raw
+// token, never the token itself, so a DB leak can't hand out a working
+// invite link.
+export const accountInvites = pgTable("account_invites", {
+  id: serial("id").primaryKey(),
+  ownerAccountId: integer("owner_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Grants memberAccountId (a coach's own login) access to ownerAccountId's
+// teams — the Club plan's multi-coach seat. memberAccountId is unique: a
+// coach belongs to at most one club at a time.
+export const accountMemberships = pgTable("account_memberships", {
+  id: serial("id").primaryKey(),
+  ownerAccountId: integer("owner_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  memberAccountId: integer("member_account_id").notNull().unique().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
@@ -360,6 +384,10 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+export const inviteCoachSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+});
+
 export const insertTeamSchema = createInsertSchema(teams).omit({
   id: true,
   accountId: true,
@@ -487,6 +515,18 @@ export type InsertAccount = z.infer<typeof insertAccountSchema>;
 
 export type Team = typeof teams.$inferSelect;
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
+
+export type AccountInvite = typeof accountInvites.$inferSelect;
+export type AccountMembership = typeof accountMemberships.$inferSelect;
+export type InviteCoach = z.infer<typeof inviteCoachSchema>;
+
+// A membership row plus the member's own email, for the "manage coaches"
+// list — the membership table itself only stores the account id.
+export interface CoachMember {
+  memberAccountId: number;
+  email: string;
+  createdAt: string | null;
+}
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type Exercise = typeof exercises.$inferSelect;

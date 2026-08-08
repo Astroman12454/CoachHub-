@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { startCheckout, openBillingPortal } from "@/lib/billing";
 import { extractErrorMessage } from "@/lib/queryClient";
-import { isPaidPlan } from "@shared/entitlements";
+import { isPaidPlan, isClubPlan } from "@shared/entitlements";
 import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandMark from "@/components/BrandMark";
@@ -79,9 +79,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { account, logout } = useAuth();
   const { toast } = useToast();
   const [isBillingPending, setIsBillingPending] = useState(false);
+  const isClubMember = !!account?.isClubMember;
+  // Coach management is the Club owner's action alone — a member who
+  // accepted an invite has full access to the club's teams but doesn't
+  // manage who else is on it.
+  const canManageCoaches = isClubPlan(account?.plan ?? "free") && !isClubMember;
+  const items = canManageCoaches
+    ? [...navigation, { key: "nav.coaches", href: "/settings/coaches", icon: UserCog }]
+    : navigation;
 
   const handlePlanClick = async () => {
-    if (isBillingPending) return;
+    if (isBillingPending || isClubMember) return;
     setIsBillingPending(true);
     try {
       await (isPaidPlan(account?.plan ?? "free") ? openBillingPortal() : startCheckout());
@@ -118,7 +126,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <TeamSwitcher />
 
       <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navigation.map((item) => {
+        {items.map((item) => {
           const isActive = location === item.href
             || (location === "/" && item.href === "/dashboard")
             || (item.href === "/playbook" && location.startsWith("/playbook/"));
@@ -148,12 +156,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <button
             type="button"
             onClick={handlePlanClick}
-            disabled={isBillingPending}
+            disabled={isBillingPending || isClubMember}
             className="mt-1 disabled:opacity-60"
-            title={isPaidPlan(account?.plan ?? "free") ? t("common.manageBilling") : t("common.upgradeToPaid")}
+            title={
+              isClubMember
+                ? t("common.managedByOwner", { email: account?.ownerEmail ?? "" })
+                : isPaidPlan(account?.plan ?? "free") ? t("common.manageBilling") : t("common.upgradeToPaid")
+            }
           >
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide cursor-pointer hover:bg-white/20">
-              {isPaidPlan(account?.plan ?? "free") ? t("common.paidPlan") : t("common.freePlanUpgrade")}
+            <Badge
+              variant="secondary"
+              className={`text-[10px] uppercase tracking-wide ${isClubMember ? "" : "cursor-pointer hover:bg-white/20"}`}
+            >
+              {isClubPlan(account?.plan ?? "free")
+                ? t("common.clubPlan")
+                : isPaidPlan(account?.plan ?? "free") ? t("common.paidPlan") : t("common.freePlanUpgrade")}
             </Badge>
           </button>
         </div>

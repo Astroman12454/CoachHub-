@@ -16,6 +16,8 @@ import {
   drillAttempts,
   sessionTemplates,
   recurringPracticeSlots,
+  accountInvites,
+  accountMemberships,
   type Account,
   type Team,
   type Exercise,
@@ -47,6 +49,9 @@ import {
   type InsertRecurringPracticeSlot,
   type RecurringPracticeSlot,
   type Plan,
+  type AccountInvite,
+  type AccountMembership,
+  type CoachMember,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -63,6 +68,23 @@ export interface IStorage {
   setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void>;
   getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined>;
   resetPassword(id: number, passwordHash: string): Promise<void>;
+
+  // Club plan multi-coach seats. resolveEffectiveAccountId is the one
+  // primitive nearly everything else builds on: for a coach who accepted an
+  // invite, every account-scoped operation (exercises, plan/limit checks,
+  // team creation, the team switcher) should act on the CLUB's account, not
+  // their own — so routes resolve through this instead of using
+  // req.session.accountId directly wherever ownership of a shared resource
+  // is being decided.
+  resolveEffectiveAccountId(accountId: number): Promise<number>;
+  getOwnerAccountIdForMember(memberAccountId: number): Promise<number | null>;
+  createAccountInvite(ownerAccountId: number, email: string, tokenHash: string, expiresAt: Date): Promise<AccountInvite>;
+  getAccountInviteByValidTokenHash(tokenHash: string): Promise<AccountInvite | undefined>;
+  getPendingInvitesForAccount(ownerAccountId: number): Promise<AccountInvite[]>;
+  deleteAccountInvite(id: number): Promise<void>;
+  createAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<AccountMembership>;
+  getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]>;
+  removeAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<boolean>;
 
   // Team methods
   createTeam(accountId: number, name: string): Promise<Team>;
@@ -233,6 +255,69 @@ export class DatabaseStorage implements IStorage {
 
   async resetPassword(id: number, passwordHash: string): Promise<void> {
     await db.update(accounts).set({ passwordHash, resetTokenHash: null, resetTokenExpiresAt: null }).where(eq(accounts.id, id));
+  }
+
+  async getOwnerAccountIdForMember(memberAccountId: number): Promise<number | null> {
+    const [membership] = await db
+      .select({ ownerAccountId: accountMemberships.ownerAccountId })
+      .from(accountMemberships)
+      .where(eq(accountMemberships.memberAccountId, memberAccountId));
+    return membership?.ownerAccountId ?? null;
+  }
+
+  async resolveEffectiveAccountId(accountId: number): Promise<number> {
+    return (await this.getOwnerAccountIdForMember(accountId)) ?? accountId;
+  }
+
+  async createAccountInvite(ownerAccountId: number, email: string, tokenHash: string, expiresAt: Date): Promise<AccountInvite> {
+    const [invite] = await db
+      .insert(accountInvites)
+      .values({ ownerAccountId, email, tokenHash, expiresAt })
+      .returning();
+    return invite;
+  }
+
+  async getAccountInviteByValidTokenHash(tokenHash: string): Promise<AccountInvite | undefined> {
+    const [invite] = await db
+      .select()
+      .from(accountInvites)
+      .where(and(eq(accountInvites.tokenHash, tokenHash), sql`${accountInvites.expiresAt} > now()`));
+    return invite || undefined;
+  }
+
+  async getPendingInvitesForAccount(ownerAccountId: number): Promise<AccountInvite[]> {
+    return await db
+      .select()
+      .from(accountInvites)
+      .where(and(eq(accountInvites.ownerAccountId, ownerAccountId), sql`${accountInvites.expiresAt} > now()`));
+  }
+
+  async deleteAccountInvite(id: number): Promise<void> {
+    await db.delete(accountInvites).where(eq(accountInvites.id, id));
+  }
+
+  async createAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<AccountMembership> {
+    const [membership] = await db
+      .insert(accountMemberships)
+      .values({ ownerAccountId, memberAccountId })
+      .returning();
+    return membership;
+  }
+
+  async getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]> {
+    const rows = await db
+      .select({ memberAccountId: accountMemberships.memberAccountId, email: accounts.email, createdAt: accountMemberships.createdAt })
+      .from(accountMemberships)
+      .innerJoin(accounts, eq(accountMemberships.memberAccountId, accounts.id))
+      .where(eq(accountMemberships.ownerAccountId, ownerAccountId));
+    return rows.map((r) => ({ ...r, createdAt: r.createdAt ? r.createdAt.toISOString() : null }));
+  }
+
+  async removeAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<boolean> {
+    const result = await db
+      .delete(accountMemberships)
+      .where(and(eq(accountMemberships.ownerAccountId, ownerAccountId), eq(accountMemberships.memberAccountId, memberAccountId)));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Team methods

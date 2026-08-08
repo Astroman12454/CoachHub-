@@ -32,6 +32,20 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   });
 }
 
+export async function sendCoachInviteEmail(to: string, ownerEmail: string, acceptUrl: string): Promise<void> {
+  await getClient().emails.send({
+    from: FROM_EMAIL!,
+    to,
+    subject: `${ownerEmail} invited you to coach on Coach Hub`,
+    html: `
+      <p><strong>${ownerEmail}</strong> invited you to join their team as a coach on Coach Hub.</p>
+      <p><a href="${acceptUrl}">Click here to accept the invitation</a>. This link works for 7 days.</p>
+      <p>If you weren't expecting this, you can safely ignore this email.</p>
+    `,
+    text: `${ownerEmail} invited you to join their team as a coach on Coach Hub.\n\nOpen this link to accept (works for 7 days):\n${acceptUrl}\n\nIf you weren't expecting this, you can safely ignore this email.`,
+  });
+}
+
 export interface WeeklyDigestData {
   teamName: string;
   sessionsHeld: number;

@@ -17,7 +17,9 @@
     "manageBilling": "Manage billing",
     "upgradeToPaid": "Upgrade to paid",
     "paidPlan": "Paid Plan",
+    "clubPlan": "Club Plan",
     "freePlanUpgrade": "Free Plan · Upgrade",
+    "managedByOwner": "Billing is managed by {{email}}",
     "billing": "Billing",
     "couldntOpenBilling": "Couldn't open billing right now.",
     "tryAgain": "Try again.",
@@ -37,7 +39,8 @@
     "games": "Games",
     "playbook": "Playbook",
     "exerciseLibrary": "Exercise Library",
-    "players": "Players"
+    "players": "Players",
+    "coaches": "Coaches"
   },
   "sidebar": {
     "tagline": "Basketball Training",
@@ -726,6 +729,36 @@
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
     "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."
+  },
+  "coachSettings": {
+    "title": "Manage Coaches",
+    "subtitle": "Invite other coaches to your club's teams.",
+    "inviteACoach": "Invite a Coach",
+    "seatsUsed": "{{used}} / {{limit}} seats",
+    "emailPlaceholder": "coach@example.com",
+    "sendInvite": "Send Invite",
+    "sendingEllipsis": "Sending…",
+    "inviteSent": "Invite sent",
+    "couldntSendInvite": "Couldn't send invite",
+    "atSeatLimit": "You've used all your Club plan coach seats. Remove a coach to invite someone new.",
+    "pendingInvites": "Pending Invites",
+    "revokeInvite": "Revoke invite",
+    "revokeInviteFor": "Revoke invite for {{email}}",
+    "coaches": "Coaches",
+    "noCoachesYet": "No coaches yet — invite one above.",
+    "remove": "Remove",
+    "removeCoachTitle": "Remove this coach?",
+    "removeCoachDescription": "{{email}} will immediately lose access to your teams."
+  },
+  "acceptInvite": {
+    "title": "Join as a Coach",
+    "invalidInvite": "This invite is invalid or has expired.",
+    "invitedBy": "{{email}} invited you to coach on their teams.",
+    "createAccountAndJoin": "Create Account & Join",
+    "logInAndJoin": "Log In & Join",
+    "joining": "Joining…",
+    "joined": "You're in! Redirecting to your dashboard…",
+    "couldntJoin": "Couldn't accept the invite"
   },
   "pricing": {
     "title": "Plans & Pricing",

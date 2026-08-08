@@ -19,15 +19,19 @@ export default async function globalSetup(config: FullConfig) {
     await page.request.post("/api/login", {
       data: { email: TEST_EMAIL, password: TEST_PASSWORD },
     });
-  } else {
-    // Fresh account: no billing exists yet (that's a later step), so the
-    // suite upgrades the test account directly in the DB — otherwise every
-    // test that opens the create/edit exercise form would hit the
-    // free-plan upgrade gate instead of the dialog it's meant to check.
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    await pool.query("UPDATE accounts SET plan = 'paid' WHERE email = $1", [TEST_EMAIL]);
-    await pool.end();
   }
+  // No billing actually exists (that's a later step), so the suite upgrades
+  // the test account directly in the DB — otherwise every test that opens
+  // the create/edit exercise form would hit the free-plan upgrade gate
+  // instead of the dialog it's meant to check. Run unconditionally (not
+  // just on first creation) so a shared dev DB from before this plan was
+  // "paid" gets migrated too. "club" rather than "paid" so the same shared
+  // account also exercises the Club-only coach management page — Club is a
+  // superset of Paid, so every existing paid-gated test still passes
+  // unchanged.
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  await pool.query("UPDATE accounts SET plan = 'club' WHERE email = $1", [TEST_EMAIL]);
+  await pool.end();
 
   // Idempotent: only creates data the first time, so repeat runs against a
   // database that already has it are no-ops.

@@ -31,6 +31,8 @@ const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 const Portal = lazy(() => import("@/pages/Portal"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
+const CoachSettings = lazy(() => import("@/pages/CoachSettings"));
 
 function PageLoadingFallback() {
   return (
@@ -70,6 +72,7 @@ function Router() {
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
       <Route path="/players/:id" component={() => <Layout><PlayerProfile /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />
+      <Route path="/settings/coaches" component={() => <Layout><CoachSettings /></Layout>} />
       <Route path="/billing/success" component={() => <Layout><BillingStatus status="success" /></Layout>} />
       <Route path="/billing/cancel" component={() => <Layout><BillingStatus status="cancel" /></Layout>} />
       <Route component={NotFound} />
@@ -114,6 +117,14 @@ function App() {
                   component={() => (
                     <Suspense fallback={<PageLoadingFallback />}>
                       <ResetPassword />
+                    </Suspense>
+                  )}
+                />
+                <Route
+                  path="/accept-invite"
+                  component={() => (
+                    <Suspense fallback={<PageLoadingFallback />}>
+                      <AcceptInvite />
                     </Suspense>
                   )}
                 />

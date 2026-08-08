@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
+import { registerCoachRoutes } from "./coaches";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, type SessionPlanContext } from "./ai-session-plan";
 import { isPushConfigured, getVapidPublicKey } from "./push";
@@ -160,6 +161,7 @@ export async function buildSessionPlanContext(teamId: number): Promise<SessionPl
 
 export async function registerRoutes(app: Express): Promise<Server> {
   registerBillingRoutes(app);
+  registerCoachRoutes(app);
 
   // Team routes
   app.get("/api/teams", async (req, res) => {
@@ -173,7 +175,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/teams", async (req, res) => {
     try {
-      const accountId = req.session.accountId!;
+      // A coach who accepted a Club invite creates teams under the club's
+      // account (visible to every coach on it), gated by the club's plan
+      // and team count — not their own separate, otherwise-unused account.
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
       const existingTeams = await storage.getTeamsByAccount(accountId);
 
@@ -189,10 +194,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Exercise routes — scoped by account, shared across that account's teams.
+  // Exercise routes — scoped by account, shared across that account's teams
+  // (and, for a Club coach, across the whole club — see
+  // resolveEffectiveAccountId).
   app.get("/api/exercises", async (req, res) => {
     try {
-      const accountId = req.session.accountId!;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const { category } = req.query;
       const exercises = category && typeof category === "string"
         ? await storage.getExercisesByCategory(accountId, category)
@@ -208,7 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseId(req, res);
       if (id === null) return;
-      const exercise = await storage.getExerciseById(id, req.session.accountId!);
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const exercise = await storage.getExerciseById(id, accountId);
 
       if (!exercise) {
         return res.status(404).json({ message: "Exercise not found" });
@@ -222,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/exercises", async (req, res) => {
     try {
-      const accountId = req.session.accountId!;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
       if (!canUseCustomExercises(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to add custom exercises." });
@@ -238,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/exercises/:id", async (req, res) => {
     try {
-      const accountId = req.session.accountId!;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
       if (!canUseCustomExercises(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to edit exercises." });
@@ -261,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/exercises/:id", async (req, res) => {
     try {
-      const accountId = req.session.accountId!;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
       if (!canUseCustomExercises(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to delete exercises." });
@@ -341,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // draft only; nothing is saved until the coach reviews it and submits the
   // normal POST /api/training-sessions below.
   app.post("/api/training-sessions/generate-plan", requireTeam, sessionPlanRateLimiter, async (req, res) => {
-    const accountId = req.session.accountId!;
+    const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
     const account = await storage.getAccountById(accountId);
     if (!canGenerateAiSessionPlan(account?.plan ?? "free")) {
       return res.status(403).json({ message: "Upgrade to a paid plan to generate a practice plan with AI." });
@@ -560,7 +568,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/players", requireTeam, async (req, res) => {
     try {
       const teamId = req.session.currentTeamId!;
-      const account = await storage.getAccountById(req.session.accountId!);
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(effectiveAccountId);
 
       const currentPlayerCount = await storage.getPlayerCount(teamId);
       if (!canCreatePlayer(account?.plan ?? "free", currentPlayerCount)) {
@@ -1201,7 +1210,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/plays", requireTeam, async (req, res) => {
     try {
       const teamId = req.session.currentTeamId!;
-      const account = await storage.getAccountById(req.session.accountId!);
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(effectiveAccountId);
       const currentPlayCount = await storage.getPlayCount(teamId);
       if (!canCreatePlay(account?.plan ?? "free", currentPlayCount)) {
         return res.status(403).json({
@@ -1259,7 +1269,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // this" regardless of whether the AI backend happens to be
       // configured — not a confusing "not configured" error that implies
       // it's a temporary outage rather than a plan limit.
-      const account = await storage.getAccountById(req.session.accountId!);
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(effectiveAccountId);
       if (!canImportBoxScore(account?.plan ?? "free")) {
         return res.status(403).json({ message: "Upgrade to a paid plan to import box scores automatically." });
       }

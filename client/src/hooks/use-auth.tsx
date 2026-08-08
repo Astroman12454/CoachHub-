@@ -7,6 +7,12 @@ interface AccountInfo {
   id: number;
   email: string;
   plan: Plan;
+  // True when this login accepted a Club invite — every team/exercise/plan
+  // check already resolves to the club owner's account server-side, but the
+  // client still needs this to know whether to show billing/coach-
+  // management actions (owner-only) versus a "managed by" note.
+  isClubMember: boolean;
+  ownerEmail?: string;
 }
 
 interface SessionResponse {
