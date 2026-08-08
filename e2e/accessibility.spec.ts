@@ -213,6 +213,18 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("players — balance scrimmage teams dialog, teams generated", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Balance Teams")');
+    await page.waitForSelector("text=Balance Scrimmage Teams");
+    await page.click('button:has-text("Generate Teams")');
+    await page.waitForSelector("text=Team 1");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("player portal page (public, no session)", async ({ page }) => {
     await login(page);
     await page.goto("/players");

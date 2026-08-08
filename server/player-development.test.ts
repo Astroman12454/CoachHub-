@@ -130,3 +130,35 @@ describe("player development (skill ratings + notes)", () => {
     expect(deleteRes.status).toBe(404);
   });
 });
+
+describe("GET /api/players/skill-ratings (roster-wide current ratings)", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("omits players with no ratings and reports the latest snapshot for those that have one", async () => {
+    const agent = await signedInAgent(app);
+    const unrated = await agent.post("/api/players").send({ name: "Unrated" });
+    const rated = await agent.post("/api/players").send({ name: "Rated" });
+    await agent.post(`/api/players/${rated.body.id}/skill-ratings`).send(fullRating({ shooting: 4 }));
+    await agent.post(`/api/players/${rated.body.id}/skill-ratings`).send(fullRating({ shooting: 9 }));
+
+    const res = await agent.get("/api/players/skill-ratings");
+    expect(res.status).toBe(200);
+    expect(res.body[unrated.body.id]).toBeUndefined();
+    expect(res.body[rated.body.id]).toMatchObject({ shooting: 9, dribbling: 5, defense: 5, passing: 5, conditioning: 5 });
+  });
+
+  it("scopes results to the requesting team, never leaking another team's ratings", async () => {
+    const owner = await signedInAgent(app);
+    const player = await owner.post("/api/players").send({ name: "Owner's Player" });
+    await owner.post(`/api/players/${player.body.id}/skill-ratings`).send(fullRating());
+
+    const outsider = await signedInAgent(app);
+    const res = await outsider.get("/api/players/skill-ratings");
+    expect(res.status).toBe(200);
+    expect(res.body[player.body.id]).toBeUndefined();
+  });
+});

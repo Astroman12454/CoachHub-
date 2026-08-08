@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse } from "lucide-react";
+import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
 import PlayerPortalDialog from "@/components/PlayerPortalDialog";
+import ScrimmageBalancerDialog from "@/components/ScrimmageBalancerDialog";
 import StatCard from "@/components/StatCard";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -25,6 +26,7 @@ export default function Players() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterActive, setFilterActive] = useState<string>("all");
   const [portalPlayer, setPortalPlayer] = useState<Player | null>(null);
+  const [isBalancerOpen, setIsBalancerOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -168,13 +170,23 @@ export default function Players() {
             </Select>
           </div>
 
-          <Button
-            className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            <UserPlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            {t("dashboard.addPlayer")}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row w-full sm:w-auto">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setIsBalancerOpen(true)}
+            >
+              <Shuffle className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+              {t("scrimmageBalancer.openButton")}
+            </Button>
+            <Button
+              className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <UserPlus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+              {t("dashboard.addPlayer")}
+            </Button>
+          </div>
         </div>
 
         {/* Player Statistics */}
@@ -314,6 +326,8 @@ export default function Players() {
       )}
 
       <PlayerPortalDialog player={portalPlayer} onOpenChange={(open) => !open && setPortalPlayer(null)} />
+
+      <ScrimmageBalancerDialog open={isBalancerOpen} onOpenChange={setIsBalancerOpen} players={players} />
     </div>
   );
 }

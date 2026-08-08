@@ -384,6 +384,22 @@
   "skillRadarChart": {
     "ariaLabel": "Skill radar chart"
   },
+  "scrimmageBalancer": {
+    "openButton": "Balance Teams",
+    "title": "Balance Scrimmage Teams",
+    "description": "Split today's active roster into evenly matched teams based on current skill ratings. Nothing here is saved.",
+    "numberOfTeams": "Number of teams",
+    "includePlayers_one": "Include players ({{count}} selected)",
+    "includePlayers_other": "Include players ({{count}} selected)",
+    "noActivePlayers": "No active players to split into teams.",
+    "generate": "Generate Teams",
+    "shuffleAgain": "Shuffle Again",
+    "notEnoughPlayers": "Select at least as many players as teams.",
+    "teamLabel": "Team {{number}}",
+    "averageScore": "Avg. skill: {{score}}",
+    "unrated": "(unrated)",
+    "moveTo": "Move {{name}} to team"
+  },
   "playerPortalDialog": {
     "couldntCreateLink": "Couldn't create link",
     "linkRevoked": "Link revoked",

@@ -384,6 +384,22 @@
   "skillRadarChart": {
     "ariaLabel": "Gráfico de radar de habilidades"
   },
+  "scrimmageBalancer": {
+    "openButton": "Equilibrar Equipos",
+    "title": "Equilibrar Equipos de Scrimmage",
+    "description": "Divide el plantel activo de hoy en equipos parejos según las calificaciones de habilidad actuales. Nada de esto se guarda.",
+    "numberOfTeams": "Cantidad de equipos",
+    "includePlayers_one": "Incluir jugadores ({{count}} seleccionado)",
+    "includePlayers_other": "Incluir jugadores ({{count}} seleccionados)",
+    "noActivePlayers": "No hay jugadores activos para dividir en equipos.",
+    "generate": "Generar Equipos",
+    "shuffleAgain": "Mezclar de Nuevo",
+    "notEnoughPlayers": "Selecciona al menos tantos jugadores como equipos.",
+    "teamLabel": "Equipo {{number}}",
+    "averageScore": "Habilidad prom.: {{score}}",
+    "unrated": "(sin calificar)",
+    "moveTo": "Mover a {{name}} al equipo"
+  },
   "playerPortalDialog": {
     "couldntCreateLink": "No se pudo crear el enlace",
     "linkRevoked": "Enlace revocado",

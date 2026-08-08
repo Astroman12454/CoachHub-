@@ -53,6 +53,15 @@ export default async function globalSetup(config: FullConfig) {
       data: { name: "E2E Test Player", position: "Point Guard", isActive: 1 },
     });
   }
+  if (players.length < 2) {
+    // A second active player so the scrimmage balancer can actually
+    // generate a two-team split (not just show the "not enough players"
+    // state), matching the "populated dialog" a11y test pattern used
+    // elsewhere in this file.
+    await page.request.post("/api/players", {
+      data: { name: "E2E Test Player Two", position: "Shooting Guard", isActive: 1 },
+    });
+  }
 
   const playsRes = await page.request.get("/api/plays");
   const plays = await playsRes.json();

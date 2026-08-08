@@ -132,6 +132,9 @@ export interface IStorage {
   createPlayerNote(playerId: number, content: string): Promise<PlayerNote>;
   deletePlayerNote(id: number, teamId: number): Promise<boolean>;
   getPlayerDevelopment(playerId: number): Promise<PlayerDevelopment>;
+  // Roster-wide current ratings — feeds the scrimmage team balancer, so it
+  // doesn't need one getPlayerDevelopment round trip per player.
+  getCurrentSkillRatingsForTeam(teamId: number): Promise<Record<number, Record<string, number>>>;
 
   // Injury tracking — history lives on the player (getPlayerInjuries);
   // getActiveInjuriesForTeam is the roster-wide cross-reference used for the
@@ -713,6 +716,24 @@ export class DatabaseStorage implements IStorage {
       history: ratingRows.map((r) => ({ category: r.category, rating: r.rating, ratedAt: (r.ratedAt ?? new Date()).toISOString() })),
       notes,
     };
+  }
+
+  async getCurrentSkillRatingsForTeam(teamId: number): Promise<Record<number, Record<string, number>>> {
+    const rows = await db
+      .select({ playerId: skillRatings.playerId, category: skillRatings.category, rating: skillRatings.rating })
+      .from(skillRatings)
+      .innerJoin(players, eq(skillRatings.playerId, players.id))
+      .where(eq(players.teamId, teamId))
+      .orderBy(desc(skillRatings.ratedAt));
+
+    // Same newest-first-wins reduction as getPlayerDevelopment, just grouped
+    // by player instead of scoped to one.
+    const current: Record<number, Record<string, number>> = {};
+    for (const row of rows) {
+      const playerCurrent = current[row.playerId] ?? (current[row.playerId] = {});
+      if (!(row.category in playerCurrent)) playerCurrent[row.category] = row.rating;
+    }
+    return current;
   }
 
   async getPlayerInjuries(playerId: number): Promise<PlayerInjury[]> {

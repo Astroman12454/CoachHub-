@@ -613,6 +613,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Player development — skill ratings (radar chart) and freeform coach
   // notes, both gated on the player actually belonging to the current team
   // before touching storage.
+  // Roster-wide current ratings — feeds the scrimmage team balancer on the
+  // client, which needs every player's snapshot at once rather than one
+  // /development round trip per player.
+  app.get("/api/players/skill-ratings", requireTeam, async (req, res) => {
+    try {
+      const ratings = await storage.getCurrentSkillRatingsForTeam(req.session.currentTeamId!);
+      res.json(ratings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch skill ratings" });
+    }
+  });
+
   app.get("/api/players/:id/development", requireTeam, async (req, res) => {
     try {
       const id = parseId(req, res);
