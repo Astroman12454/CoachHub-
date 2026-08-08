@@ -177,6 +177,9 @@ export interface IStorage {
   getPushSubscriptionsForTeam(
     teamId: number,
   ): Promise<{ endpoint: string; p256dh: string; auth: string; portalToken: string | null }[]>;
+  getPushSubscriptionsForPlayer(
+    playerId: number,
+  ): Promise<{ endpoint: string; p256dh: string; auth: string; portalToken: string | null }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1041,6 +1044,25 @@ export class DatabaseStorage implements IStorage {
       .from(pushSubscriptions)
       .innerJoin(players, eq(pushSubscriptions.playerId, players.id))
       .where(eq(players.teamId, teamId));
+  }
+
+  // Same shape as getPushSubscriptionsForTeam, scoped to one player instead
+  // of the whole roster — backs the personalized "proactive parent" pushes
+  // (skill-rating improvements, absences) in server/routes.ts, as opposed
+  // to the coach-initiated team-wide broadcasts notifyTeam sends.
+  async getPushSubscriptionsForPlayer(
+    playerId: number,
+  ): Promise<{ endpoint: string; p256dh: string; auth: string; portalToken: string | null }[]> {
+    return await db
+      .select({
+        endpoint: pushSubscriptions.endpoint,
+        p256dh: pushSubscriptions.p256dh,
+        auth: pushSubscriptions.auth,
+        portalToken: players.portalToken,
+      })
+      .from(pushSubscriptions)
+      .innerJoin(players, eq(pushSubscriptions.playerId, players.id))
+      .where(eq(pushSubscriptions.playerId, playerId));
   }
 }
 

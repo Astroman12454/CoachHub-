@@ -8,7 +8,7 @@ import { registerBillingRoutes } from "./billing";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, type SessionPlanContext } from "./ai-session-plan";
 import { isPushConfigured, getVapidPublicKey } from "./push";
-import { notifyTeam, formatNotifyDate } from "./notify";
+import { notifyTeam, notifyPlayer, formatNotifyDate } from "./notify";
 import { runNotificationSweep } from "./notifications-cron";
 import { z } from "zod";
 import {
@@ -31,6 +31,7 @@ import {
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_TEAM_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
+  type TrainingSession,
 } from "@shared/schema";
 
 const ACCEPTED_BOX_SCORE_TYPES = new Set([
@@ -631,8 +632,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Player not found" });
       }
       const ratings = skillRatingInputSchema.parse(req.body);
+      const before = (await storage.getPlayerDevelopment(id)).current;
       await storage.createSkillRating(id, ratings);
-      res.status(201).json(await storage.getPlayerDevelopment(id));
+      const development = await storage.getPlayerDevelopment(id);
+
+      // "Proactive parent mode": push straight to whoever's subscribed to
+      // THIS player's portal (not the whole team) the moment a rating goes
+      // up — no digest, no coach action beyond the rating itself.
+      if (isPushConfigured() && before) {
+        const improved = Object.entries(ratings).filter(
+          ([category, rating]) => typeof before[category] === "number" && rating > before[category],
+        );
+        if (improved.length > 0) {
+          const summary = improved
+            .map(([category, rating]) => `${category.charAt(0).toUpperCase()}${category.slice(1)} ${before[category]}→${rating}`)
+            .join(", ");
+          try {
+            await notifyPlayer(id, { title: `${player.name}'s progress`, body: `Nice improvement: ${summary}` });
+          } catch {
+            // Best-effort — a push failure shouldn't fail the rating save.
+          }
+        }
+      }
+
+      res.status(201).json(development);
     } catch (error) {
       res.status(400).json({ message: "Invalid skill rating data" });
     }
@@ -918,6 +941,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // "Proactive parent mode": pushes straight to whoever's subscribed to
+  // this player's portal the moment they're marked absent — the one
+  // attendance status that's actually actionable for a parent to know
+  // about right away, unlike present/late/excused.
+  async function notifyIfAbsent(playerId: number, playerName: string, session: TrainingSession, status: string) {
+    if (status !== "absent" || !isPushConfigured()) return;
+    try {
+      await notifyPlayer(playerId, {
+        title: "Absence recorded",
+        body: `${playerName} was marked absent for "${session.name}" on ${formatNotifyDate(session.date)}.`,
+      });
+    } catch {
+      // Best-effort — a push failure shouldn't fail the attendance save.
+    }
+  }
+
   app.post("/api/attendance", requireTeam, async (req, res) => {
     try {
       const attendanceData = insertAttendanceSchema.parse(req.body);
@@ -932,6 +971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const attendanceRecord = await storage.markAttendance(attendanceData);
+      await notifyIfAbsent(player.id, player.name, session, attendanceRecord.status);
       res.status(201).json(attendanceRecord);
     } catch (error) {
       res.status(400).json({ message: "Invalid attendance data" });
@@ -947,13 +987,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existing) {
         return res.status(404).json({ message: "Attendance record not found" });
       }
-      const session = await storage.getTrainingSessionById(existing.sessionId, req.session.currentTeamId!);
-      if (!session) {
+      const teamId = req.session.currentTeamId!;
+      const [session, player] = await Promise.all([
+        storage.getTrainingSessionById(existing.sessionId, teamId),
+        storage.getPlayerById(existing.playerId, teamId),
+      ]);
+      if (!session || !player) {
         return res.status(404).json({ message: "Attendance record not found" });
       }
 
       const updateData = insertAttendanceSchema.partial().parse(req.body);
       const attendanceRecord = await storage.updateAttendance(id, updateData);
+      if (attendanceRecord) {
+        await notifyIfAbsent(player.id, player.name, session, attendanceRecord.status);
+      }
 
       res.json(attendanceRecord);
     } catch (error) {
