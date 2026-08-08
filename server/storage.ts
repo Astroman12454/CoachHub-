@@ -48,7 +48,7 @@ import {
   type RecurringPracticeSlot
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
+import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -83,6 +83,13 @@ export interface IStorage {
   createTrainingSession(teamId: number, session: InsertTrainingSession): Promise<TrainingSession>;
   updateTrainingSession(id: number, teamId: number, session: Partial<InsertTrainingSession>): Promise<TrainingSession | undefined>;
   deleteTrainingSession(id: number, teamId: number): Promise<boolean>;
+
+  // Scheduled-notification methods (server/notifications-cron.ts) — global,
+  // not scoped to one team/account, since a cron sweep runs over everyone.
+  getSessionsNeedingReminder(windowStart: Date, windowEnd: Date): Promise<TrainingSession[]>;
+  markSessionReminderSent(id: number): Promise<void>;
+  getTeamsDueForWeeklyDigest(cutoff: Date): Promise<Team[]>;
+  markTeamDigestSent(teamId: number, at: Date): Promise<void>;
 
   // Session template methods (scoped by team)
   getAllSessionTemplates(teamId: number): Promise<SessionTemplate[]>;
@@ -344,6 +351,42 @@ export class DatabaseStorage implements IStorage {
       .delete(trainingSessions)
       .where(and(eq(trainingSessions.id, id), eq(trainingSessions.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // date/time are separate text columns (no timezone stored anywhere in the
+  // schema — see generateSessionsFromSlots for the same convention), so the
+  // window bounds are formatted as naive "YYYY-MM-DD HH:MM:SS" strings and
+  // compared as plain text against date || ' ' || time. windowStart/End are
+  // themselves computed by the caller as if the stored wall-clock time were
+  // UTC, same assumption the rest of the server-side scheduling code makes.
+  async getSessionsNeedingReminder(windowStart: Date, windowEnd: Date): Promise<TrainingSession[]> {
+    const startStr = windowStart.toISOString().slice(0, 19).replace("T", " ");
+    const endStr = windowEnd.toISOString().slice(0, 19).replace("T", " ");
+    return await db
+      .select()
+      .from(trainingSessions)
+      .where(
+        and(
+          sql`(${trainingSessions.date} || ' ' || ${trainingSessions.time}) BETWEEN ${startStr} AND ${endStr}`,
+          isNull(trainingSessions.reminderSentAt),
+          sql`${trainingSessions.status} IS DISTINCT FROM 'cancelled'`,
+        ),
+      );
+  }
+
+  async markSessionReminderSent(id: number): Promise<void> {
+    await db.update(trainingSessions).set({ reminderSentAt: new Date() }).where(eq(trainingSessions.id, id));
+  }
+
+  async getTeamsDueForWeeklyDigest(cutoff: Date): Promise<Team[]> {
+    return await db
+      .select()
+      .from(teams)
+      .where(or(isNull(teams.lastWeeklyDigestAt), lt(teams.lastWeeklyDigestAt, cutoff)));
+  }
+
+  async markTeamDigestSent(teamId: number, at: Date): Promise<void> {
+    await db.update(teams).set({ lastWeeklyDigestAt: at }).where(eq(teams.id, teamId));
   }
 
   async getAllSessionTemplates(teamId: number): Promise<SessionTemplate[]> {

@@ -7,7 +7,9 @@ import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, type SessionPlanContext } from "./ai-session-plan";
-import { isPushConfigured, getVapidPublicKey, sendPushNotifications } from "./push";
+import { isPushConfigured, getVapidPublicKey } from "./push";
+import { notifyTeam, formatNotifyDate } from "./notify";
+import { runNotificationSweep } from "./notifications-cron";
 import { z } from "zod";
 import {
   insertExerciseSchema,
@@ -83,33 +85,6 @@ const notifyRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many notifications sent. Please try again later." },
 });
-
-function formatNotifyDate(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-// Pushes to every subscribed player on the team, deep-linking each one back
-// to their own portal (not a shared URL — every subscriber has a different
-// token), and prunes any subscription the push service reports as
-// permanently gone (see sendPushNotifications).
-async function notifyTeam(teamId: number, payload: { title: string; body: string }): Promise<number> {
-  const subs = await storage.getPushSubscriptionsForTeam(teamId);
-  const targets = subs.map((s) => ({
-    endpoint: s.endpoint,
-    p256dh: s.p256dh,
-    auth: s.auth,
-    url: s.portalToken ? `/portal/${s.portalToken}` : undefined,
-  }));
-  const { sent, expiredEndpoints } = await sendPushNotifications(targets, payload);
-  if (expiredEndpoints.length > 0) {
-    await Promise.all(expiredEndpoints.map((endpoint) => storage.deletePushSubscriptionsByEndpoint(endpoint)));
-  }
-  return sent;
-}
 
 // Parses a route param as a positive integer id, or responds 400 and returns
 // null so callers can bail out instead of querying the DB with NaN.
@@ -1243,6 +1218,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   );
+
+  // Runs the same sweep the in-process scheduler (server/notifications-cron.ts)
+  // already ticks every 15 minutes — this HTTP path exists because Render's
+  // free tier sleeps the whole process after inactivity, and a sleeping
+  // process can't fire its own interval. Point an external pinger (a Render
+  // Cron Job, cron-job.org, a GitHub Actions schedule, ...) at this every 15
+  // min with the CRON_SECRET header for reliable delivery on that plan; on
+  // an always-on deployment it's redundant but harmless (the sweep is
+  // idempotent either way).
+  app.post("/api/cron/notifications", async (req: Request, res: Response) => {
+    const secret = process.env.CRON_SECRET;
+    if (!secret) {
+      return res.status(503).json({ message: "Scheduled notifications aren't configured yet." });
+    }
+    const provided = req.get("x-cron-secret") ?? req.query.secret;
+    if (provided !== secret) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const result = await runNotificationSweep();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Notification sweep failed" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

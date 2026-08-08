@@ -43,6 +43,10 @@ export const teams = pgTable("teams", {
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // Null until the first automatic weekly digest goes out; gates the cron
+  // sweep (server/notifications-cron.ts) so a team gets at most one digest
+  // every 7 days regardless of how often the sweep itself runs.
+  lastWeeklyDigestAt: timestamp("last_weekly_digest_at"),
 });
 
 export const exercises = pgTable("exercises", {
@@ -70,6 +74,10 @@ export const trainingSessions = pgTable("training_sessions", {
   attendanceCount: integer("attendance_count").default(0),
   totalPlayers: integer("total_players").default(18),
   status: text("status").default("scheduled"), // scheduled, in_progress, completed, cancelled
+  // Null until the automatic ~2h-before reminder goes out (see
+  // server/notifications-cron.ts) — the guard that keeps a coach's own
+  // manual "Notify" button and the automatic sweep from double-sending.
+  reminderSentAt: timestamp("reminder_sent_at"),
 });
 
 // A reusable starting point for a new session — everything about a session

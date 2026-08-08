@@ -31,3 +31,39 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     text: `Someone asked to reset the password for this Coach Hub account.\n\nOpen this link to choose a new password (works for 1 hour):\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
   });
 }
+
+export interface WeeklyDigestData {
+  teamName: string;
+  sessionsHeld: number;
+  avgAttendanceRate: number | null;
+  nextSession: { name: string; date: string; time: string } | null;
+  appUrl: string;
+}
+
+// Sent automatically once a week per team (see server/notifications-cron.ts)
+// — the coach never has to ask for this, it just shows up.
+export async function sendWeeklyDigestEmail(to: string, data: WeeklyDigestData): Promise<void> {
+  const attendanceLine = data.avgAttendanceRate !== null
+    ? `${data.avgAttendanceRate}% average attendance`
+    : "no attendance recorded";
+  const sessionsLine = `${data.sessionsHeld} session${data.sessionsHeld === 1 ? "" : "s"} held`;
+  const nextLine = data.nextSession
+    ? `Next up: "${data.nextSession.name}" on ${data.nextSession.date} at ${data.nextSession.time}.`
+    : "Nothing on the calendar yet — plan your next session.";
+
+  await getClient().emails.send({
+    from: FROM_EMAIL!,
+    to,
+    subject: `${data.teamName} — your weekly Coach Hub update`,
+    html: `
+      <p>Here's how <strong>${data.teamName}</strong>'s week went:</p>
+      <ul>
+        <li>${sessionsLine}</li>
+        <li>${attendanceLine}</li>
+      </ul>
+      <p>${nextLine}</p>
+      <p><a href="${data.appUrl}">Open Coach Hub</a></p>
+    `,
+    text: `Here's how ${data.teamName}'s week went:\n\n- ${sessionsLine}\n- ${attendanceLine}\n\n${nextLine}\n\n${data.appUrl}`,
+  });
+}

@@ -3,6 +3,7 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupAuth, requireAuth } from "./auth";
 import { setupStripeWebhook } from "./billing";
+import { startNotificationScheduler } from "./notifications-cron";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
@@ -86,6 +87,7 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  startNotificationScheduler();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

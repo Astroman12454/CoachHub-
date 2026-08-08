@@ -222,7 +222,12 @@ export function setupAuth(app: Express) {
 // parent needing an account of their own — so it's exempted from the
 // blanket session check below. It's the token, not this exemption, that
 // actually scopes access to a single player; see storage.getPortalData.
-const PUBLIC_API_PREFIXES = ["/portal/"];
+//
+// /cron/notifications is exempted for a different reason: it's meant to be
+// hit by an external scheduler (no coach session at all, possibly not even
+// a browser), and is protected by its own CRON_SECRET check inside the
+// route handler instead — see server/routes.ts.
+const PUBLIC_API_PREFIXES = ["/portal/", "/cron/"];
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (PUBLIC_API_PREFIXES.some((prefix) => req.path.startsWith(prefix))) return next();

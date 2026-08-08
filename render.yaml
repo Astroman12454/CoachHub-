@@ -54,10 +54,24 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
-      # "Forgot password" emails (Resend) — optional. Leave unset and the
-      # reset-password request returns a 503 instead of sending an email.
-      # Create an API key at resend.com and verify a sending domain there.
+      # Transactional email (Resend) — optional, used for "forgot password"
+      # and the weekly digest email. Leave unset and reset-password returns
+      # a 503; the digest just skips the email leg. Create an API key at
+      # resend.com and verify a sending domain there.
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
         sync: false
+      # Automatic session reminders + weekly digest — optional, replaces
+      # the manual "Notify" button. This free plan sleeps the whole process
+      # after inactivity, so the in-process scheduler alone isn't reliable;
+      # after setting CRON_SECRET, also add a free external pinger (e.g.
+      # cron-job.org) hitting this service's
+      # POST /api/cron/notifications every ~15 min with header
+      # `x-cron-secret: <CRON_SECRET>`. Leave CRON_SECRET unset and that
+      # endpoint just 503s — the in-process scheduler still runs whenever
+      # the dyno happens to be awake.
+      - key: CRON_SECRET
+        sync: false
+      - key: APP_URL
+        value: https://coach-hub-g99u.onrender.com
