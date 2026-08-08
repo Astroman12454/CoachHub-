@@ -25,6 +25,7 @@ const Games = lazy(() => import("@/pages/Games"));
 const Playbook = lazy(() => import("@/pages/Playbook"));
 const PlayEditor = lazy(() => import("@/pages/PlayEditor"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
+const PhysicalTests = lazy(() => import("@/pages/PhysicalTests"));
 const Players = lazy(() => import("@/pages/Players"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/playbook" component={() => <Layout><Playbook /></Layout>} />
       <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
+      <Route path="/physical-tests" component={() => <Layout><PhysicalTests /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
       <Route path="/players/:id" component={() => <Layout><PlayerProfile /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />

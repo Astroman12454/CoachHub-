@@ -80,6 +80,14 @@ export default async function globalSetup(config: FullConfig) {
     });
   }
 
+  const physicalTestsRes = await page.request.get("/api/physical-tests");
+  const physicalTests = await physicalTestsRes.json();
+  if (physicalTests.length === 0) {
+    await page.request.post("/api/physical-tests", {
+      data: { name: "E2E Sprint Test", unit: "seconds", lowerIsBetter: 1, description: "3 sprints across the court" },
+    });
+  }
+
   await page.context().storageState({ path: AUTH_STATE_PATH });
   await browser.close();
 }

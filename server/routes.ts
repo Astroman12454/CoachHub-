@@ -29,6 +29,8 @@ import {
   insertSessionTemplateSchema,
   insertRecurringPracticeSlotSchema,
   generateSessionsFromSlotsSchema,
+  insertPhysicalTestSchema,
+  recordPhysicalTestResultsSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -286,6 +288,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete exercise" });
+    }
+  });
+
+  // Physical test routes — templates scoped by account, shared across that
+  // account's teams (and, for a Club coach, across the whole club — see
+  // resolveEffectiveAccountId), same as exercises. No plan gate: physical
+  // testing is a player-evaluation tool like skill ratings, available on
+  // every plan.
+  app.get("/api/physical-tests", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const tests = await storage.getAllPhysicalTests(accountId);
+      res.json(tests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch physical tests" });
+    }
+  });
+
+  app.post("/api/physical-tests", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const testData = insertPhysicalTestSchema.parse(req.body);
+      const test = await storage.createPhysicalTest(accountId, testData);
+      res.status(201).json(test);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid physical test data" });
+    }
+  });
+
+  app.put("/api/physical-tests/:id", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const id = parseId(req, res);
+      if (id === null) return;
+      const updateData = insertPhysicalTestSchema.partial().parse(req.body);
+      const test = await storage.updatePhysicalTest(id, accountId, updateData);
+
+      if (!test) {
+        return res.status(404).json({ message: "Physical test not found" });
+      }
+
+      res.json(test);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid physical test data" });
+    }
+  });
+
+  app.delete("/api/physical-tests/:id", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const id = parseId(req, res);
+      if (id === null) return;
+      const deleted = await storage.deletePhysicalTest(id, accountId);
+
+      if (!deleted) {
+        return res.status(404).json({ message: "Physical test not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete physical test" });
+    }
+  });
+
+  // A whole active roster's results for one test, recorded in a single
+  // batch (the way a coach actually runs a fitness test — one session,
+  // everyone in turn) rather than one request per player.
+  app.post("/api/physical-tests/:id/results", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const test = await storage.getPhysicalTestById(id, accountId);
+      if (!test) {
+        return res.status(404).json({ message: "Physical test not found" });
+      }
+
+      const { date, results } = recordPhysicalTestResultsSchema.parse(req.body);
+      const teamPlayers = await storage.getAllPlayers(req.session.currentTeamId!);
+      const teamPlayerIds = new Set(teamPlayers.map((p) => p.id));
+      const invalidPlayerId = results.find((r) => !teamPlayerIds.has(r.playerId));
+      if (invalidPlayerId) {
+        return res.status(400).json({ message: "One or more players don't belong to the current team." });
+      }
+
+      const saved = await storage.recordPhysicalTestResults(id, date, results);
+      res.status(201).json(saved);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid physical test results" });
+    }
+  });
+
+  // Prefills the bulk-entry form with each player's most recent result for
+  // this test, so re-testing the roster doesn't start from a blank table.
+  app.get("/api/physical-tests/:id/latest", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const latest = await storage.getLatestPhysicalTestResultsForTeam(id, req.session.currentTeamId!);
+      res.json(latest);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest results" });
+    }
+  });
+
+  app.get("/api/players/:id/physical-test-results", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const history = await storage.getPhysicalTestResultsForPlayer(id);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch physical test results" });
     }
   });
 

@@ -18,6 +18,8 @@ import {
   recurringPracticeSlots,
   accountInvites,
   accountMemberships,
+  physicalTests,
+  physicalTestResults,
   type Account,
   type Team,
   type Exercise,
@@ -52,6 +54,10 @@ import {
   type AccountInvite,
   type AccountMembership,
   type CoachMember,
+  type PhysicalTest,
+  type InsertPhysicalTest,
+  type PhysicalTestResult,
+  type PlayerPhysicalTestHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
@@ -98,6 +104,18 @@ export interface IStorage {
   createExercise(accountId: number, exercise: InsertExercise): Promise<Exercise>;
   updateExercise(id: number, accountId: number, exercise: Partial<InsertExercise>): Promise<Exercise | undefined>;
   deleteExercise(id: number, accountId: number): Promise<boolean>;
+
+  // Physical test methods — the templates are scoped by account (shared
+  // across that account's teams, same as exercises); results are recorded
+  // in bulk (a whole roster in one sitting) and read back per player.
+  getAllPhysicalTests(accountId: number): Promise<PhysicalTest[]>;
+  getPhysicalTestById(id: number, accountId: number): Promise<PhysicalTest | undefined>;
+  createPhysicalTest(accountId: number, test: InsertPhysicalTest): Promise<PhysicalTest>;
+  updatePhysicalTest(id: number, accountId: number, test: Partial<InsertPhysicalTest>): Promise<PhysicalTest | undefined>;
+  deletePhysicalTest(id: number, accountId: number): Promise<boolean>;
+  recordPhysicalTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<PhysicalTestResult[]>;
+  getLatestPhysicalTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>>;
+  getPhysicalTestResultsForPlayer(playerId: number): Promise<PlayerPhysicalTestHistory[]>;
 
   // Training Session methods (scoped by team)
   getAllTrainingSessions(teamId: number): Promise<TrainingSession[]>;
@@ -388,6 +406,94 @@ export class DatabaseStorage implements IStorage {
       .delete(exercises)
       .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Physical test methods
+  async getAllPhysicalTests(accountId: number): Promise<PhysicalTest[]> {
+    return await db.select().from(physicalTests).where(eq(physicalTests.accountId, accountId));
+  }
+
+  async getPhysicalTestById(id: number, accountId: number): Promise<PhysicalTest | undefined> {
+    const [test] = await db
+      .select()
+      .from(physicalTests)
+      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)));
+    return test || undefined;
+  }
+
+  async createPhysicalTest(accountId: number, insertTest: InsertPhysicalTest): Promise<PhysicalTest> {
+    const [test] = await db
+      .insert(physicalTests)
+      .values({ ...insertTest, accountId, description: insertTest.description || null })
+      .returning();
+    return test;
+  }
+
+  async updatePhysicalTest(id: number, accountId: number, updateData: Partial<InsertPhysicalTest>): Promise<PhysicalTest | undefined> {
+    const [test] = await db
+      .update(physicalTests)
+      .set(updateData)
+      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)))
+      .returning();
+    return test || undefined;
+  }
+
+  async deletePhysicalTest(id: number, accountId: number): Promise<boolean> {
+    const result = await db
+      .delete(physicalTests)
+      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async recordPhysicalTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<PhysicalTestResult[]> {
+    return await db
+      .insert(physicalTestResults)
+      .values(results.map((r) => ({ testId, playerId: r.playerId, value: r.value, date })))
+      .returning();
+  }
+
+  async getLatestPhysicalTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>> {
+    const rows = await db
+      .select({ playerId: physicalTestResults.playerId, value: physicalTestResults.value, date: physicalTestResults.date })
+      .from(physicalTestResults)
+      .innerJoin(players, eq(physicalTestResults.playerId, players.id))
+      .where(and(eq(physicalTestResults.testId, testId), eq(players.teamId, teamId)))
+      .orderBy(desc(physicalTestResults.date), desc(physicalTestResults.createdAt));
+
+    // Rows are newest-first, so the first time a player is seen is their
+    // latest result — same reduction as getCurrentSkillRatingsForTeam.
+    const latest: Record<number, { value: number; date: string }> = {};
+    for (const row of rows) {
+      if (!(row.playerId in latest)) latest[row.playerId] = { value: row.value, date: row.date };
+    }
+    return latest;
+  }
+
+  async getPhysicalTestResultsForPlayer(playerId: number): Promise<PlayerPhysicalTestHistory[]> {
+    const rows = await db
+      .select({
+        testId: physicalTests.id,
+        testName: physicalTests.name,
+        unit: physicalTests.unit,
+        lowerIsBetter: physicalTests.lowerIsBetter,
+        value: physicalTestResults.value,
+        date: physicalTestResults.date,
+      })
+      .from(physicalTestResults)
+      .innerJoin(physicalTests, eq(physicalTestResults.testId, physicalTests.id))
+      .where(eq(physicalTestResults.playerId, playerId))
+      .orderBy(desc(physicalTestResults.date), desc(physicalTestResults.createdAt));
+
+    const byTest = new Map<number, PlayerPhysicalTestHistory>();
+    for (const row of rows) {
+      let group = byTest.get(row.testId);
+      if (!group) {
+        group = { testId: row.testId, testName: row.testName, unit: row.unit, lowerIsBetter: row.lowerIsBetter === 1, results: [] };
+        byTest.set(row.testId, group);
+      }
+      group.results.push({ value: row.value, date: row.date });
+    }
+    return Array.from(byTest.values());
   }
 
   // Training Session methods

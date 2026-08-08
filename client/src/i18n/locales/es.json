@@ -39,6 +39,7 @@
     "games": "Partidos",
     "playbook": "Jugadas",
     "exerciseLibrary": "Biblioteca de Ejercicios",
+    "physicalTests": "Pruebas Físicas",
     "players": "Jugadores",
     "coaches": "Entrenadores"
   },
@@ -350,6 +351,8 @@
     "couldntDeleteInjury": "No se pudo eliminar la lesión",
     "deleteInjuryConfirmTitle": "¿Eliminar este registro de lesión?",
     "deleteInjuryConfirmDescription": "Esto no se puede deshacer.",
+    "physicalTests": "Pruebas Físicas",
+    "noPhysicalTestsYet": "Todavía no hay resultados de pruebas físicas — registralos desde la página de Pruebas Físicas.",
     "drillStats": "Estadísticas de Ejercicios",
     "noDrillStatsYet": "Aún no hay ejercicios registrados — registra intentos desde la pantalla de asistencia de una sesión.",
     "shotChartFor": "Mapa de tiros de {{drillName}}"
@@ -608,6 +611,51 @@
   "exerciseCard": {
     "editName": "Editar {{name}}",
     "deleteName": "Eliminar {{name}}"
+  },
+  "physicalTests": {
+    "subtitle": "Definí pruebas físicas y seguí los resultados de cada jugador en el tiempo",
+    "searchPlaceholder": "Buscar pruebas...",
+    "addTest": "Agregar Prueba",
+    "recordResults": "Registrar Resultados",
+    "editTestFor": "Editar {{name}}",
+    "deleteTestFor": "Eliminar {{name}}",
+    "emptyTitle": "Todavía No Hay Pruebas Físicas",
+    "emptyFilterDescription": "Ninguna prueba coincide con tu búsqueda.",
+    "emptyDescription": "Creá una prueba (como un sprint cronometrado o un salto) para empezar a seguir la condición física de tu plantel.",
+    "addFirstTest": "Agregar Primera Prueba",
+    "failedToDelete": "No se pudo eliminar la prueba",
+    "deletedToast": "\"{{name}}\" eliminada.",
+    "deleteConfirmTitle": "¿Eliminar esta prueba?",
+    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\" y todos los resultados registrados para ella. No se puede deshacer."
+  },
+  "physicalTestForm": {
+    "editTest": "Editar Prueba Física",
+    "createNewTest": "Crear Nueva Prueba Física",
+    "dialogDescription": "Definí el nombre de la prueba, la unidad de medida, y si un resultado menor o mayor es mejor.",
+    "testName": "Nombre de la Prueba",
+    "testNamePlaceholder": "ej., Sprint 3x Cancha",
+    "unit": "Unidad",
+    "unitPlaceholder": "ej., segundos, repeticiones, metros",
+    "descriptionOptional": "Descripción (Opcional)",
+    "descriptionPlaceholder": "Cómo administrar esta prueba...",
+    "lowerIsBetter": "Menor es mejor",
+    "lowerIsBetterDescription": "Activá esto para pruebas cronometradas (gana el tiempo más rápido). Dejalo apagado para repeticiones o distancia (más es mejor).",
+    "createTest": "Crear Prueba",
+    "updatedSuccessfully": "Prueba actualizada correctamente",
+    "createdSuccessfully": "Prueba creada correctamente",
+    "failedToUpdate": "No se pudo actualizar la prueba",
+    "failedToCreate": "No se pudo crear la prueba"
+  },
+  "recordTestResultsDialog": {
+    "title": "Registrar Resultados — {{name}}",
+    "description": "Ingresá el resultado de cada jugador activo en {{unit}}. Dejá un jugador en blanco para omitirlo.",
+    "date": "Fecha",
+    "noActivePlayers": "Todavía no hay jugadores activos en este equipo.",
+    "filledCount": "{{count}}/{{total}} cargados",
+    "save": "Guardar Resultados",
+    "savedTitle": "Resultados guardados",
+    "savedDescription": "Se registraron los resultados del equipo.",
+    "couldntSave": "No se pudieron guardar los resultados"
   },
   "schedule": {
     "failedToUpdateAttendance": "No se pudo actualizar la asistencia",

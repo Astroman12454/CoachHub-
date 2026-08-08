@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -20,9 +20,16 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
 import { SKILL_CATEGORIES } from "@shared/schema";
-import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt } from "@shared/schema";
+import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerPhysicalTestHistory } from "@shared/schema";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+
+// Plain "YYYY-MM-DD" dates (no time/zone info) need a forced local-midnight
+// parse — `new Date("2026-08-08")` parses as UTC midnight, which
+// `toLocaleDateString` can then roll back a day in timezones behind UTC.
+function formatPlainDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
 
 // `createdAt`/`ratedAt` are typed Date in the DB schema, but arrive over the
 // wire as ISO strings once JSON-serialized — accepting both here means
@@ -88,6 +95,11 @@ export default function PlayerProfile() {
     queryKey: [`/api/players/${playerId}/drill-attempts`],
     enabled: !isNaN(playerId),
   });
+  const { data: physicalTestHistory = [] } = useQuery<PlayerPhysicalTestHistory[]>({
+    queryKey: [`/api/players/${playerId}/physical-test-results`],
+    enabled: !isNaN(playerId),
+  });
+
   const [expandedDrill, setExpandedDrill] = useState<string | null>(null);
   const drillSummary = useMemo(() => {
     const byDrill = new Map<string, { made: number; total: number; shots: { id: number; x: number; y: number; made: number }[] }>();
@@ -404,6 +416,45 @@ export default function PlayerProfile() {
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">{t("playerProfile.noInjuriesYet")}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("playerProfile.physicalTests")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {physicalTestHistory.length > 0 ? (
+              <ul className="space-y-2.5">
+                {physicalTestHistory.map((test) => {
+                  const latest = test.results[0];
+                  const previous = test.results[1];
+                  const delta = previous ? latest.value - previous.value : null;
+                  const improved = delta !== null && delta !== 0 ? (test.lowerIsBetter ? delta < 0 : delta > 0) : null;
+                  return (
+                    <li key={test.testId} className="flex items-center justify-between gap-3 text-sm border-t border-border pt-2.5 first:border-0 first:pt-0">
+                      <div className="min-w-0">
+                        <span className="font-medium text-foreground truncate">{test.testName}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{formatPlainDate(latest.date)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
+                        <span className="font-semibold text-foreground">{latest.value} {test.unit}</span>
+                        {delta !== null && delta !== 0 && (
+                          <span className={improved ? "text-success" : "text-red-600"}>
+                            {delta > 0 ? "+" : ""}{delta.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("playerProfile.noPhysicalTestsYet")}</p>
             )}
           </CardContent>
         </Card>

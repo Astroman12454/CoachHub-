@@ -224,6 +224,53 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("physical tests", async ({ page }) => {
+    await login(page);
+    await page.goto("/physical-tests");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Sprint Test");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("physical tests — create test form open", async ({ page }) => {
+    await login(page);
+    await page.goto("/physical-tests");
+    await page.click('button:has-text("Add Test")');
+    await page.waitForSelector("text=Create New Physical Test");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("physical tests — record results dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/physical-tests");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Record Results")');
+    await page.waitForSelector("text=Record Results — E2E Sprint Test");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("player profile — physical test recorded", async ({ page }) => {
+    await login(page);
+    await page.goto("/physical-tests");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Record Results")');
+    await page.waitForSelector("text=Record Results — E2E Sprint Test");
+    await page.getByLabel("E2E Test Player", { exact: true }).fill("9.8");
+    await page.click('button:has-text("Save Results")');
+    await page.waitForSelector("text=Results saved");
+
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('[role="button"][aria-label="View E2E Test Player\'s profile"]').click();
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Sprint Test");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("players", async ({ page }) => {
     await login(page);
     await page.goto("/players");

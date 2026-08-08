@@ -198,6 +198,34 @@ export const skillRatings = pgTable("skill_ratings", {
   ratedAt: timestamp("rated_at").defaultNow(),
 });
 
+// A reusable physical-test template ("Sprint 3x court", measured in seconds)
+// — scoped by accountId like exercises, so a coach defines it once and runs
+// it with any of their teams. lowerIsBetter distinguishes timed tests (lower
+// is the better result) from rep/distance tests (higher is better), so the
+// UI can rank and trend results correctly without guessing from the unit.
+export const physicalTests = pgTable("physical_tests", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  unit: text("unit").notNull(), // free text, e.g. "seconds", "reps", "meters"
+  lowerIsBetter: integer("lower_is_better").notNull().default(0), // 1 for timed tests, 0 for reps/distance
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// One player's result on one occasion a test was run — recorded in bulk
+// (the whole active roster at once, see POST /api/physical-tests/:id/results)
+// rather than one at a time like skill ratings, since a coach typically runs
+// a fitness test as a single team-wide session.
+export const physicalTestResults = pgTable("physical_test_results", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  value: real("value").notNull(),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const playerNotes = pgTable("player_notes", {
   id: serial("id").primaryKey(),
   playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
@@ -411,6 +439,28 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
   difficulty: z.enum(DIFFICULTY_LEVELS),
 });
 
+export const insertPhysicalTestSchema = createInsertSchema(physicalTests).omit({
+  id: true,
+  accountId: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Test name is required"),
+  unit: z.string().min(1, "Unit is required").max(20, "Unit is too long"),
+  lowerIsBetter: z.union([z.literal(0), z.literal(1)]),
+  description: z.string().max(500).nullable().optional(),
+});
+
+// What a coach submits after running one test with the whole active roster
+// in one sitting — a single date plus one value per player, inserted as a
+// batch instead of one request per player.
+export const recordPhysicalTestResultsSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  results: z.array(z.object({
+    playerId: z.number().int(),
+    value: z.number(),
+  })).min(1, "At least one result is required"),
+});
+
 export const insertTrainingSessionSchema = createInsertSchema(trainingSessions).omit({
   id: true,
   teamId: true,
@@ -530,6 +580,21 @@ export interface CoachMember {
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type Exercise = typeof exercises.$inferSelect;
+
+export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;
+export type PhysicalTest = typeof physicalTests.$inferSelect;
+export type PhysicalTestResult = typeof physicalTestResults.$inferSelect;
+export type RecordPhysicalTestResults = z.infer<typeof recordPhysicalTestResultsSchema>;
+
+// One player's full history for one test template, newest-first — the
+// shape returned by GET /api/players/:id/physical-test-results.
+export interface PlayerPhysicalTestHistory {
+  testId: number;
+  testName: string;
+  unit: string;
+  lowerIsBetter: boolean;
+  results: { value: number; date: string }[];
+}
 
 export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
 export type TrainingSession = typeof trainingSessions.$inferSelect;

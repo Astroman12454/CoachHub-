@@ -39,6 +39,7 @@
     "games": "Games",
     "playbook": "Playbook",
     "exerciseLibrary": "Exercise Library",
+    "physicalTests": "Physical Tests",
     "players": "Players",
     "coaches": "Coaches"
   },
@@ -350,6 +351,8 @@
     "couldntDeleteInjury": "Couldn't delete injury",
     "deleteInjuryConfirmTitle": "Delete this injury record?",
     "deleteInjuryConfirmDescription": "This can't be undone.",
+    "physicalTests": "Physical Tests",
+    "noPhysicalTestsYet": "No physical test results yet — record them from the Physical Tests page.",
     "drillStats": "Drill Stats",
     "noDrillStatsYet": "No drills logged yet — track attempts from a session's attendance screen.",
     "shotChartFor": "Shot chart for {{drillName}}"
@@ -608,6 +611,51 @@
   "exerciseCard": {
     "editName": "Edit {{name}}",
     "deleteName": "Delete {{name}}"
+  },
+  "physicalTests": {
+    "subtitle": "Define fitness tests and track every player's results over time",
+    "searchPlaceholder": "Search tests...",
+    "addTest": "Add Test",
+    "recordResults": "Record Results",
+    "editTestFor": "Edit {{name}}",
+    "deleteTestFor": "Delete {{name}}",
+    "emptyTitle": "No Physical Tests Yet",
+    "emptyFilterDescription": "No tests match your search.",
+    "emptyDescription": "Create a test (like a timed sprint or a jump) to start tracking your roster's fitness.",
+    "addFirstTest": "Add First Test",
+    "failedToDelete": "Failed to delete test",
+    "deletedToast": "\"{{name}}\" deleted.",
+    "deleteConfirmTitle": "Delete this test?",
+    "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and every recorded result for it. This can't be undone."
+  },
+  "physicalTestForm": {
+    "editTest": "Edit Physical Test",
+    "createNewTest": "Create New Physical Test",
+    "dialogDescription": "Set the test's name, unit of measurement, and whether a lower or higher result is better.",
+    "testName": "Test Name",
+    "testNamePlaceholder": "e.g., Sprint 3x Court",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g., seconds, reps, meters",
+    "descriptionOptional": "Description (Optional)",
+    "descriptionPlaceholder": "How to administer this test...",
+    "lowerIsBetter": "Lower is better",
+    "lowerIsBetterDescription": "Turn on for timed tests (a faster time wins). Leave off for reps or distance (more is better).",
+    "createTest": "Create Test",
+    "updatedSuccessfully": "Test updated successfully",
+    "createdSuccessfully": "Test created successfully",
+    "failedToUpdate": "Failed to update test",
+    "failedToCreate": "Failed to create test"
+  },
+  "recordTestResultsDialog": {
+    "title": "Record Results — {{name}}",
+    "description": "Enter each active player's result in {{unit}}. Leave a player blank to skip them.",
+    "date": "Date",
+    "noActivePlayers": "No active players on this team yet.",
+    "filledCount": "{{count}}/{{total}} entered",
+    "save": "Save Results",
+    "savedTitle": "Results saved",
+    "savedDescription": "The team's results were recorded.",
+    "couldntSave": "Couldn't save results"
   },
   "schedule": {
     "failedToUpdateAttendance": "Failed to update attendance",
