@@ -235,8 +235,8 @@ export default function Players() {
           />
         ) : (
           <div className="space-y-6">
-            {Object.entries(playersByPosition).map(([position, positionPlayers]) => (
-              <Card key={position}>
+            {Object.entries(playersByPosition).map(([position, positionPlayers], groupIndex) => (
+              <Card key={position} className="fade-in" style={{ animationDelay: `${Math.min(groupIndex, 6) * 60}ms` }}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>{position}</span>
@@ -248,7 +248,7 @@ export default function Players() {
                     {positionPlayers.map((player) => (
                       <div
                         key={player.id}
-                        className="border border-border rounded-lg p-4 hover:border-basketball-orange hover:shadow-sm transition-all"
+                        className="border border-border rounded-lg p-4 hover:border-basketball-orange hover:shadow-md hover:-translate-y-0.5 transition-all"
                       >
                         {/* Only the summary (name/badge/position) is the
                             clickable region — the action buttons below are
@@ -265,27 +265,32 @@ export default function Players() {
                               setLocation(`/players/${player.id}`);
                             }
                           }}
-                          className="cursor-pointer mb-2"
+                          className="cursor-pointer mb-2 flex items-start gap-3"
                           aria-label={t("players.viewProfile", { name: player.name })}
                         >
-                          <div className="flex items-center justify-between mb-2 gap-2">
-                            <h3 className="font-display font-semibold uppercase tracking-tight text-foreground">{player.name}</h3>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {injuredPlayerIds.has(player.id) && (
-                                <Badge variant="destructive" className="gap-1">
-                                  <HeartPulse className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
-                                  {t("playerProfile.injured")}
-                                </Badge>
-                              )}
-                              <Badge
-                                variant={player.isActive === 1 ? "default" : "secondary"}
-                                className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
-                              >
-                                {player.isActive === 1 ? t("players.active") : t("players.inactive")}
-                              </Badge>
-                            </div>
+                          <div className="w-10 h-10 flex-shrink-0 rounded-full bg-muted flex items-center justify-center font-display font-semibold text-foreground text-sm">
+                            {player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">{player.position}</p>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between mb-1 gap-2">
+                              <h3 className="font-display font-semibold uppercase tracking-tight text-foreground truncate">{player.name}</h3>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {injuredPlayerIds.has(player.id) && (
+                                  <Badge variant="destructive" className="gap-1">
+                                    <HeartPulse className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                                    {t("playerProfile.injured")}
+                                  </Badge>
+                                )}
+                                <Badge
+                                  variant={player.isActive === 1 ? "default" : "secondary"}
+                                  className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
+                                >
+                                  {player.isActive === 1 ? t("players.active") : t("players.inactive")}
+                                </Badge>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{player.position}</p>
+                          </div>
                         </div>
                         <div className="flex items-center justify-end gap-1.5">
                           <Button

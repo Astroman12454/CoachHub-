@@ -8,6 +8,7 @@ import { registerBillingRoutes } from "./billing";
 import { registerCoachRoutes } from "./coaches";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, type SessionPlanContext } from "./ai-session-plan";
+import { parseCommand } from "./ai-command";
 import { isPushConfigured, getVapidPublicKey } from "./push";
 import { notifyTeam, notifyPlayer, formatNotifyDate } from "./notify";
 import { runNotificationSweep } from "./notifications-cron";
@@ -499,6 +500,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(plan);
     } catch (error) {
       res.status(502).json({ message: "Couldn't generate a plan right now. Try again, or build the session by hand." });
+    }
+  });
+
+  const parseCommandSchema = z.object({
+    text: z.string().min(1).max(300),
+  });
+
+  // Natural-language shortcut for the two safest, most common scheduling
+  // requests (create a session, repeat a past one) — never saves anything
+  // itself. The client uses the parsed result to prefill SessionModal, so
+  // "create a session tomorrow at 6" still ends with the coach reviewing
+  // and hitting Save, same as building it by hand.
+  app.post("/api/ai/parse-command", requireTeam, sessionPlanRateLimiter, async (req, res) => {
+    const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+    const account = await storage.getAccountById(accountId);
+    if (!canGenerateAiSessionPlan(account?.plan ?? "free")) {
+      return res.status(403).json({ message: "Upgrade to a paid plan to use natural-language commands." });
+    }
+
+    const parseResult = parseCommandSchema.safeParse(req.body ?? {});
+    if (!parseResult.success) {
+      return res.status(400).json({ message: "Invalid request." });
+    }
+
+    if (!isAIConfigured()) {
+      return res.status(503).json({ message: "Natural-language commands aren't configured yet." });
+    }
+
+    const teamId = req.session.currentTeamId!;
+    const recentSessions = (await storage.getAllTrainingSessions(teamId))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    try {
+      const todayISO = new Date().toISOString().split("T")[0];
+      const result = await parseCommand(parseResult.data.text, todayISO, recentSessions);
+      res.json(result);
+    } catch (error) {
+      res.status(502).json({ message: "Couldn't understand that right now. Try again, or use the normal form." });
     }
   });
 

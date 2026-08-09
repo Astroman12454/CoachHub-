@@ -167,6 +167,14 @@
       "createSession": "Programar sesión"
     }
   },
+  "commandBar": {
+    "placeholder": "Prueba \"crea un entrenamiento mañana a las 18:00\" o \"repite el entrenamiento del martes\"",
+    "submit": "Ejecutar comando",
+    "freePlan": "Plan gratis",
+    "upgradeToUse": "Mejora a un plan de pago para usar comandos en lenguaje natural.",
+    "couldntUnderstand": "No entendí eso",
+    "tryRephrasing": "Prueba a reformularlo, o usa el formulario normal."
+  },
   "insights": {
     "thinCategory": {
       "title": "Pocos Ejercicios de {{category}}",

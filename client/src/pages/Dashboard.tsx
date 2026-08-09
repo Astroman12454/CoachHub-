@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
+import CommandBar from "@/components/CommandBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import TodayHero from "@/components/TodayHero";
@@ -24,6 +25,8 @@ export default function Dashboard() {
   const { teams, currentTeamId } = useAuth();
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [sessionPrefill, setSessionPrefill] = useState<{ name?: string | null; date?: string; time?: string | null; duration?: number | null } | null>(null);
+  const [duplicateFromSession, setDuplicateFromSession] = useState<TrainingSession | null>(null);
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ['/api/stats'],
@@ -98,6 +101,12 @@ export default function Dashboard() {
     navigateToPage('/exercise-library');
   };
 
+  const closeSessionModal = () => {
+    setIsSessionModalOpen(false);
+    setSessionPrefill(null);
+    setDuplicateFromSession(null);
+  };
+
   if (statsLoading || sessionsLoading || exercisesLoading) {
     return (
       <div className="flex flex-col h-full">
@@ -150,6 +159,14 @@ export default function Dashboard() {
           onCreateSession={() => setIsSessionModalOpen(true)}
         />
 
+        <div className="mb-5">
+          <CommandBar
+            sessions={sessions}
+            onCreateSession={(prefill) => { setSessionPrefill(prefill); setIsSessionModalOpen(true); }}
+            onDuplicateSession={(source, date) => setDuplicateFromSession({ ...source, date })}
+          />
+        </div>
+
         <DashboardStatsGrid stats={stats} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -180,10 +197,12 @@ export default function Dashboard() {
           onBrowseLibrary={() => navigateToPage('/exercise-library')}
         />
 
-        {isSessionModalOpen && (
+        {(isSessionModalOpen || duplicateFromSession) && (
           <SessionModal
-            isOpen={isSessionModalOpen}
-            onClose={() => setIsSessionModalOpen(false)}
+            isOpen={isSessionModalOpen || !!duplicateFromSession}
+            onClose={closeSessionModal}
+            duplicateFrom={duplicateFromSession}
+            prefill={sessionPrefill ?? undefined}
           />
         )}
 

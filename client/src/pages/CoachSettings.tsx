@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CLUB_PLAN_SEAT_LIMIT } from "@shared/schema";
@@ -80,7 +81,7 @@ export default function CoachSettings() {
     <div className="flex flex-col h-full">
       <TopBar title={t("coachSettings.title")} subtitle={t("coachSettings.subtitle")} />
 
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-2xl">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-2xl fade-in">
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -142,7 +143,10 @@ export default function CoachSettings() {
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
             ) : data && data.members.length > 0 ? (
               data.members.map((member) => (
                 <div key={member.memberAccountId} className="flex items-center justify-between gap-2 border border-border rounded-lg p-3">

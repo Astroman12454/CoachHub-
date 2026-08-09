@@ -42,9 +42,15 @@ interface SessionModalProps {
    * duration, notes) is copied over, but this still creates a brand-new
    * session (POST, not PUT): `session` stays unset, so `isEditing` is false. */
   duplicateFrom?: TrainingSession | null;
+  /** Partial field values from a parsed natural-language command (e.g. "Crea
+   * un entrenamiento mañana a las 18:00") — a lighter touch than
+   * `duplicateFrom`: only the fields the coach's request actually mentioned,
+   * the rest keep their normal from-scratch defaults. Only applies when not
+   * editing or duplicating. */
+  prefill?: { name?: string | null; date?: string; time?: string | null; duration?: number | null };
 }
 
-export default function SessionModal({ isOpen, onClose, session, duplicateFrom }: SessionModalProps) {
+export default function SessionModal({ isOpen, onClose, session, duplicateFrom, prefill }: SessionModalProps) {
   const { t } = useTranslation();
   const isEditing = !!session;
   const isDuplicating = !isEditing && !!duplicateFrom;
@@ -152,10 +158,10 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom }
   const form = useForm<SessionFormData>({
     resolver: zodResolver(insertTrainingSessionSchema),
     defaultValues: {
-      name: source?.name ?? "",
-      date: source?.date ?? "",
-      time: source?.time ?? "",
-      duration: source?.duration ?? mostRecentDuration,
+      name: source?.name ?? prefill?.name ?? "",
+      date: source?.date ?? prefill?.date ?? "",
+      time: source?.time ?? prefill?.time ?? "",
+      duration: source?.duration ?? prefill?.duration ?? mostRecentDuration,
       exerciseIds: source?.exerciseIds ?? [],
       playIds: source?.playIds ?? [],
       notes: source?.notes ?? "",

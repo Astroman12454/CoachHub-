@@ -229,6 +229,9 @@ export default function PlayerProfile() {
           <Button variant="ghost" size="icon" onClick={() => setLocation("/players")} aria-label={t("playerProfile.backToPlayers")}>
             <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
+          <div className="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0 rounded-full bg-basketball-orange/10 border-2 border-basketball-orange/20 flex items-center justify-center font-display font-bold text-basketball-orange text-lg">
+            {player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">
@@ -271,7 +274,7 @@ export default function PlayerProfile() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 fade-in">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label={t("playerProfile.attendanceRate")} value={`${attendanceStats?.rate ?? 0}%`} icon={CheckCircle2} color="success" />
           <StatCard label={t("playerProfile.gamesPlayed")} value={gameStats?.gamesPlayed ?? 0} icon={TrendingUp} color="court" />

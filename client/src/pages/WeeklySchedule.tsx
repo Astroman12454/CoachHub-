@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import { useSessionAttendance } from "@/hooks/use-session-attendance";
+import { cn } from "@/lib/utils";
 import type { TrainingSession, Player, PlayerInjury } from "@shared/schema";
 
 const DAYS_OF_WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
@@ -180,7 +181,8 @@ export default function WeeklySchedule() {
             return (
               <Card
                 key={index}
-                className={isToday ? 'ring-2 ring-basketball-orange' : ''}
+                className={cn("fade-in", isToday && "ring-2 ring-basketball-orange")}
+                style={{ animationDelay: `${index * 40}ms` }}
               >
                 <CardHeader className="pb-3 border-b border-border">
                   <div className="text-center">

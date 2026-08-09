@@ -167,6 +167,14 @@
       "createSession": "Schedule a session"
     }
   },
+  "commandBar": {
+    "placeholder": "Try \"create a session tomorrow at 6pm\" or \"repeat Tuesday's practice\"",
+    "submit": "Run command",
+    "freePlan": "Free plan",
+    "upgradeToUse": "Upgrade to a paid plan to use natural-language commands.",
+    "couldntUnderstand": "Couldn't understand that",
+    "tryRephrasing": "Try rephrasing it, or use the normal form."
+  },
   "insights": {
     "thinCategory": {
       "title": "Light on {{category}} Drills",
