@@ -96,8 +96,8 @@ export default function PhysicalTests() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTests.map((test) => (
-              <Card key={test.id}>
+            {filteredTests.map((test, index) => (
+              <Card key={test.id} className="fade-in" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
                 <CardHeader>
                   <CardTitle className="flex items-start justify-between gap-2">
                     <span className="truncate">{test.name}</span>

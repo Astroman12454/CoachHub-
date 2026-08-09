@@ -253,6 +253,22 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training mode — sound toggle", async ({ page }) => {
+    await login(page);
+    const sessionsRes = await page.request.get("/api/training-sessions");
+    const sessions = await sessionsRes.json();
+    const today = new Date().toISOString().split("T")[0];
+    const todaySession = sessions.find((s: { date: string }) => s.date === today);
+    if (!todaySession) test.skip(true, "no session today to open in training mode");
+    await page.goto(`/training-sessions/${todaySession.id}/live`);
+    await page.waitForLoadState("networkidle");
+    const toggle = page.locator('button[aria-label="Unmute sound"], button[aria-label="Mute sound"]');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("exercise library", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");
@@ -647,5 +663,33 @@ test.describe("accessibility (axe)", () => {
     await page.waitForTimeout(200);
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  // Dialog/AlertDialog render as a bottom sheet below the sm breakpoint
+  // (see ui/dialog.tsx, ui/alert-dialog.tsx) — checked at a phone-sized
+  // viewport since the rest of this suite runs at desktop width and would
+  // never exercise that layout.
+  test.describe("mobile viewport", () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    test("training sessions — create session as a bottom sheet", async ({ page }) => {
+      await login(page);
+      await page.goto("/training-sessions");
+      await page.waitForLoadState("networkidle");
+      await page.click('button:has-text("New Session")');
+      await page.waitForSelector("text=Create Training Session");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
+
+    test("training sessions — delete confirm as a bottom sheet", async ({ page }) => {
+      await login(page);
+      await page.goto("/training-sessions");
+      await page.waitForLoadState("networkidle");
+      await page.locator('button[aria-label^="Delete"]').first().click();
+      await page.waitForSelector("text=Delete training session?");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
   });
 });

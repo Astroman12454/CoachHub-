@@ -765,7 +765,9 @@
     "couldntUpdate": "No se pudo actualizar la sesión",
     "noExercises": "Esta sesión todavía no tiene ejercicios",
     "noExercisesHint": "Añade ejercicios a la sesión para poder ejecutarla en modo entrenamiento.",
-    "playsToday": "Jugadas a practicar hoy"
+    "playsToday": "Jugadas a practicar hoy",
+    "muteSound": "Silenciar sonido",
+    "unmuteSound": "Activar sonido"
   },
   "drillTracker": {
     "drillName": "Ejercicio",

@@ -765,7 +765,9 @@
     "couldntUpdate": "Couldn't update the session",
     "noExercises": "This session has no exercises yet",
     "noExercisesHint": "Add exercises to the session to run it in training mode.",
-    "playsToday": "Plays to practice today"
+    "playsToday": "Plays to practice today",
+    "muteSound": "Mute sound",
+    "unmuteSound": "Unmute sound"
   },
   "drillTracker": {
     "drillName": "Drill",

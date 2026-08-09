@@ -188,13 +188,14 @@ export default function ExerciseLibrary() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredExercises.map((exercise) => (
-              <ExerciseCard
-                key={exercise.id}
-                exercise={exercise}
-                onEdit={canEditExercises ? () => setEditingExercise(exercise) : undefined}
-                onDelete={canEditExercises ? () => setExerciseToDelete(exercise) : undefined}
-              />
+            {filteredExercises.map((exercise, index) => (
+              <div key={exercise.id} className="fade-in" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
+                <ExerciseCard
+                  exercise={exercise}
+                  onEdit={canEditExercises ? () => setEditingExercise(exercise) : undefined}
+                  onDelete={canEditExercises ? () => setExerciseToDelete(exercise) : undefined}
+                />
+              </div>
             ))}
           </div>
         )}

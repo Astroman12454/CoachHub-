@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyNote, CheckCircle2, Dumbbell } from "lucide-react";
+import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyNote, CheckCircle2, Dumbbell, Volume2, VolumeX } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AttendanceModal from "@/components/AttendanceModal";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import CircularTimer from "@/components/CircularTimer";
 import { useSessionAttendance } from "@/hooks/use-session-attendance";
+import { useSwipe } from "@/hooks/use-swipe";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { haptic } from "@/lib/haptics";
+import { isSoundEnabled, setSoundEnabled, playTimerDone, playSessionFinish } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/types";
 import type { TrainingSession, Exercise, Play as PlaybookPlay, Player, PlayerInjury } from "@shared/schema";
@@ -66,7 +68,14 @@ export default function TrainingMode() {
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isNoteOpen, setIsNoteOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
+  const [soundEnabled, setSoundEnabledState] = useState(() => isSoundEnabled());
   const startedRef = useRef(false);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    setSoundEnabledState(next);
+  };
 
   const currentExercise = sequence[stepIndex] ?? null;
   const nextExercise = sequence[stepIndex + 1] ?? null;
@@ -99,6 +108,7 @@ export default function TrainingMode() {
     if (secondsLeft === 0 && totalSeconds > 0 && !reachedZeroRef.current) {
       reachedZeroRef.current = true;
       haptic("success");
+      playTimerDone();
     }
   }, [secondsLeft, totalSeconds]);
 
@@ -131,6 +141,18 @@ export default function TrainingMode() {
     setIsRunning(true);
   };
 
+  // Swipe left/right on the exercise card as a shortcut for the next/
+  // previous buttons — a coach's thumb is often already resting on the
+  // phone, and a swipe is faster than aiming for a specific button.
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: () => {
+      if (stepIndex < sequence.length - 1) goToStep(stepIndex + 1);
+    },
+    onSwipeRight: () => {
+      if (stepIndex > 0) goToStep(stepIndex - 1);
+    },
+  });
+
   const addSeconds = (amount: number) => {
     haptic("tap");
     setSecondsLeft((prev) => Math.max(0, prev + amount));
@@ -143,6 +165,7 @@ export default function TrainingMode() {
 
   const handleFinish = () => {
     haptic("success");
+    playSessionFinish();
     updateSessionMutation.mutate({ status: "completed" }, {
       onSuccess: () => setLocation("/training-sessions"),
     });
@@ -170,7 +193,7 @@ export default function TrainingMode() {
   }
 
   return (
-    <div className="min-h-screen bg-rail text-rail-foreground flex flex-col court-texture">
+    <div className="min-h-screen bg-rail text-rail-foreground flex flex-col court-texture fade-in">
       {/* Top bar — exit + progress + finish, always reachable, never buried */}
       <header className="flex items-center justify-between gap-2 p-4 border-b border-rail-border">
         <Button
@@ -191,15 +214,29 @@ export default function TrainingMode() {
             </p>
           )}
         </div>
-        <Button
-          size="sm"
-          className="basketball-orange basketball-orange-hover text-white flex-shrink-0"
-          onClick={handleFinish}
-          disabled={updateSessionMutation.isPending}
-        >
-          <CheckCircle2 className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-          {t("trainingMode.finish")}
-        </Button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-rail-foreground hover:bg-white/10"
+            onClick={toggleSound}
+            aria-label={soundEnabled ? t("trainingMode.muteSound") : t("trainingMode.unmuteSound")}
+            title={soundEnabled ? t("trainingMode.muteSound") : t("trainingMode.unmuteSound")}
+          >
+            {soundEnabled
+              ? <Volume2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+              : <VolumeX className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />}
+          </Button>
+          <Button
+            size="sm"
+            className="basketball-orange basketball-orange-hover text-white"
+            onClick={handleFinish}
+            disabled={updateSessionMutation.isPending}
+          >
+            <CheckCircle2 className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+            {t("trainingMode.finish")}
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
@@ -216,7 +253,11 @@ export default function TrainingMode() {
                 contrast instead of being read directly off bg-rail. Keyed on
                 the exercise id so switching exercises re-triggers the fade
                 instead of silently swapping text in place. */}
-            <div key={currentExercise.id} className="fade-in w-full max-w-lg bg-card text-card-foreground rounded-xl p-6 shadow-2xl">
+            <div
+              key={currentExercise.id}
+              className="fade-in w-full max-w-lg bg-card text-card-foreground rounded-xl p-6 shadow-2xl touch-pan-y"
+              {...swipeHandlers}
+            >
               <div className="flex items-center justify-between gap-2 mb-3">
                 <Badge className={CATEGORY_COLORS[currentExercise.category as keyof typeof CATEGORY_COLORS]}>
                   {t(`categories.exercise.${currentExercise.category}`, currentExercise.category)}

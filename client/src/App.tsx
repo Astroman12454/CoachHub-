@@ -49,7 +49,11 @@ function Layout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        <div className="flex-1 overflow-hidden">
+        {/* Layout itself remounts on every route change (each route maps to
+            a distinct component reference), so a plain entrance animation
+            here already fires once per navigation — no location-tracking
+            needed for a page that "arrives" instead of just appearing. */}
+        <div className="flex-1 overflow-hidden fade-in">
           <ErrorBoundary>
             <Suspense fallback={<PageLoadingFallback />}>
               {children}
