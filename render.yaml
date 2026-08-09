@@ -19,7 +19,15 @@ services:
     # where vite, esbuild, and drizzle-kit live, all needed right here
     # to build and migrate (only the built output needs to run without
     # them, at startCommand time).
-    buildCommand: npm install --include=dev && npm run build && npm run db:push
+    # TEMPORARY, ONE DEPLOY ONLY: `db:reset` wipes the database (see
+    # server/scripts/reset-schema.ts) — the schema had drifted far enough
+    # from shared/schema.ts that `db:push` alone couldn't reconcile it
+    # ("column \"id\" is in a primary key"). Safe right now only because
+    # this database has no real accounts/teams/players in it yet. Remove
+    # the `&& npm run db:reset` segment in the very next commit after this
+    # deploy succeeds — leaving it here would wipe real user data on every
+    # future deploy.
+    buildCommand: npm install --include=dev && npm run build && npm run db:reset && npm run db:push
     startCommand: npm start
     envVars:
       - key: NODE_ENV
