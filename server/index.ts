@@ -1,4 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
+// Express 4 does not forward a rejected promise from an async route handler
+// to error-handling middleware — an unhandled rejection there is left to
+// Node's default handling, which (since Node 15) terminates the process.
+// Patches Express's route/router dispatch so every existing `async (req,
+// res) => {...}` handler in this app gets that forwarding for free, no
+// individual route needs touching. Must be imported before any routes are
+// registered (registerRoutes, setupAuth, etc., all below).
+import "express-async-errors";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupAuth, requireAuth } from "./auth";
@@ -7,6 +15,15 @@ import { startNotificationScheduler } from "./notifications-cron";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Defense-in-depth beyond express-async-errors above, which only covers
+// promises rejected inside Express's own route dispatch — this catches
+// anything else (a fire-and-forget call, a future background job not
+// wrapped in its own .catch the way runNotificationSweep already is)
+// before Node's default behavior (terminating the process) kicks in.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
+});
 
 // A real Content-Security-Policy only makes sense in production: Vite's dev
 // server relies on inline eval'd HMR updates and a websocket connection
