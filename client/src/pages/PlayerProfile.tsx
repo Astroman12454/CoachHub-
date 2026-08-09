@@ -231,7 +231,9 @@ export default function PlayerProfile() {
             <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
           <div className="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0 rounded-full bg-basketball-orange/10 border-2 border-basketball-orange/20 flex items-center justify-center font-display font-bold text-basketball-orange text-lg">
-            {player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+            {player.jerseyNumber != null
+              ? `#${player.jerseyNumber}`
+              : player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

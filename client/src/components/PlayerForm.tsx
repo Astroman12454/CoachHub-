@@ -44,6 +44,7 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
       name: player?.name ?? "",
       position: player?.position ?? "Point Guard",
       isActive: player?.isActive ?? 1,
+      jerseyNumber: player?.jerseyNumber ?? undefined,
       birthDate: player?.birthDate ?? "",
       height: player?.height ?? undefined,
     },
@@ -93,30 +94,52 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="position"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("playerForm.position")}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("playerForm.position")}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("playerForm.selectPosition")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {positions.map(position => (
+                          <SelectItem key={position} value={position}>
+                            {t(`playerForm.positions.${position}`, position)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="jerseyNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("playerForm.jerseyNumber")}</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("playerForm.selectPosition")} />
-                      </SelectTrigger>
+                      <Input
+                        type="number"
+                        placeholder={t("playerForm.jerseyNumberPlaceholder")}
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {positions.map(position => (
-                        <SelectItem key={position} value={position}>
-                          {t(`playerForm.positions.${position}`, position)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

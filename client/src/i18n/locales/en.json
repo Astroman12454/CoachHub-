@@ -406,6 +406,8 @@
       "Power Forward": "Power Forward",
       "Center": "Center"
     },
+    "jerseyNumber": "Jersey Number",
+    "jerseyNumberPlaceholder": "e.g., 23",
     "birthDate": "Birth Date",
     "height": "Height (cm)",
     "heightPlaceholder": "e.g., 178",

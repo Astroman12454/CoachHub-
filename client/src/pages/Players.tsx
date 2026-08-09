@@ -271,7 +271,9 @@ export default function Players() {
                           aria-label={t("players.viewProfile", { name: player.name })}
                         >
                           <div className="w-10 h-10 flex-shrink-0 rounded-full bg-muted flex items-center justify-center font-display font-semibold text-foreground text-sm">
-                            {player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                            {player.jerseyNumber != null
+                              ? `#${player.jerseyNumber}`
+                              : player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between mb-1 gap-2">

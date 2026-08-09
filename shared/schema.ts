@@ -153,6 +153,10 @@ export const players = pgTable("players", {
   teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   position: text("position"),
+  // No uniqueness constraint — a coach mid-season swapping numbers, or two
+  // players briefly sharing one during a jersey order delay, shouldn't be
+  // blocked by the app. Null until the coach assigns one.
+  jerseyNumber: integer("jersey_number"),
   isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
   // Plain "YYYY-MM-DD" text, same convention as every other date in this
   // schema (trainingSessions.date, playerInjuries.reportedDate, ...) —
@@ -514,6 +518,7 @@ export const insertPlayerSchema = createInsertSchema(players).omit({
   name: z.string().min(1, "Player name is required"),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date").nullish(),
   height: z.number().int().min(50, "Enter a height in centimeters").max(260, "Enter a height in centimeters").nullish(),
+  jerseyNumber: z.number().int().min(0, "Enter a jersey number").max(99, "Enter a jersey number").nullish(),
 });
 
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({
