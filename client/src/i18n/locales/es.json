@@ -327,8 +327,12 @@
     "inactive": "Inactivo",
     "portalLinkFor": "Enlace del portal para {{name}}",
     "portalLink": "Enlace del portal",
+    "editPlayerFor": "Editar a {{name}}",
     "deactivate": "Desactivar",
-    "activate": "Activar"
+    "activate": "Activar",
+    "ageValue_one": "{{count}} año",
+    "ageValue_other": "{{count}} años",
+    "heightValue": "{{count}} cm"
   },
   "playerProfile": {
     "couldntAddNote": "No se pudo añadir la nota",
@@ -385,8 +389,11 @@
   "playerForm": {
     "success": "Éxito",
     "addedSuccessfully": "Jugador añadido con éxito",
+    "updatedSuccessfully": "Jugador actualizado con éxito",
     "failedToAdd": "No se pudo añadir el jugador",
+    "failedToUpdate": "No se pudo actualizar el jugador",
     "addNewPlayer": "Añadir Nuevo Jugador",
+    "editPlayer": "Editar Jugador",
     "dialogDescription": "Ingresa el nombre del jugador, su posición y si está activo.",
     "playerName": "Nombre del Jugador",
     "playerNamePlaceholder": "ej., Carlos García",
@@ -399,6 +406,9 @@
       "Power Forward": "Ala-Pívot",
       "Center": "Pívot"
     },
+    "birthDate": "Fecha de Nacimiento",
+    "height": "Altura (cm)",
+    "heightPlaceholder": "ej., 178",
     "activePlayer": "Jugador Activo",
     "activePlayerDescription": "Este jugador participará en las sesiones de entrenamiento",
     "adding": "Añadiendo..."

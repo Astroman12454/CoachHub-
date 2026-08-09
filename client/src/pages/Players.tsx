@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle } from "lucide-react";
+import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { calculateAge } from "@/lib/time";
 import type { Player, PlayerInjury } from "@shared/schema";
 
 export default function Players() {
@@ -24,6 +25,7 @@ export default function Players() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [filterActive, setFilterActive] = useState<string>("all");
   const [portalPlayer, setPortalPlayer] = useState<Player | null>(null);
   const [isBalancerOpen, setIsBalancerOpen] = useState(false);
@@ -289,10 +291,26 @@ export default function Players() {
                                 </Badge>
                               </div>
                             </div>
-                            <p className="text-sm text-muted-foreground truncate">{player.position}</p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {[
+                                player.position,
+                                player.birthDate ? t("players.ageValue", { count: calculateAge(player.birthDate) ?? 0 }) : null,
+                                player.height ? t("players.heightValue", { count: player.height }) : null,
+                              ].filter(Boolean).join(" · ")}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setEditingPlayer(player)}
+                            className="w-8 h-8"
+                            aria-label={t("players.editPlayerFor", { name: player.name })}
+                            title={t("common.edit")}
+                          >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="icon"
@@ -327,6 +345,14 @@ export default function Players() {
         <PlayerForm
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
+        />
+      )}
+
+      {editingPlayer && (
+        <PlayerForm
+          isOpen={!!editingPlayer}
+          onClose={() => setEditingPlayer(null)}
+          player={editingPlayer}
         />
       )}
 

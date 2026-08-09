@@ -243,7 +243,7 @@ export default function TrainingMode() {
         {!currentExercise ? (
           <div className="text-center max-w-sm">
             <Dumbbell className="w-10 h-10 text-rail-muted mx-auto mb-3" strokeWidth={1.5} aria-hidden="true" />
-            <p className="text-rail-foreground font-medium">{t("trainingMode.noExercises")}</p>
+            <h1 className="text-rail-foreground font-medium">{t("trainingMode.noExercises")}</h1>
             <p className="text-rail-muted text-sm mt-1">{t("trainingMode.noExercisesHint")}</p>
           </div>
         ) : (

@@ -154,6 +154,14 @@ export const players = pgTable("players", {
   name: text("name").notNull(),
   position: text("position"),
   isActive: integer("is_active").default(1), // 1 for active, 0 for inactive
+  // Plain "YYYY-MM-DD" text, same convention as every other date in this
+  // schema (trainingSessions.date, playerInjuries.reportedDate, ...) —
+  // avoids the timezone-shift bugs a native `date` column invites once a
+  // value round-trips through JSON. Null for a player without a birth date
+  // on file yet.
+  birthDate: text("birth_date"),
+  // Centimeters — null until the coach records one.
+  height: integer("height"),
   // Unguessable (24 random bytes) credential for the public read-only player
   // portal — a coach shares a link built from this instead of the parent
   // needing an account. Null until the coach first generates a link.
@@ -504,6 +512,8 @@ export const insertPlayerSchema = createInsertSchema(players).omit({
   teamId: true,
 }).extend({
   name: z.string().min(1, "Player name is required"),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date").nullish(),
+  height: z.number().int().min(50, "Enter a height in centimeters").max(260, "Enter a height in centimeters").nullish(),
 });
 
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({

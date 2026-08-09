@@ -371,6 +371,18 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("players — edit player form open, with birth date and height", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Edit "]').first().click();
+    await page.waitForSelector("text=Edit Player");
+    await page.fill('input[type="date"]', "2011-03-04");
+    await page.fill('input[type="number"]', "170");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("players — portal link dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/players");

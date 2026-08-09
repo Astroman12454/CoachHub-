@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { addMinutesToClock } from "./time";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { addMinutesToClock, calculateAge } from "./time";
 
 describe("addMinutesToClock", () => {
   it("adds minutes within the same hour", () => {
@@ -23,5 +23,34 @@ describe("addMinutesToClock", () => {
   it("returns null for a malformed start time", () => {
     expect(addMinutesToClock("", 15)).toBeNull();
     expect(addMinutesToClock("not-a-time", 15)).toBeNull();
+  });
+});
+
+describe("calculateAge", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-09T12:00:00"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("counts a full year once the birthday has passed this year", () => {
+    expect(calculateAge("2010-01-15")).toBe(16);
+  });
+
+  it("does not count this year until the birthday arrives", () => {
+    expect(calculateAge("2010-12-25")).toBe(15);
+  });
+
+  it("counts the birthday itself as the new age", () => {
+    expect(calculateAge("2010-08-09")).toBe(16);
+  });
+
+  it("returns null for a malformed date", () => {
+    expect(calculateAge("")).toBeNull();
+    expect(calculateAge("not-a-date")).toBeNull();
+    expect(calculateAge("2010/01/15")).toBeNull();
   });
 });

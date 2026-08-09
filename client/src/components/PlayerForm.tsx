@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { insertPlayerSchema } from "@shared/schema";
+import type { Player } from "@shared/schema";
 
 type PlayerFormData = z.infer<typeof insertPlayerSchema>;
 
@@ -25,10 +26,12 @@ const positions = [
 interface PlayerFormProps {
   isOpen: boolean;
   onClose: () => void;
+  player?: Player | null;
 }
 
-export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
+export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps) {
   const { t } = useTranslation();
+  const isEditing = !!player;
   const restoreFocus = useDialogFocusReturn(isOpen);
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
@@ -38,30 +41,37 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
   const form = useForm<PlayerFormData>({
     resolver: zodResolver(insertPlayerSchema),
     defaultValues: {
-      name: "",
-      position: "Point Guard",
-      isActive: 1,
+      name: player?.name ?? "",
+      position: player?.position ?? "Point Guard",
+      isActive: player?.isActive ?? 1,
+      birthDate: player?.birthDate ?? "",
+      height: player?.height ?? undefined,
     },
   });
 
-  const createPlayerMutation = useSaveMutation<PlayerFormData>({
+  const savePlayerMutation = useSaveMutation<PlayerFormData>({
     endpoint: "/api/players",
-    successTitle: t("playerForm.success"),
-    successMessage: t("playerForm.addedSuccessfully"),
-    errorMessage: t("playerForm.failedToAdd"),
+    id: player?.id,
+    successMessage: isEditing ? t("playerForm.updatedSuccessfully") : t("playerForm.addedSuccessfully"),
+    errorMessage: isEditing ? t("playerForm.failedToUpdate") : t("playerForm.failedToAdd"),
     onSuccess: () => handleOpenChange(false),
   });
 
   const onSubmit = (data: PlayerFormData) => {
-    if (createPlayerMutation.isPending) return;
-    createPlayerMutation.mutate(data);
+    if (savePlayerMutation.isPending) return;
+    // Empty string means "not entered" here, but the field is a nullable
+    // date column — send null instead of "" so it clears cleanly on an
+    // edit rather than failing the schema's date-format check.
+    savePlayerMutation.mutate({ ...data, birthDate: data.birthDate || null });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">{t("playerForm.addNewPlayer")}</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">
+            {isEditing ? t("playerForm.editPlayer") : t("playerForm.addNewPlayer")}
+          </DialogTitle>
           <DialogDescription className="sr-only">
             {t("playerForm.dialogDescription")}
           </DialogDescription>
@@ -108,6 +118,42 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               )}
             />
 
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="birthDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("playerForm.birthDate")}</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="height"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("playerForm.height")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder={t("playerForm.heightPlaceholder")}
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
               name="isActive"
@@ -142,9 +188,11 @@ export default function PlayerForm({ isOpen, onClose }: PlayerFormProps) {
               <Button
                 type="submit"
                 className="basketball-orange basketball-orange-hover text-white"
-                disabled={createPlayerMutation.isPending}
+                disabled={savePlayerMutation.isPending}
               >
-                {createPlayerMutation.isPending ? t("playerForm.adding") : t("dashboard.addPlayer")}
+                {savePlayerMutation.isPending
+                  ? (isEditing ? t("common.saving") : t("playerForm.adding"))
+                  : (isEditing ? t("common.save") : t("dashboard.addPlayer"))}
               </Button>
             </div>
           </form>

@@ -12,3 +12,26 @@ export function addMinutesToClock(startTime: string, minutes: number): string | 
   const period = hour24 < 12 ? "AM" : "PM";
   return `${hour12}:${minute.toString().padStart(2, "0")} ${period}`;
 }
+
+// Whole years elapsed since a "YYYY-MM-DD" birth date, as of today — the
+// naive `currentYear - birthYear` is off by one for anyone whose birthday
+// hasn't happened yet this calendar year, so this checks month/day too.
+// Parsed at local noon (not midnight) so the date itself never shifts a
+// day from timezone rounding, the same class of bug formatPlainDate
+// (PlayerProfile) guards against for other plain-date fields.
+export function calculateAge(birthDate: string): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
+  if (!match) return null;
+  const [, yearStr, monthStr, dayStr] = match;
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const hasHadBirthdayThisYear =
+    today.getMonth() + 1 > month || (today.getMonth() + 1 === month && today.getDate() >= day);
+  if (!hasHadBirthdayThisYear) age -= 1;
+
+  return age >= 0 ? age : null;
+}

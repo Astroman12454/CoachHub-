@@ -19,6 +19,7 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
+import { calculateAge } from "@/lib/time";
 import { SKILL_CATEGORIES } from "@shared/schema";
 import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerPhysicalTestHistory } from "@shared/schema";
 
@@ -250,7 +251,13 @@ export default function PlayerProfile() {
                 </Badge>
               )}
             </div>
-            {player.position && <p className="text-sm text-muted-foreground mt-0.5">{player.position}</p>}
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {[
+                player.position,
+                player.birthDate ? t("players.ageValue", { count: calculateAge(player.birthDate) ?? 0 }) : null,
+                player.height ? t("players.heightValue", { count: player.height }) : null,
+              ].filter(Boolean).join(" · ")}
+            </p>
           </div>
           <Button
             variant="outline"
