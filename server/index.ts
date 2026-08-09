@@ -93,8 +93,17 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Log server-side for diagnosis — do NOT rethrow. Express's finalhandler
+    // destroys the underlying socket when it receives an error after
+    // headers are already sent (res.json above just sent them), so
+    // rethrowing here doesn't "log louder" — it truncates/aborts the
+    // response the client is mid-way through reading. That turns a normal
+    // "account already exists" or validation 4xx into a raw connection
+    // reset, which the client can't parse as JSON and falls back to a
+    // generic "Couldn't create account" / "Couldn't log in" message that
+    // hides the real reason from both the user and our own logs.
+    console.error(err);
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
