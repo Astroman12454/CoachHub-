@@ -21,6 +21,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 // shown — the rest fetch on first visit and are cached after that.
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const TrainingSessions = lazy(() => import("@/pages/TrainingSessions"));
+const TrainingMode = lazy(() => import("@/pages/TrainingMode"));
 const Games = lazy(() => import("@/pages/Games"));
 const Playbook = lazy(() => import("@/pages/Playbook"));
 const PlayEditor = lazy(() => import("@/pages/PlayEditor"));
@@ -66,6 +67,19 @@ function Router() {
       <Route path="/" component={() => <Layout><Dashboard /></Layout>} />
       <Route path="/dashboard" component={() => <Layout><Dashboard /></Layout>} />
       <Route path="/training-sessions" component={() => <Layout><TrainingSessions /></Layout>} />
+      {/* Deliberately outside <Layout> — no sidebar, no chrome. A coach
+          running a practice needs the full screen for the timer, not a
+          nav rail eating a fifth of it. */}
+      <Route
+        path="/training-sessions/:id/live"
+        component={() => (
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <TrainingMode />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+      />
       <Route path="/games" component={() => <Layout><Games /></Layout>} />
       <Route path="/playbook" component={() => <Layout><Playbook /></Layout>} />
       <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />

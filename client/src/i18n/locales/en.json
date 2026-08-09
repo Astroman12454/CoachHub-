@@ -152,7 +152,20 @@
     "aiModalDescription": "Generated from your team's actual session and exercise data.",
     "performanceAnalysis": "Performance Analysis",
     "notEnoughData": "Not enough data yet — add exercises and complete a few training sessions to see insights here.",
-    "viewCategoryExercises": "View {{category}} Exercises"
+    "viewCategoryExercises": "View {{category}} Exercises",
+    "today": {
+      "today": "Today",
+      "teamToday": "{{team}} · Today",
+      "live": "Live",
+      "completed": "Completed",
+      "noneToday": "No training today",
+      "nextSession": "Next: {{name}} on {{date}} at {{time}}",
+      "noSessionsHint": "Nothing scheduled yet.",
+      "startTraining": "Start training",
+      "continueTraining": "Continue training",
+      "viewSession": "View session",
+      "createSession": "Schedule a session"
+    }
   },
   "insights": {
     "thinCategory": {
@@ -207,7 +220,10 @@
     "notes": "Notes",
     "editSession": "Edit Session",
     "deleteConfirmTitle": "Delete training session?",
-    "deleteConfirmDescription": "This will permanently delete \"{{name}}\". This can't be undone."
+    "deleteConfirmDescription": "This will permanently delete \"{{name}}\". This can't be undone.",
+    "duplicateName": "Duplicate {{name}}",
+    "duplicateTitle": "Duplicate session",
+    "startSession": "Start"
   },
   "sessionModal": {
     "templateSaved": "Template saved",
@@ -263,7 +279,8 @@
     "saveTemplateDescription": "Saves this session's duration, exercises, plays and notes as a reusable starting point. The date and time aren't included.",
     "templateName": "Template Name",
     "templateNamePlaceholder": "e.g., Shooting Focus",
-    "saveTemplate": "Save Template"
+    "saveTemplate": "Save Template",
+    "duplicateTitle": "Duplicate Training Session"
   },
   "sessionTimeline": {
     "noExercisesYet": "No exercises added yet — pick some below to build the timeline.",
@@ -727,7 +744,28 @@
     "markedAt": "Marked at {{time}}",
     "closeAttendance": "Close Attendance",
     "attendanceTab": "Attendance",
-    "drillsTab": "Drills"
+    "drillsTab": "Drills",
+    "markAllPresent": "Mark all present"
+  },
+  "trainingMode": {
+    "exit": "Exit training mode",
+    "finish": "Finish",
+    "stepProgress": "Exercise {{current}} of {{total}}",
+    "next": "Next: {{name}}",
+    "previous": "Previous exercise",
+    "nextExercise": "Next exercise",
+    "pause": "Pause",
+    "resume": "Resume",
+    "secondsAbbrev": "s",
+    "minuteAbbrev": "min",
+    "attendance": "Attendance",
+    "quickNote": "Quick note",
+    "quickNotePlaceholder": "Write a quick note about this practice...",
+    "noteSaved": "Note saved",
+    "couldntUpdate": "Couldn't update the session",
+    "noExercises": "This session has no exercises yet",
+    "noExercisesHint": "Add exercises to the session to run it in training mode.",
+    "playsToday": "Plays to practice today"
   },
   "drillTracker": {
     "drillName": "Drill",

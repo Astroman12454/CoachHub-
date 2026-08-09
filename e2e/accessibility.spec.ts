@@ -207,6 +207,52 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — duplicate session modal open", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Duplicate"]').first().click();
+    await page.waitForSelector("text=Duplicate Training Session");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training mode — live session with exercises", async ({ page }) => {
+    await login(page);
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    const sessionRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E Training Mode Session",
+        date: new Date().toISOString().split("T")[0],
+        time: "17:00",
+        duration: 60,
+        exerciseIds: exercises.slice(0, 2).map((e: { id: number }) => e.id.toString()),
+        notes: null,
+      },
+    });
+    const session = await sessionRes.json();
+    await page.goto(`/training-sessions/${session.id}/live`);
+    await page.waitForSelector("text=Exercise 1 of 2");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training mode — attendance modal open", async ({ page }) => {
+    await login(page);
+    const sessionsRes = await page.request.get("/api/training-sessions");
+    const sessions = await sessionsRes.json();
+    const today = new Date().toISOString().split("T")[0];
+    const todaySession = sessions.find((s: { date: string }) => s.date === today);
+    if (!todaySession) test.skip(true, "no session today to open in training mode");
+    await page.goto(`/training-sessions/${todaySession.id}/live`);
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Attendance")');
+    await page.waitForSelector("text=/Attendance - /");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("exercise library", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");
@@ -396,6 +442,22 @@ test.describe("accessibility (axe)", () => {
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule — mark all present", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
+    await sessionCard.click();
+    await page.waitForSelector("text=/Attendance - /");
+    const markAllButton = page.locator('button:has-text("Mark all present")');
+    if (await markAllButton.count() === 0) test.skip(true, "no active players to mark present");
+    await markAllButton.click();
+    await page.waitForTimeout(300);
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });

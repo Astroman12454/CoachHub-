@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays, BellRing, FileDown, Loader2 } from "lucide-react";
+import { useLocation } from "wouter";
+import { Calendar, Clock, Pencil, Trash2, Plus, CalendarDays, BellRing, FileDown, Loader2, Copy, PlayCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
@@ -19,9 +20,11 @@ import type { Exercise, Play, TrainingSession } from "@shared/schema";
 
 export default function TrainingSessions() {
   const { t } = useTranslation();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [duplicateFromSession, setDuplicateFromSession] = useState<TrainingSession | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
   const [exportingSessionId, setExportingSessionId] = useState<number | null>(null);
   const { toast } = useToast();
@@ -157,9 +160,9 @@ export default function TrainingSessions() {
             {sortedSessions.map((session) => (
               <Card key={session.id} className="hover:border-basketball-orange hover:shadow-sm transition-all">
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1 truncate">
                         {session.name}
                       </CardTitle>
                       <div className="flex items-center text-sm text-muted-foreground gap-3">
@@ -173,7 +176,7 @@ export default function TrainingSessions() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-1 flex-shrink-0">
                       {session.status !== "completed" && session.status !== "cancelled" && (
                         <Button
                           variant="ghost"
@@ -199,6 +202,16 @@ export default function TrainingSessions() {
                         {exportingSessionId === session.id
                           ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                           : <FileDown className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => setDuplicateFromSession(session)}
+                        aria-label={t("sessions.duplicateName", { name: session.name })}
+                        title={t("sessions.duplicateTitle")}
+                      >
+                        <Copy className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -272,10 +285,20 @@ export default function TrainingSessions() {
                     </div>
                   )}
 
-                  <div className="pt-3 border-t border-border">
+                  <div className="pt-3 border-t border-border flex gap-2">
+                    {session.status !== "completed" && session.status !== "cancelled" && (
+                      <Button
+                        className="flex-1"
+                        size="sm"
+                        onClick={() => setLocation(`/training-sessions/${session.id}/live`)}
+                      >
+                        <PlayCircle className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+                        {t("sessions.startSession")}
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className={session.status !== "completed" && session.status !== "cancelled" ? "" : "flex-1"}
                       size="sm"
                       onClick={() => setEditingSession(session)}
                     >
@@ -290,10 +313,14 @@ export default function TrainingSessions() {
         )}
       </main>
 
-      {isCreateModalOpen && (
+      {(isCreateModalOpen || duplicateFromSession) && (
         <SessionModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
+          isOpen={isCreateModalOpen || !!duplicateFromSession}
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setDuplicateFromSession(null);
+          }}
+          duplicateFrom={duplicateFromSession}
         />
       )}
 

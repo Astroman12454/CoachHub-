@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, XCircle, Clock3, Info, HeartPulse } from "lucide-react";
+import { ClipboardList, Calendar, Clock, Timer, CheckCircle2, CheckCheck, XCircle, Clock3, Info, HeartPulse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +52,9 @@ interface AttendanceModalProps {
   attendance: Attendance[];
   isLoading: boolean;
   onToggleAttendance: (playerId: number, status: string) => void;
+  /** Marks every active player present in one tap — the common case ("whole
+   * team showed up") shouldn't cost one tap per player every practice. */
+  onMarkAllPresent?: () => void;
   /** Player whose attendance mutation is currently in flight, if any — its
    * status buttons are disabled so a second tap before the optimistic
    * update lands can't create a duplicate attendance record. */
@@ -69,6 +72,7 @@ export default function AttendanceModal({
   attendance,
   isLoading,
   onToggleAttendance,
+  onMarkAllPresent,
   pendingPlayerId,
   injuredPlayerIds,
 }: AttendanceModalProps) {
@@ -151,6 +155,18 @@ export default function AttendanceModal({
           </div>
         ) : (
           <div className="space-y-3 mt-6">
+            {onMarkAllPresent && players.some(p => p.isActive === 1) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onMarkAllPresent}
+                className="w-full sm:w-auto"
+              >
+                <CheckCheck className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+                {t("attendanceModal.markAllPresent")}
+              </Button>
+            )}
             {players.filter(p => p.isActive === 1).map((player) => {
               const playerAttendance = getPlayerAttendance(player.id);
               const currentStatus = playerAttendance?.status || '';

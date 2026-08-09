@@ -152,7 +152,20 @@
     "aiModalDescription": "Generado a partir de los datos reales de sesiones y ejercicios de tu equipo.",
     "performanceAnalysis": "Análisis de Rendimiento",
     "notEnoughData": "Aún no hay suficientes datos — añade ejercicios y completa algunas sesiones de entrenamiento para ver información aquí.",
-    "viewCategoryExercises": "Ver Ejercicios de {{category}}"
+    "viewCategoryExercises": "Ver Ejercicios de {{category}}",
+    "today": {
+      "today": "Hoy",
+      "teamToday": "{{team}} · Hoy",
+      "live": "En vivo",
+      "completed": "Completado",
+      "noneToday": "No hay entrenamiento hoy",
+      "nextSession": "Siguiente: {{name}} el {{date}} a las {{time}}",
+      "noSessionsHint": "Todavía no hay nada programado.",
+      "startTraining": "Empezar entrenamiento",
+      "continueTraining": "Continuar entrenamiento",
+      "viewSession": "Ver sesión",
+      "createSession": "Programar sesión"
+    }
   },
   "insights": {
     "thinCategory": {
@@ -207,7 +220,10 @@
     "notes": "Notas",
     "editSession": "Editar Sesión",
     "deleteConfirmTitle": "¿Eliminar sesión de entrenamiento?",
-    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\". No se puede deshacer."
+    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\". No se puede deshacer.",
+    "duplicateName": "Duplicar {{name}}",
+    "duplicateTitle": "Duplicar sesión",
+    "startSession": "Empezar"
   },
   "sessionModal": {
     "templateSaved": "Plantilla guardada",
@@ -263,7 +279,8 @@
     "saveTemplateDescription": "Guarda la duración, ejercicios, jugadas y notas de esta sesión como punto de partida reutilizable. La fecha y hora no se incluyen.",
     "templateName": "Nombre de la Plantilla",
     "templateNamePlaceholder": "ej., Enfoque en Tiro",
-    "saveTemplate": "Guardar Plantilla"
+    "saveTemplate": "Guardar Plantilla",
+    "duplicateTitle": "Duplicar Sesión de Entrenamiento"
   },
   "sessionTimeline": {
     "noExercisesYet": "Aún no hay ejercicios añadidos — elige algunos abajo para construir el cronograma.",
@@ -727,7 +744,28 @@
     "markedAt": "Marcado a las {{time}}",
     "closeAttendance": "Cerrar Asistencia",
     "attendanceTab": "Asistencia",
-    "drillsTab": "Ejercicios"
+    "drillsTab": "Ejercicios",
+    "markAllPresent": "Marcar todos presentes"
+  },
+  "trainingMode": {
+    "exit": "Salir del modo entrenamiento",
+    "finish": "Finalizar",
+    "stepProgress": "Ejercicio {{current}} de {{total}}",
+    "next": "Siguiente: {{name}}",
+    "previous": "Ejercicio anterior",
+    "nextExercise": "Siguiente ejercicio",
+    "pause": "Pausa",
+    "resume": "Reanudar",
+    "secondsAbbrev": "s",
+    "minuteAbbrev": "min",
+    "attendance": "Asistencia",
+    "quickNote": "Nota rápida",
+    "quickNotePlaceholder": "Escribe una nota rápida sobre este entrenamiento...",
+    "noteSaved": "Nota guardada",
+    "couldntUpdate": "No se pudo actualizar la sesión",
+    "noExercises": "Esta sesión todavía no tiene ejercicios",
+    "noExercisesHint": "Añade ejercicios a la sesión para poder ejecutarla en modo entrenamiento.",
+    "playsToday": "Jugadas a practicar hoy"
   },
   "drillTracker": {
     "drillName": "Ejercicio",

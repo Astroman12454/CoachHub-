@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
@@ -11,9 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import type { TrainingSession, Player, Attendance, PlayerInjury } from "@shared/schema";
+import { useSessionAttendance } from "@/hooks/use-session-attendance";
+import type { TrainingSession, Player, PlayerInjury } from "@shared/schema";
 
 const DAYS_OF_WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
@@ -37,9 +36,6 @@ export default function WeeklySchedule() {
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
-
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   // Calculate week dates
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -69,64 +65,8 @@ export default function WeeklySchedule() {
   });
   const injuredPlayerIds = new Set(activeInjuries.map((injury) => injury.playerId));
 
-  const { data: attendance = [], isLoading: attendanceLoading } = useQuery<Attendance[]>({
-    queryKey: ['/api/attendance/session', selectedSession?.id],
-    queryFn: async () => {
-      if (!selectedSession) return [];
-      const response = await fetch(`/api/attendance/session/${selectedSession.id}`);
-      if (!response.ok) throw new Error('Failed to fetch attendance');
-      return response.json();
-    },
-    enabled: !!selectedSession,
-  });
-
-  const markAttendanceMutation = useMutation({
-    mutationFn: async ({ sessionId, playerId, status }: { sessionId: number; playerId: number; status: string }) => {
-      const existingAttendance = attendance.find(a => a.playerId === playerId);
-      if (existingAttendance) {
-        return apiRequest("PUT", `/api/attendance/${existingAttendance.id}`, { status });
-      } else {
-        return apiRequest("POST", "/api/attendance", { sessionId, playerId, status });
-      }
-    },
-    // Applies the tap immediately so the button highlights without waiting on
-    // the round trip; a coach marking 15+ players in a row needs it to feel instant.
-    onMutate: async ({ sessionId, playerId, status }) => {
-      const queryKey = ['/api/attendance/session', selectedSession?.id];
-      await queryClient.cancelQueries({ queryKey });
-      const previousAttendance = queryClient.getQueryData<Attendance[]>(queryKey);
-
-      queryClient.setQueryData<Attendance[]>(queryKey, (old = []) => {
-        const existingIndex = old.findIndex(a => a.playerId === playerId);
-        if (existingIndex !== -1) {
-          const updated = [...old];
-          updated[existingIndex] = { ...updated[existingIndex], status, markedAt: new Date() };
-          return updated;
-        }
-        return [
-          ...old,
-          { id: -Date.now(), sessionId, playerId, status, notes: null, markedAt: new Date() },
-        ];
-      });
-
-      return { previousAttendance, queryKey };
-    },
-    onError: (_err, _variables, context) => {
-      if (context) {
-        queryClient.setQueryData(context.queryKey, context.previousAttendance);
-      }
-      toast({
-        title: t("players.error"),
-        description: t("schedule.failedToUpdateAttendance"),
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/attendance/session'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/training-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
-    },
-  });
+  const { attendance, isLoading: attendanceLoading, toggleAttendance: handleAttendanceToggle, markAllPresent, pendingPlayerId } =
+    useSessionAttendance(selectedSession?.id);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = new Date(selectedWeek);
@@ -142,16 +82,6 @@ export default function WeeklySchedule() {
   const getSessionsForDate = (date: Date) => {
     const dateString = date.toISOString().split('T')[0];
     return Array.isArray(sessions) ? sessions.filter(session => session.date === dateString) : [];
-  };
-
-  const handleAttendanceToggle = (playerId: number, status: string) => {
-    if (selectedSession) {
-      markAttendanceMutation.mutate({
-        sessionId: selectedSession.id,
-        playerId,
-        status
-      });
-    }
   };
 
   const getWeekStats = () => {
@@ -330,7 +260,8 @@ export default function WeeklySchedule() {
           isLoading={attendanceLoading}
           injuredPlayerIds={injuredPlayerIds}
           onToggleAttendance={handleAttendanceToggle}
-          pendingPlayerId={markAttendanceMutation.isPending ? markAttendanceMutation.variables?.playerId : undefined}
+          onMarkAllPresent={() => markAllPresent(players.filter((p) => p.isActive === 1).map((p) => p.id))}
+          pendingPlayerId={pendingPlayerId}
         />
 
         <RecurringScheduleDialog open={isRecurringDialogOpen} onOpenChange={setIsRecurringDialogOpen} />

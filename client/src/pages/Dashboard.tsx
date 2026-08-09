@@ -6,6 +6,7 @@ import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
+import TodayHero from "@/components/TodayHero";
 import DashboardStatsGrid, { type DashboardStats } from "@/components/DashboardStatsGrid";
 import UpcomingSessionsCard from "@/components/UpcomingSessionsCard";
 import QuickActionsCard from "@/components/QuickActionsCard";
@@ -14,11 +15,13 @@ import AICoachBanner from "@/components/AICoachBanner";
 import AIRecommendationsModal from "@/components/AIRecommendationsModal";
 import RecentExercisesCard from "@/components/RecentExercisesCard";
 import { computeInsights } from "@/lib/insights";
+import { useAuth } from "@/hooks/use-auth";
 import type { Exercise, TrainingSession } from "@shared/schema";
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const { teams, currentTeamId } = useAuth();
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
@@ -34,8 +37,36 @@ export default function Dashboard() {
     queryKey: ['/api/exercises'],
   });
 
-  // Get upcoming sessions (next 3)
-  const upcomingSessions = sessions.slice(0, 3);
+  const currentTeam = useMemo(() => teams.find((team) => team.id === currentTeamId), [teams, currentTeamId]);
+
+  // Today's date as YYYY-MM-DD, matching how session.date is stored/compared
+  // everywhere else in the app (WeeklySchedule, TrainingMode).
+  const todayString = useMemo(() => new Date().toISOString().split("T")[0], []);
+
+  // The session the "Hoy" hero cares about: today's, preferring one already
+  // in progress (the coach came back mid-practice) over a merely-scheduled one.
+  const todaySession = useMemo(() => {
+    const todays = sessions
+      .filter((s) => s.date === todayString && s.status !== "cancelled")
+      .sort((a, b) => a.time.localeCompare(b.time));
+    return todays.find((s) => s.status === "in_progress") ?? todays[0] ?? null;
+  }, [sessions, todayString]);
+
+  const nextSession = useMemo(() => {
+    return [...sessions]
+      .filter((s) => s.status === "scheduled" && s.date > todayString)
+      .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)))[0] ?? null;
+  }, [sessions, todayString]);
+
+  // Upcoming sessions (next 3) — scheduled and not in the past. The previous
+  // version was an unfiltered `sessions.slice(0, 3)`, which could surface
+  // already-past sessions depending on fetch order.
+  const upcomingSessions = useMemo(() => {
+    return [...sessions]
+      .filter((s) => s.status === "scheduled" && s.date >= todayString)
+      .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)))
+      .slice(0, 3);
+  }, [sessions, todayString]);
 
   // Get recent exercises (last 3 added)
   const recentExercises = exercises.slice(-3);
@@ -110,6 +141,15 @@ export default function Dashboard() {
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <TodayHero
+          teamName={currentTeam?.name}
+          todaySession={todaySession}
+          nextSession={nextSession}
+          onStart={(sessionId) => navigateToPage(`/training-sessions/${sessionId}/live`)}
+          onOpenSession={() => navigateToPage('/training-sessions')}
+          onCreateSession={() => setIsSessionModalOpen(true)}
+        />
+
         <DashboardStatsGrid stats={stats} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

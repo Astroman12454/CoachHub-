@@ -38,19 +38,37 @@ interface SessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   session?: TrainingSession | null;
+  /** A past session to prefill from — everything (exercises, plays,
+   * duration, notes) is copied over, but this still creates a brand-new
+   * session (POST, not PUT): `session` stays unset, so `isEditing` is false. */
+  duplicateFrom?: TrainingSession | null;
 }
 
-export default function SessionModal({ isOpen, onClose, session }: SessionModalProps) {
+export default function SessionModal({ isOpen, onClose, session, duplicateFrom }: SessionModalProps) {
   const { t } = useTranslation();
   const isEditing = !!session;
+  const isDuplicating = !isEditing && !!duplicateFrom;
+  const source = session ?? duplicateFrom ?? null;
   const restoreFocus = useDialogFocusReturn(isOpen);
   const { account } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const canGeneratePlan = canGenerateAiSessionPlan(account?.plan ?? "free");
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
     onClose();
   };
+
+  // Smart default for a from-scratch session (not editing, not duplicating):
+  // reuse the most recently created session's duration instead of a fixed
+  // 120 — a coach's practices tend to run the same length week to week.
+  // Read straight from the query cache (already populated by whichever page
+  // opened this modal) rather than a fresh fetch, so there's no async gap
+  // before the form's defaultValues are computed.
+  const cachedSessions = queryClient.getQueryData<TrainingSession[]>(["/api/training-sessions"]) ?? [];
+  const mostRecentDuration = cachedSessions.length > 0
+    ? [...cachedSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].duration
+    : 120;
 
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [aiInstructions, setAiInstructions] = useState("");
@@ -66,7 +84,7 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   // for editing — otherwise a session's existing exercises would appear
   // (and get saved as) empty if this is the first query to fetch them.
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>(
-    () => session?.exerciseIds ?? []
+    () => source?.exerciseIds ?? []
   );
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
 
@@ -74,14 +92,13 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   // as selectedExerciseIds above.
   const { data: plays = [] } = useQuery<Play[]>({ queryKey: ["/api/plays"] });
   const [selectedPlayIds, setSelectedPlayIds] = useState<string[]>(
-    () => session?.playIds ?? []
+    () => source?.playIds ?? []
   );
   const togglePlay = (playId: number) => {
     const id = playId.toString();
     setSelectedPlayIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
 
-  const queryClient = useQueryClient();
   const { data: templates = [] } = useQuery<SessionTemplate[]>({ queryKey: ["/api/session-templates"] });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
@@ -135,13 +152,13 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
   const form = useForm<SessionFormData>({
     resolver: zodResolver(insertTrainingSessionSchema),
     defaultValues: {
-      name: session?.name ?? "",
-      date: session?.date ?? "",
-      time: session?.time ?? "",
-      duration: session?.duration ?? 120,
-      exerciseIds: session?.exerciseIds ?? [],
-      playIds: session?.playIds ?? [],
-      notes: session?.notes ?? "",
+      name: source?.name ?? "",
+      date: source?.date ?? "",
+      time: source?.time ?? "",
+      duration: source?.duration ?? mostRecentDuration,
+      exerciseIds: source?.exerciseIds ?? [],
+      playIds: source?.playIds ?? [],
+      notes: source?.notes ?? "",
       attendanceCount: session?.attendanceCount ?? 0,
       totalPlayers: session?.totalPlayers ?? 18,
     },
@@ -234,7 +251,11 @@ export default function SessionModal({ isOpen, onClose, session }: SessionModalP
         <DialogHeader>
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 pr-8 sm:pr-0">
             <DialogTitle className="text-xl font-display uppercase tracking-tight">
-              {isEditing ? t("sessionModal.editTitle") : t("sessionModal.createTitle")}
+              {isEditing
+                ? t("sessionModal.editTitle")
+                : isDuplicating
+                  ? t("sessionModal.duplicateTitle")
+                  : t("sessionModal.createTitle")}
             </DialogTitle>
             <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
               <Button type="button" variant="outline" size="sm" onClick={() => setIsSaveTemplateOpen(true)}>
