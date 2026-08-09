@@ -157,8 +157,12 @@ export default function TrainingSessions() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedSessions.map((session) => (
-              <Card key={session.id} className="hover:border-basketball-orange hover:shadow-sm transition-all">
+            {sortedSessions.map((session, index) => (
+              <Card
+                key={session.id}
+                className="fade-in hover:border-basketball-orange hover:shadow-md hover:-translate-y-0.5 transition-all"
+                style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">

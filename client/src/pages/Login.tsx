@@ -49,7 +49,7 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-rail p-4 relative">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-rail court-texture p-4 relative">
       <div className="absolute top-4 right-4">
         <LanguageToggle />
       </div>

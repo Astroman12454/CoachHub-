@@ -182,8 +182,12 @@ export default function Games() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedGames.map((game) => (
-              <Card key={game.id} className="hover:border-basketball-orange hover:shadow-sm transition-all">
+            {sortedGames.map((game, index) => (
+              <Card
+                key={game.id}
+                className="fade-in hover:border-basketball-orange hover:shadow-md hover:-translate-y-0.5 transition-all"
+                style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

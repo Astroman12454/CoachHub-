@@ -7,9 +7,12 @@ import AttendanceModal from "@/components/AttendanceModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import CircularTimer from "@/components/CircularTimer";
 import { useSessionAttendance } from "@/hooks/use-session-attendance";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { haptic } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/types";
 import type { TrainingSession, Exercise, Play as PlaybookPlay, Player, PlayerInjury } from "@shared/schema";
 
@@ -67,6 +70,10 @@ export default function TrainingMode() {
 
   const currentExercise = sequence[stepIndex] ?? null;
   const nextExercise = sequence[stepIndex + 1] ?? null;
+  const totalSeconds = (currentExercise?.duration ?? 0) * 60;
+  const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
+  const isUrgent = isRunning && secondsLeft > 0 && secondsLeft <= 10;
+  const reachedZeroRef = useRef(false);
 
   // Resets the countdown to the new step's own duration whenever the coach
   // moves to a different exercise (forward, back, or the sequence just
@@ -74,6 +81,7 @@ export default function TrainingMode() {
   // already, so there's nothing extra to configure here.
   useEffect(() => {
     setSecondsLeft((currentExercise?.duration ?? 0) * 60);
+    reachedZeroRef.current = false;
   }, [stepIndex, currentExercise?.id]);
 
   useEffect(() => {
@@ -83,6 +91,16 @@ export default function TrainingMode() {
     }, 1000);
     return () => clearInterval(interval);
   }, [isRunning, currentExercise]);
+
+  // One haptic buzz the moment an exercise's clock actually runs out —
+  // guarded so it fires once per exercise, not on every render while it
+  // sits at zero waiting for the coach to move on.
+  useEffect(() => {
+    if (secondsLeft === 0 && totalSeconds > 0 && !reachedZeroRef.current) {
+      reachedZeroRef.current = true;
+      haptic("success");
+    }
+  }, [secondsLeft, totalSeconds]);
 
   const updateSessionMutation = useMutation({
     mutationFn: async (data: Partial<TrainingSession>) => apiRequest("PUT", `/api/training-sessions/${sessionId}`, data),
@@ -108,13 +126,23 @@ export default function TrainingMode() {
   const { attendance, isLoading: attendanceLoading, toggleAttendance, markAllPresent, pendingPlayerId } = useSessionAttendance(sessionId);
 
   const goToStep = (index: number) => {
+    haptic("tap");
     setStepIndex(Math.max(0, Math.min(sequence.length - 1, index)));
     setIsRunning(true);
   };
 
-  const addSeconds = (amount: number) => setSecondsLeft((prev) => Math.max(0, prev + amount));
+  const addSeconds = (amount: number) => {
+    haptic("tap");
+    setSecondsLeft((prev) => Math.max(0, prev + amount));
+  };
+
+  const togglePause = () => {
+    haptic("tap");
+    setIsRunning((r) => !r);
+  };
 
   const handleFinish = () => {
+    haptic("success");
     updateSessionMutation.mutate({ status: "completed" }, {
       onSuccess: () => setLocation("/training-sessions"),
     });
@@ -125,6 +153,7 @@ export default function TrainingMode() {
     const combined = existing ? `${existing}\n${noteDraft.trim()}` : noteDraft.trim();
     updateSessionMutation.mutate({ notes: combined }, {
       onSuccess: () => {
+        haptic("success");
         setNoteDraft("");
         setIsNoteOpen(false);
         toast({ title: t("trainingMode.noteSaved") });
@@ -141,7 +170,7 @@ export default function TrainingMode() {
   }
 
   return (
-    <div className="min-h-screen bg-rail text-rail-foreground flex flex-col">
+    <div className="min-h-screen bg-rail text-rail-foreground flex flex-col court-texture">
       {/* Top bar — exit + progress + finish, always reachable, never buried */}
       <header className="flex items-center justify-between gap-2 p-4 border-b border-rail-border">
         <Button
@@ -184,8 +213,10 @@ export default function TrainingMode() {
           <>
             {/* Current exercise — a light card even on the dark screen, so
                 category badges keep their normal (light-surface-tuned)
-                contrast instead of being read directly off bg-rail. */}
-            <div className="w-full max-w-lg bg-card text-card-foreground rounded-xl p-6 shadow-2xl">
+                contrast instead of being read directly off bg-rail. Keyed on
+                the exercise id so switching exercises re-triggers the fade
+                instead of silently swapping text in place. */}
+            <div key={currentExercise.id} className="fade-in w-full max-w-lg bg-card text-card-foreground rounded-xl p-6 shadow-2xl">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <Badge className={CATEGORY_COLORS[currentExercise.category as keyof typeof CATEGORY_COLORS]}>
                   {t(`categories.exercise.${currentExercise.category}`, currentExercise.category)}
@@ -208,12 +239,19 @@ export default function TrainingMode() {
             </div>
 
             {/* Timer — the one thing a coach glancing from across the gym
-                needs to read in under a second: huge, high-contrast. */}
-            <div className="text-center">
-              <div className="font-display font-bold text-7xl sm:text-8xl tabular-nums tracking-tight text-basketball-orange">
+                needs to read in under a second: huge, high-contrast, with a
+                ring that fills the periphery for anyone not looking dead at
+                the number, and a color/pulse shift in the final 10s. */}
+            <CircularTimer progress={progress} urgent={isUrgent} size={252} strokeWidth={5}>
+              <div
+                className={cn(
+                  "font-display font-bold text-6xl sm:text-7xl tabular-nums tracking-tight transition-colors",
+                  isUrgent ? "text-destructive" : "text-basketball-orange"
+                )}
+              >
                 {formatCountdown(secondsLeft)}
               </div>
-            </div>
+            </CircularTimer>
 
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(10)}>
@@ -241,7 +279,7 @@ export default function TrainingMode() {
               <Button
                 size="icon"
                 className="w-20 h-20 rounded-full basketball-orange basketball-orange-hover text-white"
-                onClick={() => setIsRunning((r) => !r)}
+                onClick={togglePause}
                 aria-label={isRunning ? t("trainingMode.pause") : t("trainingMode.resume")}
               >
                 {isRunning
@@ -330,8 +368,8 @@ export default function TrainingMode() {
         attendance={attendance}
         isLoading={attendanceLoading}
         injuredPlayerIds={injuredPlayerIds}
-        onToggleAttendance={toggleAttendance}
-        onMarkAllPresent={() => markAllPresent(players.filter((p) => p.isActive === 1).map((p) => p.id))}
+        onToggleAttendance={(playerId, status) => { haptic("tap"); toggleAttendance(playerId, status); }}
+        onMarkAllPresent={() => { haptic("success"); markAllPresent(players.filter((p) => p.isActive === 1).map((p) => p.id)); }}
         pendingPlayerId={pendingPlayerId}
       />
     </div>

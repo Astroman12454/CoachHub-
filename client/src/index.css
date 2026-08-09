@@ -96,6 +96,9 @@
   --rail-foreground: hsl(45, 25%, 94%);
   --rail-muted: hsl(35, 12%, 60%);
   --rail-border: hsl(30, 12%, 15%);
+
+  --skeleton-base: hsl(45, 16%, 91%);
+  --skeleton-highlight: hsl(45, 20%, 97%);
 }
 
 .dark {
@@ -143,6 +146,9 @@
   --rail-foreground: hsl(45, 25%, 94%);
   --rail-muted: hsl(35, 10%, 55%);
   --rail-border: hsl(28, 12%, 12%);
+
+  --skeleton-base: hsl(25, 10%, 13%);
+  --skeleton-highlight: hsl(25, 10%, 19%);
 }
 
 @layer base {
@@ -235,9 +241,62 @@
     }
   }
 
+  /* Very faint hardwood-line motif — a single diagonal stripe pair, not a
+     literal court diagram — for large, mostly-empty hero/rail surfaces that
+     otherwise read as flat corporate dashboard space. Deliberately subtle:
+     it should register as texture, not as a graphic. */
+  .court-texture {
+    background-image: repeating-linear-gradient(
+      115deg,
+      hsl(0, 0%, 100%, 0.035) 0px,
+      hsl(0, 0%, 100%, 0.035) 1px,
+      transparent 1px,
+      transparent 64px
+    );
+  }
+
+  /* Shimmer skeleton — a moving highlight band instead of a flat pulse, the
+     difference between "this is loading" and "this app is broken". */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      100deg,
+      var(--skeleton-base) 40%,
+      var(--skeleton-highlight) 50%,
+      var(--skeleton-base) 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+
+  /* One consistent "press" for every interactive element that opts in —
+     tactile, not bouncy. Skipped entirely under reduced motion below. */
+  .press-feedback {
+    transition: transform 0.12s ease-out;
+  }
+  .press-feedback:active {
+    transform: scale(0.97);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .fade-in {
+    .fade-in,
+    .skeleton-shimmer,
+    .animate-pulse,
+    .animate-ping {
       animation-duration: 0.001ms;
+    }
+    .press-feedback,
+    .press-feedback:active {
+      transition: none;
+      transform: none;
     }
   }
 }

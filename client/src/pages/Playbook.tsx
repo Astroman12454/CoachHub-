@@ -143,10 +143,11 @@ export default function Playbook() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {visiblePlays.map((play) => (
+            {visiblePlays.map((play, index) => (
               <Card
                 key={play.id}
-                className="hover:border-basketball-orange hover:shadow-sm transition-all cursor-pointer"
+                className="fade-in hover:border-basketball-orange hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer"
+                style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
                 onClick={() => setLocation(`/playbook/${play.id}`)}
               >
                 <CardHeader className="pb-3">

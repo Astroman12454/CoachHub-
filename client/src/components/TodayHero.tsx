@@ -41,7 +41,15 @@ export default function TodayHero({ teamName, todaySession, nextSession, onStart
                   {todaySession.time}
                 </span>
                 <span>{t("sessions.minutesValue", { count: todaySession.duration })}</span>
-                {isLive && <Badge className="basketball-orange text-white">{t("dashboard.today.live")}</Badge>}
+                {isLive && (
+                  <Badge className="basketball-orange text-white gap-1.5">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+                    </span>
+                    {t("dashboard.today.live")}
+                  </Badge>
+                )}
                 {isDone && <Badge variant="secondary">{t("dashboard.today.completed")}</Badge>}
               </div>
             </>
