@@ -146,7 +146,7 @@ export default function TrainingMode() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.status]);
 
-  const { attendance, isLoading: attendanceLoading, toggleAttendance, markAllPresent, pendingPlayerId } = useSessionAttendance(sessionId);
+  const { attendance, isLoading: attendanceLoading, toggleAttendance, markAllPresent, setAttendanceReason, pendingPlayerId } = useSessionAttendance(sessionId);
 
   const goToStep = (index: number) => {
     haptic("tap");
@@ -450,6 +450,7 @@ export default function TrainingMode() {
         injuredPlayerIds={injuredPlayerIds}
         onToggleAttendance={(playerId, status) => { haptic("tap"); toggleAttendance(playerId, status); }}
         onMarkAllPresent={() => { haptic("success"); markAllPresent(players.filter((p) => p.isActive === 1).map((p) => p.id)); }}
+        onSetAttendanceReason={setAttendanceReason}
         pendingPlayerId={pendingPlayerId}
       />
 

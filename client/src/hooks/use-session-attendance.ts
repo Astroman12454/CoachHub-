@@ -75,6 +75,45 @@ export function useSessionAttendance(sessionId: number | undefined) {
     markAttendanceMutation.mutate({ playerId, status });
   };
 
+  // Sets/clears an absence reason without touching status — only meaningful
+  // once a status exists, so this is a no-op if the player has no
+  // attendance record yet (nothing to attach the reason to).
+  const setAttendanceReasonMutation = useMutation({
+    mutationFn: async ({ playerId, notes }: { playerId: number; notes: string }) => {
+      const existing = attendance.find((a) => a.playerId === playerId);
+      if (!existing) return;
+      return apiRequest("PUT", `/api/attendance/${existing.id}`, { notes: notes || null });
+    },
+    onMutate: async ({ playerId, notes }) => {
+      const queryKey = ["/api/attendance/session", sessionId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousAttendance = queryClient.getQueryData<Attendance[]>(queryKey);
+
+      queryClient.setQueryData<Attendance[]>(queryKey, (old = []) =>
+        old.map((a) => (a.playerId === playerId ? { ...a, notes: notes || null } : a)),
+      );
+
+      return { previousAttendance, queryKey };
+    },
+    onError: (_err, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousAttendance);
+      }
+      toast({
+        title: t("players.error"),
+        description: t("schedule.failedToUpdateAttendance"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance/session"] });
+    },
+  });
+
+  const setAttendanceReason = (playerId: number, notes: string) => {
+    setAttendanceReasonMutation.mutate({ playerId, notes });
+  };
+
   // The common case is "whole team showed up" — mark everyone present in one
   // tap, then flip the one or two exceptions individually, instead of
   // tapping "present" once per player every single practice.
@@ -92,6 +131,7 @@ export function useSessionAttendance(sessionId: number | undefined) {
     isLoading,
     toggleAttendance,
     markAllPresent,
+    setAttendanceReason,
     pendingPlayerId: markAttendanceMutation.isPending ? markAttendanceMutation.variables?.playerId : undefined,
   };
 }

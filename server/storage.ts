@@ -22,6 +22,7 @@ import {
   physicalTestResults,
   type Account,
   type Team,
+  type InsertTeam,
   type Exercise,
   type InsertExercise,
   type TrainingSession,
@@ -97,6 +98,7 @@ export interface IStorage {
   createTeam(accountId: number, name: string): Promise<Team>;
   getTeamsByAccount(accountId: number): Promise<Team[]>;
   getTeamById(id: number, accountId: number): Promise<Team | undefined>;
+  updateTeam(id: number, accountId: number, data: Partial<InsertTeam>): Promise<Team | undefined>;
 
   // Exercise methods (scoped by account — shared across that account's teams)
   getAllExercises(accountId: number): Promise<Exercise[]>;
@@ -165,7 +167,11 @@ export interface IStorage {
   getAttendanceById(id: number): Promise<Attendance | undefined>;
   markAttendance(attendance: InsertAttendance): Promise<Attendance>;
   updateAttendance(id: number, attendance: Partial<InsertAttendance>): Promise<Attendance | undefined>;
-  getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }>;
+  getPlayerAttendanceStats(playerId: number): Promise<{
+    total: number; present: number; absent: number; rate: number;
+    totalHoursTrained: number;
+    monthly: { month: string; present: number; absent: number }[];
+  }>;
 
   // Player development methods — skill ratings and freeform notes, both
   // scoped by playerId (callers verify team ownership via getPlayerById
@@ -363,6 +369,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(teams)
       .where(and(eq(teams.id, id), eq(teams.accountId, accountId)));
+    return team || undefined;
+  }
+
+  async updateTeam(id: number, accountId: number, data: Partial<InsertTeam>): Promise<Team | undefined> {
+    const [team] = await db
+      .update(teams)
+      .set(data)
+      .where(and(eq(teams.id, id), eq(teams.accountId, accountId)))
+      .returning();
     return team || undefined;
   }
 
@@ -860,14 +875,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(trainingSessions.id, sessionId));
   }
 
-  async getPlayerAttendanceStats(playerId: number): Promise<{ total: number; present: number; absent: number; rate: number }> {
-    const playerAttendance = await db.select().from(attendance).where(eq(attendance.playerId, playerId));
-    const total = playerAttendance.length;
-    const present = playerAttendance.filter(a => a.status === 'present' || a.status === 'late').length;
+  async getPlayerAttendanceStats(playerId: number): Promise<{
+    total: number; present: number; absent: number; rate: number;
+    totalHoursTrained: number;
+    monthly: { month: string; present: number; absent: number }[];
+  }> {
+    // Joined with trainingSessions (rather than a plain attendance select)
+    // so total hours trained and the monthly breakdown can be derived from
+    // each session's own date/duration without a second round trip.
+    const rows = await db
+      .select({ status: attendance.status, date: trainingSessions.date, duration: trainingSessions.duration })
+      .from(attendance)
+      .innerJoin(trainingSessions, eq(attendance.sessionId, trainingSessions.id))
+      .where(eq(attendance.playerId, playerId));
+
+    const total = rows.length;
+    const presentRows = rows.filter(r => r.status === 'present' || r.status === 'late');
+    const present = presentRows.length;
     const absent = total - present;
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+    const totalHoursTrained = Math.round((presentRows.reduce((sum, r) => sum + r.duration, 0) / 60) * 10) / 10;
 
-    return { total, present, absent, rate };
+    const monthlyMap = new Map<string, { present: number; absent: number }>();
+    for (const row of rows) {
+      const month = row.date.slice(0, 7); // "YYYY-MM"
+      const entry = monthlyMap.get(month) ?? { present: 0, absent: 0 };
+      if (row.status === 'present' || row.status === 'late') entry.present++;
+      else entry.absent++;
+      monthlyMap.set(month, entry);
+    }
+    const monthly = Array.from(monthlyMap.entries())
+      .map(([month, counts]) => ({ month, ...counts }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return { total, present, absent, rate, totalHoursTrained, monthly };
   }
 
   // A rating is always all 5 categories submitted together (see

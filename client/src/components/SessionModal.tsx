@@ -57,7 +57,8 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
   const isDuplicating = !isEditing && !!duplicateFrom;
   const source = session ?? duplicateFrom ?? null;
   const restoreFocus = useDialogFocusReturn(isOpen);
-  const { account } = useAuth();
+  const { account, teams, currentTeamId } = useAuth();
+  const currentTeam = teams.find((team) => team.id === currentTeamId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canGeneratePlan = canGenerateAiSessionPlan(account?.plan ?? "free");
@@ -71,11 +72,13 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
   // 120 — a coach's practices tend to run the same length week to week.
   // Read straight from the query cache (already populated by whichever page
   // opened this modal) rather than a fresh fetch, so there's no async gap
-  // before the form's defaultValues are computed.
+  // before the form's defaultValues are computed. Falls back to the team's
+  // own configured default (see CoachSettings) before the hardcoded 120, for
+  // a brand-new team with no session history yet.
   const cachedSessions = queryClient.getQueryData<TrainingSession[]>(["/api/training-sessions"]) ?? [];
   const mostRecentDuration = cachedSessions.length > 0
     ? [...cachedSessions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].duration
-    : 120;
+    : currentTeam?.defaultSessionDuration ?? 120;
 
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [aiInstructions, setAiInstructions] = useState("");

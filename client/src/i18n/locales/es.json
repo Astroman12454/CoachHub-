@@ -356,6 +356,9 @@
     "report": "Informe",
     "couldntExportReport": "No se pudo exportar el informe de temporada",
     "attendanceRate": "Tasa de Asistencia",
+    "hoursTrained": "Horas Entrenadas",
+    "monthlyAttendance": "Asistencia Mensual",
+    "monthlyAttendanceTally": "{{present}}/{{total}} ({{pct}}%)",
     "gamesPlayed": "Partidos Jugados",
     "seasonPoints": "Puntos de Temporada",
     "seasonAssists": "Asistencias de Temporada",
@@ -732,6 +735,12 @@
     "previousWeek": "Semana Anterior",
     "next": "Siguiente",
     "nextWeek": "Siguiente Semana",
+    "weekView": "Semana",
+    "monthView": "Mes",
+    "previousMonth": "Mes Anterior",
+    "nextMonth": "Mes Siguiente",
+    "monthGridAriaLabel": "Calendario mensual — selecciona un día para ver su semana",
+    "monthDayAriaLabel": "{{date}}, {{count}} sesiones",
     "completed": "Completadas",
     "upcoming": "Próximas",
     "days": {
@@ -794,7 +803,9 @@
     "closeAttendance": "Cerrar Asistencia",
     "attendanceTab": "Asistencia",
     "drillsTab": "Ejercicios",
-    "markAllPresent": "Marcar todos presentes"
+    "markAllPresent": "Marcar todos presentes",
+    "reasonPlaceholder": "Motivo (enfermedad, viaje, ...) — opcional",
+    "reasonFor": "Motivo de {{name}}"
   },
   "trainingMode": {
     "exit": "Salir del modo entrenamiento",
@@ -871,6 +882,12 @@
   "coachSettings": {
     "title": "Gestionar Entrenadores",
     "subtitle": "Invitá a otros entrenadores a los equipos de tu club.",
+    "teamPreferences": "Preferencias del Equipo",
+    "defaultSessionDuration": "Duración de Sesión por Defecto",
+    "defaultSessionDurationDescription": "Rellena la duración de una nueva sesión de entrenamiento cuando no hay una sesión reciente de la que copiarla.",
+    "noDefault": "Sin valor por defecto",
+    "preferencesSaved": "Preferencias guardadas",
+    "couldntSavePreferences": "No se pudieron guardar las preferencias",
     "inviteACoach": "Invitar a un Entrenador",
     "seatsUsed": "{{used}} / {{limit}} cupos",
     "emailPlaceholder": "entrenador@ejemplo.com",

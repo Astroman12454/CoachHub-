@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity, Crown, Phone } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity, Crown, Phone, Clock, Calendar } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -37,6 +37,13 @@ function formatPlainDate(date: string): string {
 // callers don't need an awkward cast at every use site.
 function formatDateTime(value: string | Date): string {
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+// A "YYYY-MM" bucket key (from the attendance monthly breakdown) rendered as
+// "August 2026" — parsed as day 1 at local midnight for the same reason as
+// formatPlainDate above.
+function formatMonthLabel(month: string): string {
+  return new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
 // Groups the flat rating history back into per-evaluation rows (see
@@ -78,7 +85,11 @@ export default function PlayerProfile() {
     enabled: !isNaN(playerId),
   });
 
-  const { data: attendanceStats } = useQuery<{ total: number; present: number; absent: number; rate: number }>({
+  const { data: attendanceStats } = useQuery<{
+    total: number; present: number; absent: number; rate: number;
+    totalHoursTrained: number;
+    monthly: { month: string; present: number; absent: number }[];
+  }>({
     queryKey: [`/api/players/${playerId}/attendance-stats`],
     enabled: !isNaN(playerId),
   });
@@ -288,8 +299,9 @@ export default function PlayerProfile() {
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 fade-in">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label={t("playerProfile.attendanceRate")} value={`${attendanceStats?.rate ?? 0}%`} icon={CheckCircle2} color="success" />
+          <StatCard label={t("playerProfile.hoursTrained")} value={attendanceStats?.totalHoursTrained ?? 0} icon={Clock} color="violet" />
           <StatCard label={t("playerProfile.gamesPlayed")} value={gameStats?.gamesPlayed ?? 0} icon={TrendingUp} color="court" />
           <StatCard label={t("playerProfile.seasonPoints")} value={gameStats?.points ?? 0} icon={Star} color="orange" />
           <StatCard label={t("playerProfile.seasonAssists")} value={gameStats?.assists ?? 0} icon={MessageSquarePlus} color="violet" />
@@ -346,6 +358,33 @@ export default function PlayerProfile() {
             </CardContent>
           </Card>
         </div>
+
+        {attendanceStats && attendanceStats.monthly.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+                {t("playerProfile.monthlyAttendance")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {[...attendanceStats.monthly].reverse().map((row) => {
+                  const monthTotal = row.present + row.absent;
+                  const monthRate = monthTotal > 0 ? Math.round((row.present / monthTotal) * 100) : 0;
+                  return (
+                    <li key={row.month} className="flex items-center justify-between gap-3 text-sm border-t border-border pt-2 first:border-0 first:pt-0">
+                      <span className="font-medium text-foreground">{formatMonthLabel(row.month)}</span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {t("playerProfile.monthlyAttendanceTally", { present: row.present, total: monthTotal, pct: monthRate })}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
 
         {(player.emergencyContactName || player.emergencyContactPhone || player.medicalNotes) && (
           <Card>

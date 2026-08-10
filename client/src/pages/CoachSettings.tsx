@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { UserPlus, X, Mail } from "lucide-react";
+import { UserPlus, X, Mail, Clock } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { SESSION_QUERY_KEY } from "@/lib/queryClient";
 import { CLUB_PLAN_SEAT_LIMIT } from "@shared/schema";
 
 interface CoachMember {
@@ -33,10 +36,35 @@ export default function CoachSettings() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { teams, currentTeamId } = useAuth();
+  const currentTeam = teams.find((team) => team.id === currentTeamId);
   const [email, setEmail] = useState("");
   const [removeTarget, setRemoveTarget] = useState<CoachMember | null>(null);
+  const [defaultDuration, setDefaultDuration] = useState<string>("");
+
+  useEffect(() => {
+    setDefaultDuration(currentTeam?.defaultSessionDuration ? String(currentTeam.defaultSessionDuration) : "");
+  }, [currentTeam?.id, currentTeam?.defaultSessionDuration]);
 
   const { data, isLoading } = useQuery<CoachesResponse>({ queryKey: ["/api/coaches"] });
+
+  const saveDefaultDurationMutation = useMutation({
+    mutationFn: async (value: string) =>
+      apiRequest("PUT", `/api/teams/${currentTeamId}`, {
+        defaultSessionDuration: value ? Number(value) : null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SESSION_QUERY_KEY] });
+      toast({ title: t("coachSettings.preferencesSaved") });
+    },
+    onError: (error) => {
+      toast({
+        title: t("coachSettings.couldntSavePreferences"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
 
   const inviteMutation = useMutation({
     mutationFn: async (email: string) => apiRequest("POST", "/api/coaches/invite", { email }),
@@ -82,6 +110,43 @@ export default function CoachSettings() {
       <TopBar title={t("coachSettings.title")} subtitle={t("coachSettings.subtitle")} />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-2xl fade-in">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("coachSettings.teamPreferences")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <label htmlFor="default-session-duration" className="text-sm font-medium text-foreground mb-2 block">
+              {t("coachSettings.defaultSessionDuration")}
+            </label>
+            <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.defaultSessionDurationDescription")}</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select value={defaultDuration || "none"} onValueChange={(v) => setDefaultDuration(v === "none" ? "" : v)}>
+                <SelectTrigger id="default-session-duration" className="w-full sm:w-56">
+                  <SelectValue placeholder={t("coachSettings.noDefault")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t("coachSettings.noDefault")}</SelectItem>
+                  <SelectItem value="60">{t("sessionModal.minutesOption", { count: 60 })}</SelectItem>
+                  <SelectItem value="90">{t("sessionModal.minutesOption", { count: 90 })}</SelectItem>
+                  <SelectItem value="120">{t("sessionModal.minutesOption", { count: 120 })}</SelectItem>
+                  <SelectItem value="150">{t("sessionModal.minutesOption", { count: 150 })}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                onClick={() => saveDefaultDurationMutation.mutate(defaultDuration)}
+                disabled={saveDefaultDurationMutation.isPending || !currentTeamId}
+                className="basketball-orange basketball-orange-hover text-white sm:w-auto"
+              >
+                {saveDefaultDurationMutation.isPending ? t("common.saving") : t("common.save")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">

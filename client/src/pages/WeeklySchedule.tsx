@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat, CalendarRange } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import AttendanceModal from "@/components/AttendanceModal";
@@ -16,6 +16,28 @@ import { cn } from "@/lib/utils";
 import type { TrainingSession, Player, PlayerInjury } from "@shared/schema";
 
 const DAYS_OF_WEEK = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+// Monday-start grid matching DAYS_OF_WEEK above — null cells pad out the
+// first/last week of the month to a full 7-day row.
+function getMonthGridDates(monthDate: Date): (Date | null)[] {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const firstDayOffset = (firstOfMonth.getDay() + 6) % 7; // JS getDay(): 0=Sun..6=Sat
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: (Date | null)[] = [];
+  for (let i = 0; i < firstDayOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function mondayOf(date: Date): Date {
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return monday;
+}
 
 // Left-border accent + neutral card background — a status color that reads
 // as a marker on a stat sheet rather than a full pastel-filled block.
@@ -37,6 +59,8 @@ export default function WeeklySchedule() {
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"week" | "month">("week");
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date());
 
   // Calculate week dates
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -57,6 +81,20 @@ export default function WeeklySchedule() {
     },
   });
 
+  const monthGridDates = getMonthGridDates(selectedMonth);
+  const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1).toISOString().split('T')[0];
+  const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).toISOString().split('T')[0];
+
+  const { data: monthSessions = [] } = useQuery<TrainingSession[]>({
+    queryKey: ['/api/training-sessions', 'month', monthStart, monthEnd],
+    queryFn: async () => {
+      const response = await fetch(`/api/training-sessions?startDate=${monthStart}&endDate=${monthEnd}`);
+      if (!response.ok) throw new Error('Failed to fetch sessions');
+      return response.json();
+    },
+    enabled: viewMode === "month",
+  });
+
   const { data: players = [] } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
@@ -66,13 +104,29 @@ export default function WeeklySchedule() {
   });
   const injuredPlayerIds = new Set(activeInjuries.map((injury) => injury.playerId));
 
-  const { attendance, isLoading: attendanceLoading, toggleAttendance: handleAttendanceToggle, markAllPresent, pendingPlayerId } =
+  const { attendance, isLoading: attendanceLoading, toggleAttendance: handleAttendanceToggle, markAllPresent, setAttendanceReason, pendingPlayerId } =
     useSessionAttendance(selectedSession?.id);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newWeek = new Date(selectedWeek);
     newWeek.setDate(selectedWeek.getDate() + (direction === 'next' ? 7 : -7));
     setSelectedWeek(newWeek);
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setSelectedMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
+      return next;
+    });
+  };
+
+  // Switching from the month grid to a specific day jumps into the normal
+  // week view for the week containing it, rather than duplicating the whole
+  // attendance-taking UI inside the month cell.
+  const jumpToWeekOf = (date: Date) => {
+    setSelectedWeek(mondayOf(date));
+    setViewMode("week");
   };
 
   const openAttendanceModal = (session: TrainingSession) => {
@@ -83,6 +137,11 @@ export default function WeeklySchedule() {
   const getSessionsForDate = (date: Date) => {
     const dateString = date.toISOString().split('T')[0];
     return Array.isArray(sessions) ? sessions.filter(session => session.date === dateString) : [];
+  };
+
+  const getMonthSessionsForDate = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0];
+    return monthSessions.filter(session => session.date === dateString);
   };
 
   const getWeekStats = () => {
@@ -133,13 +192,100 @@ export default function WeeklySchedule() {
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center gap-2">
+          <div className="inline-flex rounded-md border border-border p-0.5">
+            <Button
+              type="button"
+              variant={viewMode === "week" ? "default" : "ghost"}
+              size="sm"
+              className={viewMode === "week" ? "basketball-orange text-white" : ""}
+              onClick={() => setViewMode("week")}
+            >
+              {t("schedule.weekView")}
+            </Button>
+            <Button
+              type="button"
+              variant={viewMode === "month" ? "default" : "ghost"}
+              size="sm"
+              className={viewMode === "month" ? "basketball-orange text-white" : ""}
+              onClick={() => setViewMode("month")}
+            >
+              <CalendarRange className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+              {t("schedule.monthView")}
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onClick={() => setIsRecurringDialogOpen(true)}>
             <Repeat className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
             {t("recurringSchedule.openButton")}
           </Button>
         </div>
 
+        {viewMode === "month" ? (
+        <>
+        {/* Header with Month Navigation */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-4">
+          <div className="col-span-2 text-center sm:col-span-1 sm:order-2">
+            <h2 className="font-display font-bold uppercase tracking-tight text-xl sm:text-2xl text-foreground">
+              {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h2>
+            <p className="text-muted-foreground mt-0.5 text-sm">{t("schedule.trainingScheduleOverview")}</p>
+          </div>
+
+          <Button variant="outline" onClick={() => navigateMonth('prev')} className="flex items-center justify-center gap-2 sm:order-1">
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+            <span className="sm:hidden">{t("schedule.previous")}</span>
+            <span className="hidden sm:inline">{t("schedule.previousMonth")}</span>
+          </Button>
+
+          <Button variant="outline" onClick={() => navigateMonth('next')} className="flex items-center justify-center gap-2 sm:order-3">
+            <span className="sm:hidden">{t("schedule.next")}</span>
+            <span className="hidden sm:inline">{t("schedule.nextMonth")}</span>
+            <ChevronRight className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+          </Button>
+        </div>
+
+        {/* Month Calendar Grid — a plain CSS grid of self-labeled day
+            buttons, not an ARIA grid widget (no row/cell semantics to keep
+            in sync), so it deliberately carries no grid/columnheader roles. */}
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2" role="group" aria-label={t("schedule.monthGridAriaLabel")}>
+          {DAYS_OF_WEEK.map((dayKey) => (
+            <div key={dayKey} className="text-center text-xs font-medium text-muted-foreground uppercase pb-1" aria-hidden="true">
+              <span className="hidden sm:inline">{t(`schedule.days.${dayKey}.short`)}</span>
+              <span className="sm:hidden">{t(`schedule.days.${dayKey}.short`).slice(0, 1)}</span>
+            </div>
+          ))}
+          {monthGridDates.map((date, index) => {
+            if (!date) return <div key={index} aria-hidden="true" />;
+            const daySessions = getMonthSessionsForDate(date);
+            const isToday = date.toDateString() === new Date().toDateString();
+            return (
+              <button
+                type="button"
+                key={index}
+                onClick={() => jumpToWeekOf(date)}
+                aria-label={t("schedule.monthDayAriaLabel", { date: date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }), count: daySessions.length })}
+                className={cn(
+                  "aspect-square rounded-md border border-border p-1.5 sm:p-2 text-left transition-colors hover:border-basketball-orange hover:bg-muted/50 flex flex-col",
+                  isToday && "ring-2 ring-basketball-orange",
+                )}
+              >
+                <span className={cn("text-xs sm:text-sm tabular-nums", isToday ? "font-bold text-basketball-orange" : "text-foreground")}>
+                  {date.getDate()}
+                </span>
+                {daySessions.length > 0 && (
+                  <span className="mt-auto self-start">
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
+                      {daySessions.length}
+                    </Badge>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        </>
+        ) : (
+        <>
         {/* Header with Week Navigation */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:gap-4">
           <div className="col-span-2 text-center sm:col-span-1 sm:order-2">
@@ -252,6 +398,8 @@ export default function WeeklySchedule() {
             );
           })}
         </div>
+        </>
+        )}
 
         <AttendanceModal
           open={isAttendanceModalOpen}
@@ -263,6 +411,7 @@ export default function WeeklySchedule() {
           injuredPlayerIds={injuredPlayerIds}
           onToggleAttendance={handleAttendanceToggle}
           onMarkAllPresent={() => markAllPresent(players.filter((p) => p.isActive === 1).map((p) => p.id))}
+          onSetAttendanceReason={setAttendanceReason}
           pendingPlayerId={pendingPlayerId}
         />
 

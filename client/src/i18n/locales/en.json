@@ -356,6 +356,9 @@
     "report": "Report",
     "couldntExportReport": "Couldn't export the season report",
     "attendanceRate": "Attendance Rate",
+    "hoursTrained": "Hours Trained",
+    "monthlyAttendance": "Monthly Attendance",
+    "monthlyAttendanceTally": "{{present}}/{{total}} ({{pct}}%)",
     "gamesPlayed": "Games Played",
     "seasonPoints": "Season Points",
     "seasonAssists": "Season Assists",
@@ -732,6 +735,12 @@
     "previousWeek": "Previous Week",
     "next": "Next",
     "nextWeek": "Next Week",
+    "weekView": "Week",
+    "monthView": "Month",
+    "previousMonth": "Previous Month",
+    "nextMonth": "Next Month",
+    "monthGridAriaLabel": "Month calendar — select a day to view its week",
+    "monthDayAriaLabel": "{{date}}, {{count}} sessions",
     "completed": "Completed",
     "upcoming": "Upcoming",
     "days": {
@@ -794,7 +803,9 @@
     "closeAttendance": "Close Attendance",
     "attendanceTab": "Attendance",
     "drillsTab": "Drills",
-    "markAllPresent": "Mark all present"
+    "markAllPresent": "Mark all present",
+    "reasonPlaceholder": "Reason (illness, travel, ...) — optional",
+    "reasonFor": "Reason for {{name}}"
   },
   "trainingMode": {
     "exit": "Exit training mode",
@@ -871,6 +882,12 @@
   "coachSettings": {
     "title": "Manage Coaches",
     "subtitle": "Invite other coaches to your club's teams.",
+    "teamPreferences": "Team Preferences",
+    "defaultSessionDuration": "Default Session Duration",
+    "defaultSessionDurationDescription": "Prefills a new training session's duration when there's no recent session to copy from.",
+    "noDefault": "No default",
+    "preferencesSaved": "Preferences saved",
+    "couldntSavePreferences": "Couldn't save preferences",
     "inviteACoach": "Invite a Coach",
     "seatsUsed": "{{used}} / {{limit}} seats",
     "emailPlaceholder": "coach@example.com",

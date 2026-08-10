@@ -197,6 +197,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Currently only used to set defaultSessionDuration (SessionModal's
+  // starting point for a from-scratch session), but scoped generically like
+  // the other insertTeamSchema.partial() update routes in case more team
+  // preferences show up later.
+  app.put("/api/teams/:id", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const updateData = insertTeamSchema.partial().parse(req.body);
+      const team = await storage.updateTeam(id, accountId, updateData);
+
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+
+      res.json(team);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid team data" });
+    }
+  });
+
   // Exercise routes — scoped by account, shared across that account's teams
   // (and, for a Club coach, across the whole club — see
   // resolveEffectiveAccountId).

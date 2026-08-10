@@ -579,6 +579,33 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("weekly schedule — month view", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Month")');
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule — attendance modal, marks a player absent and enters a reason", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
+    await sessionCard.click();
+    await page.waitForSelector("text=/Attendance - /");
+    const absentButton = page.locator('button:has-text("Absent")').first();
+    if (await absentButton.count() === 0) test.skip(true, "no active players to mark absent");
+    await absentButton.click();
+    await page.waitForSelector('input[placeholder*="Reason"]');
+    await page.fill('input[placeholder*="Reason"]', "Sick");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("weekly schedule — mark all present", async ({ page }) => {
     await login(page);
     await page.goto("/weekly-schedule");
@@ -748,6 +775,22 @@ test.describe("accessibility (axe)", () => {
     await page.goto("/settings/coaches");
     await page.waitForLoadState("networkidle");
     await page.waitForSelector("text=Manage Coaches");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("coach settings page — sets a default session duration", async ({ page }) => {
+    await login(page);
+    await page.goto("/settings/coaches");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Team Preferences");
+    await page.locator("#default-session-duration").click();
+    await page.click('[role="option"]:has-text("90 minutes")');
+    await page.click('button:has-text("Save")');
+    await page.waitForSelector("text=Preferences saved");
+    // Dismiss the confirmation toast before scanning — see the comment on
+    // the invite-sent test below for why (a pre-existing Radix Toast quirk).
+    await page.click('button[aria-label="Close"]');
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });

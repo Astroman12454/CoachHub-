@@ -75,6 +75,10 @@ export const teams = pgTable("teams", {
   // sweep (server/notifications-cron.ts) so a team gets at most one digest
   // every 7 days regardless of how often the sweep itself runs.
   lastWeeklyDigestAt: timestamp("last_weekly_digest_at"),
+  // Prefills SessionModal's duration field for a from-scratch session, ahead
+  // of its own "reuse the most recent session's duration" fallback — null
+  // until a coach sets one, so nothing changes for a team that never does.
+  defaultSessionDuration: integer("default_session_duration"),
 });
 
 export const exercises = pgTable("exercises", {
@@ -452,6 +456,7 @@ export const insertTeamSchema = createInsertSchema(teams).omit({
   createdAt: true,
 }).extend({
   name: z.string().min(1, "Team name is required"),
+  defaultSessionDuration: z.number().int().min(1, "Duration must be at least 1 minute").nullish(),
 });
 
 // These `.extend()` calls are the single source of truth for validation on
