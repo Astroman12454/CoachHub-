@@ -123,6 +123,16 @@
       "defense": "Defense",
       "inbound": "Inbound",
       "special": "Special"
+    },
+    "playSituation": {
+      "out_of_bounds_baseline": "Baseline out-of-bounds",
+      "out_of_bounds_sideline": "Sideline out-of-bounds",
+      "last_shot": "Last shot",
+      "press_break": "Press break",
+      "vs_zone": "Vs. zone defense",
+      "vs_man": "Vs. man defense",
+      "fast_break": "Fast break",
+      "after_timeout": "After timeout"
     }
   },
   "dashboard": {
@@ -594,6 +604,7 @@
     "newPlay": "New Play",
     "emptyTitle": "No Plays Yet",
     "emptyDescription": "Draw your first play on a basketball court — set up your players, draw the movement, and animate it step by step.",
+    "emptyFilterDescription": "No plays match your current search or filters.",
     "drawFirstPlay": "Draw First Play",
     "deleteName": "Delete {{name}}",
     "courtType": {
@@ -605,7 +616,17 @@
     "notPracticedYet": "Not practiced yet",
     "tapToViewOrEdit": "Tap to view or edit",
     "deleteConfirmTitle": "Delete play?",
-    "deleteConfirmDescription": "This will permanently delete \"{{name}}\". This can't be undone."
+    "deleteConfirmDescription": "This will permanently delete \"{{name}}\". This can't be undone.",
+    "searchPlaceholder": "Search plays...",
+    "filterBySituation": "Filter by situation",
+    "allSituations": "All Situations",
+    "favoritesOnly": "Favorites only",
+    "favoriteName": "Favorite {{name}}",
+    "unfavoriteName": "Unfavorite {{name}}",
+    "couldntUpdateFavorite": "Couldn't update favorite",
+    "duplicateAction": "Duplicate {{name}}",
+    "duplicateName": "{{name}} (copy)",
+    "couldntDuplicate": "Couldn't duplicate play"
   },
   "playEditor": {
     "nameRequired": "Name required",
@@ -631,6 +652,8 @@
     "court": "Court",
     "halfCourt": "Half Court",
     "fullCourt": "Full Court",
+    "situation": "Situation",
+    "noSituation": "No specific situation",
     "exportingEllipsis": "Exporting…",
     "exportPdf": "Export PDF",
     "savingEllipsis": "Saving…",

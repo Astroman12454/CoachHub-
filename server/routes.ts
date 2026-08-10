@@ -1550,6 +1550,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const setPlayFavoriteSchema = z.object({ isFavorite: z.boolean() });
+
+  // Favoriting is a personal organizational flag, not "creating a play" —
+  // deliberately not counted against the plan's saved-play limit.
+  app.put("/api/plays/:id/favorite", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const { isFavorite } = setPlayFavoriteSchema.parse(req.body);
+      const play = await storage.setPlayFavorite(id, req.session.currentTeamId!, isFavorite);
+      if (!play) {
+        return res.status(404).json({ message: "Play not found" });
+      }
+      res.json(play);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
   // AI box-score import — upload a photo or PDF, get a draft back for the
   // coach to review/correct before it's saved via POST /api/games above.
   // Nothing is persisted here; this route only ever reads.

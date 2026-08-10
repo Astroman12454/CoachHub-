@@ -232,6 +232,7 @@ export interface IStorage {
   createPlayWithSteps(teamId: number, data: CreatePlay): Promise<Play>;
   updatePlayWithSteps(id: number, teamId: number, data: CreatePlay): Promise<Play | undefined>;
   deletePlay(id: number, teamId: number): Promise<boolean>;
+  setPlayFavorite(id: number, teamId: number, isFavorite: boolean): Promise<Play | undefined>;
   getPlayPracticeStats(teamId: number): Promise<PlayPracticeStats[]>;
 
   // Push subscription methods — scoped by player (portal visitors, not
@@ -1267,7 +1268,7 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       const [play] = await tx
         .insert(plays)
-        .values({ teamId, name: data.name, category: data.category, courtType: data.courtType, notes: data.notes ?? null })
+        .values({ teamId, name: data.name, category: data.category, courtType: data.courtType, situation: data.situation ?? null, notes: data.notes ?? null })
         .returning();
 
       await tx.insert(playSteps).values(
@@ -1290,7 +1291,7 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       const [play] = await tx
         .update(plays)
-        .set({ name: data.name, category: data.category, courtType: data.courtType, notes: data.notes ?? null })
+        .set({ name: data.name, category: data.category, courtType: data.courtType, situation: data.situation ?? null, notes: data.notes ?? null })
         .where(and(eq(plays.id, id), eq(plays.teamId, teamId)))
         .returning();
       if (!play) return undefined;
@@ -1314,6 +1315,15 @@ export class DatabaseStorage implements IStorage {
       .delete(plays)
       .where(and(eq(plays.id, id), eq(plays.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async setPlayFavorite(id: number, teamId: number, isFavorite: boolean): Promise<Play | undefined> {
+    const [play] = await db
+      .update(plays)
+      .set({ isFavorite: isFavorite ? 1 : 0 })
+      .where(and(eq(plays.id, id), eq(plays.teamId, teamId)))
+      .returning();
+    return play || undefined;
   }
 
   // Tallied in JS rather than SQL: trainingSessions.playIds is a text[]

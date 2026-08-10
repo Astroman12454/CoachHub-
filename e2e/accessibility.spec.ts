@@ -864,6 +864,77 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("playbook — new play editor, situation selected", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook/new");
+    await page.waitForSelector('input[aria-label="Play name"]');
+    await page.getByLabel("Situation").click();
+    await page.getByRole("option", { name: "Press break" }).click();
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("playbook — search filters by name", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook");
+    await page.waitForLoadState("networkidle");
+    await page.fill('input[aria-label="Search plays..."]', "E2E Test Play");
+    await page.waitForSelector("text=E2E Test Play");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.fill('input[aria-label="Search plays..."]', "no play matches this");
+    await page.waitForSelector("text=No Plays Yet");
+  });
+
+  test("playbook — favoriting toggles the star and filters by favorites-only", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook");
+    await page.waitForLoadState("networkidle");
+
+    const star = page.locator('button[aria-label^="Favorite "]').first();
+    await star.click();
+    await expect(page.locator('button[aria-label^="Unfavorite "]').first()).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button:has-text("Favorites only")');
+    await expect(page.locator('button[aria-label^="Unfavorite "]').first()).toBeVisible();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("playbook — duplicate flow opens the copy in the editor", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Duplicate "]').first().click();
+    await page.waitForURL(/\/playbook\/\d+$/);
+    await expect(page.locator('input[aria-label="Play name"]')).toHaveValue(/\(copy\)$/);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("playbook — filter by situation", async ({ page }) => {
+    await login(page);
+    await page.request.post("/api/plays", {
+      data: {
+        name: "E2E Situation Play",
+        category: "offense",
+        courtType: "half",
+        situation: "press_break",
+        steps: [{ tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] }],
+      },
+    });
+
+    await page.goto("/playbook");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel("Filter by situation").click();
+    await page.getByRole("option", { name: "Press break" }).click();
+    await page.waitForSelector("text=E2E Situation Play");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("privacy policy page", async ({ page }) => {
     await page.goto("/privacy");
     await page.waitForLoadState("networkidle");

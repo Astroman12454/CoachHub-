@@ -162,4 +162,57 @@ describe("plays (playbook)", () => {
     const res = await agent.post("/api/plays").send(onePlay({ steps: [] }));
     expect(res.status).toBe(400);
   });
+
+  it("saves and returns the play's situation tag, defaulting to null when omitted", async () => {
+    const agent = await signedInPaidAgent(app);
+    const withSituation = await agent.post("/api/plays").send(onePlay({ situation: "press_break" }));
+    expect(withSituation.status).toBe(201);
+    expect(withSituation.body.situation).toBe("press_break");
+
+    const withoutSituation = await agent.post("/api/plays").send(onePlay());
+    expect(withoutSituation.body.situation).toBeNull();
+
+    const cleared = await agent.put(`/api/plays/${withSituation.body.id}`).send(onePlay({ situation: null }));
+    expect(cleared.body.situation).toBeNull();
+  });
+
+  it("rejects a situation tag outside the known enum", async () => {
+    const agent = await signedInPaidAgent(app);
+    const res = await agent.post("/api/plays").send(onePlay({ situation: "not-a-real-situation" }));
+    expect(res.status).toBe(400);
+  });
+
+  describe("favoriting", () => {
+    it("toggles favorite on and off — available on the free plan, unlike creating a play", async () => {
+      const email = uniqueEmail();
+      const agent = request.agent(app);
+      await agent.post("/api/signup").send({ email, password: PASSWORD });
+      const create = await agent.post("/api/plays").send(onePlay());
+
+      const favorite = await agent.put(`/api/plays/${create.body.id}/favorite`).send({ isFavorite: true });
+      expect(favorite.status).toBe(200);
+      expect(favorite.body.isFavorite).toBe(1);
+
+      const unfavorite = await agent.put(`/api/plays/${create.body.id}/favorite`).send({ isFavorite: false });
+      expect(unfavorite.status).toBe(200);
+      expect(unfavorite.body.isFavorite).toBe(0);
+    });
+
+    it("scopes favoriting to the requesting team — an outsider gets 404", async () => {
+      const owner = await signedInPaidAgent(app);
+      const create = await owner.post("/api/plays").send(onePlay());
+
+      const outsider = await signedInPaidAgent(app);
+      const res = await outsider.put(`/api/plays/${create.body.id}/favorite`).send({ isFavorite: true });
+      expect(res.status).toBe(404);
+    });
+
+    it("rejects a non-boolean isFavorite value", async () => {
+      const agent = await signedInPaidAgent(app);
+      const create = await agent.post("/api/plays").send(onePlay());
+
+      const res = await agent.put(`/api/plays/${create.body.id}/favorite`).send({ isFavorite: "yes" });
+      expect(res.status).toBe(400);
+    });
+  });
 });

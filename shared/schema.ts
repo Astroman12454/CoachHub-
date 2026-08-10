@@ -335,6 +335,19 @@ export const gameStats = pgTable("game_stats", {
 
 export const PLAY_CATEGORIES = ["offense", "defense", "inbound", "special"] as const;
 export const COURT_TYPES = ["full", "half"] as const;
+// A finer-grained tag than category — "what situation does this play answer"
+// rather than "what kind of play is it". Optional: a play with no specific
+// situation is just a general set play.
+export const PLAY_SITUATIONS = [
+  "out_of_bounds_baseline",
+  "out_of_bounds_sideline",
+  "last_shot",
+  "press_break",
+  "vs_zone",
+  "vs_man",
+  "fast_break",
+  "after_timeout",
+] as const;
 export const TOKEN_TYPES = ["offense", "defense", "ball"] as const;
 export const DRAWING_TOOLS = ["move", "pass", "dribble", "screen", "text"] as const;
 
@@ -367,7 +380,12 @@ export const plays = pgTable("plays", {
   name: text("name").notNull(),
   category: text("category").notNull(), // offense | defense | inbound | special
   courtType: text("court_type").notNull().default("half"), // full | half
+  situation: text("situation"), // one of PLAY_SITUATIONS, or null for a general play
   notes: text("notes"),
+  // 1 for favorited, 0 otherwise — same convention as exercises.isFavorite.
+  // Toggled through its own ungated endpoint, since starring an existing
+  // play isn't "creating" a new one against the plan's play limit.
+  isFavorite: integer("is_favorite").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -606,6 +624,7 @@ export const createPlaySchema = z.object({
   name: z.string().min(1, "Play name is required"),
   category: z.enum(PLAY_CATEGORIES),
   courtType: z.enum(COURT_TYPES),
+  situation: z.enum(PLAY_SITUATIONS).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   steps: z.array(playStepDataSchema).min(1, "A play needs at least one step"),
 });

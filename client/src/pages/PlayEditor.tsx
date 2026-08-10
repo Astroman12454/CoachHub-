@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { straightPath, DRAWING_COLORS } from "@/lib/playDrawing";
 import PlayStepMarks from "@/components/PlayStepMarks";
-import { PLAY_CATEGORIES, COURT_TYPES } from "@shared/schema";
+import { PLAY_CATEGORIES, COURT_TYPES, PLAY_SITUATIONS } from "@shared/schema";
 import type { Token, Drawing, Play as PlayType } from "@shared/schema";
 
 interface EditorStep {
@@ -69,6 +69,9 @@ export default function PlayEditor() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("offense");
   const [courtType, setCourtType] = useState<string>("half");
+  // "none" is the sentinel for "no specific situation" — Radix Select can't
+  // take an empty-string item value, and the field itself is nullable.
+  const [situation, setSituation] = useState<string>("none");
   const [notes, setNotes] = useState("");
   const [steps, setSteps] = useState<EditorStep[]>([emptyStep()]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -85,6 +88,7 @@ export default function PlayEditor() {
       setName(existingPlay.name);
       setCategory(existingPlay.category);
       setCourtType(existingPlay.courtType);
+      setSituation(existingPlay.situation ?? "none");
       setNotes(existingPlay.notes ?? "");
       setSteps(existingPlay.steps.map((s) => ({ tokens: s.tokens, drawings: s.drawings })));
       setCurrentStepIndex(0);
@@ -340,7 +344,7 @@ export default function PlayEditor() {
     }
     setIsSaving(true);
     try {
-      const payload = { name: name.trim(), category, courtType, notes: notes.trim() || null, steps };
+      const payload = { name: name.trim(), category, courtType, situation: situation === "none" ? null : situation, notes: notes.trim() || null, steps };
       const res = isEditing
         ? await apiRequest("PUT", `/api/plays/${playId}`, payload)
         : await apiRequest("POST", "/api/plays", payload);
@@ -422,6 +426,15 @@ export default function PlayEditor() {
             <SelectContent>
               {COURT_TYPES.map((c) => (
                 <SelectItem key={c} value={c}>{c === "half" ? t("playEditor.halfCourt") : t("playEditor.fullCourt")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={situation} onValueChange={setSituation}>
+            <SelectTrigger className="w-44" aria-label={t("playEditor.situation")}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t("playEditor.noSituation")}</SelectItem>
+              {PLAY_SITUATIONS.map((s) => (
+                <SelectItem key={s} value={s}>{t(`categories.playSituation.${s}`, s)}</SelectItem>
               ))}
             </SelectContent>
           </Select>

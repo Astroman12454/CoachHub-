@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Trash2, Plus, ClipboardList, Menu, Layers, Flame } from "lucide-react";
+import { Trash2, Plus, ClipboardList, Menu, Layers, Flame, Search, Star, Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
@@ -9,10 +9,15 @@ import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
+import { PLAY_SITUATIONS } from "@shared/schema";
 import type { Play, PlayPracticeStats } from "@shared/schema";
 
 type SortMode = "name" | "most-practiced" | "least-practiced";
@@ -25,11 +30,57 @@ export default function Playbook() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { openMobile } = useSidebar();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [playToDelete, setPlayToDelete] = useState<Play | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("name");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [situationFilter, setSituationFilter] = useState<string>("all");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const { data: plays = [], isLoading, isError, refetch } = useQuery<Play[]>({
     queryKey: ["/api/plays"],
+  });
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async ({ id, isFavorite }: { id: number; isFavorite: boolean }) =>
+      apiRequest("PUT", `/api/plays/${id}/favorite`, { isFavorite }),
+    onMutate: async ({ id, isFavorite }) => {
+      const queryKey = ["/api/plays"];
+      await queryClient.cancelQueries({ queryKey });
+      const previousPlays = queryClient.getQueryData<Play[]>(queryKey);
+      queryClient.setQueryData<Play[]>(queryKey, (old = []) =>
+        old.map((p) => (p.id === id ? { ...p, isFavorite: isFavorite ? 1 : 0 } : p))
+      );
+      return { previousPlays, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) queryClient.setQueryData(context.queryKey, context.previousPlays);
+      toast({ title: t("playbook.couldntUpdateFavorite"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
+  });
+
+  const duplicatePlayMutation = useMutation({
+    mutationFn: async (play: Play) => {
+      const res = await apiRequest("GET", `/api/plays/${play.id}`);
+      const full = await res.json();
+      const created = await apiRequest("POST", "/api/plays", {
+        name: t("playbook.duplicateName", { name: play.name }),
+        category: full.category,
+        courtType: full.courtType,
+        situation: full.situation,
+        notes: full.notes,
+        steps: full.steps.map((s: { tokens: unknown; drawings: unknown }) => ({ tokens: s.tokens, drawings: s.drawings })),
+      });
+      return (await created.json()) as Play;
+    },
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/plays"] });
+      setLocation(`/playbook/${created.id}`);
+    },
+    onError: (error) => {
+      toast({ title: t("playbook.couldntDuplicate"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
   });
 
   // Best-effort: a stats fetch failing shouldn't block the Playbook itself
@@ -48,7 +99,13 @@ export default function Playbook() {
   });
 
   const visiblePlays = useMemo(() => {
-    const remaining = plays.filter((p) => !isPendingDelete(p.id));
+    const query = searchQuery.trim().toLowerCase();
+    const remaining = plays.filter((p) =>
+      !isPendingDelete(p.id) &&
+      (!query || p.name.toLowerCase().includes(query)) &&
+      (situationFilter === "all" || p.situation === situationFilter) &&
+      (!favoritesOnly || p.isFavorite === 1)
+    );
     if (sortMode === "name") {
       return remaining.sort((a, b) => a.name.localeCompare(b.name));
     }
@@ -59,7 +116,7 @@ export default function Playbook() {
       if (countA !== countB) return (countA - countB) * direction;
       return a.name.localeCompare(b.name);
     });
-  }, [plays, isPendingDelete, sortMode, statsByPlayId]);
+  }, [plays, isPendingDelete, sortMode, statsByPlayId, searchQuery, situationFilter, favoritesOnly]);
 
   const confirmDelete = () => {
     if (playToDelete) {
@@ -134,12 +191,52 @@ export default function Playbook() {
       {header}
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-4">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("playbook.searchPlaceholder")}
+              aria-label={t("playbook.searchPlaceholder")}
+              className="pl-9"
+            />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
+          </div>
+          <Select value={situationFilter} onValueChange={setSituationFilter}>
+            <SelectTrigger className="w-full sm:w-52" aria-label={t("playbook.filterBySituation")}>
+              <SelectValue placeholder={t("playbook.filterBySituation")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("playbook.allSituations")}</SelectItem>
+              {PLAY_SITUATIONS.map((s) => (
+                <SelectItem key={s} value={s}>{t(`categories.playSituation.${s}`, s)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            aria-pressed={favoritesOnly}
+            onClick={() => setFavoritesOnly((prev) => !prev)}
+            className={favoritesOnly ? "border-basketball-orange text-basketball-orange bg-basketball-orange/5" : ""}
+          >
+            <Star className={`w-4 h-4 mr-1.5 ${favoritesOnly ? "fill-basketball-orange" : ""}`} strokeWidth={1.75} aria-hidden="true" />
+            {t("playbook.favoritesOnly")}
+          </Button>
+        </div>
+
         {visiblePlays.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
             title={t("playbook.emptyTitle")}
-            description={t("playbook.emptyDescription")}
-            action={{ label: t("playbook.drawFirstPlay"), icon: Plus, onClick: () => setLocation("/playbook/new") }}
+            description={
+              searchQuery || situationFilter !== "all" || favoritesOnly
+                ? t("playbook.emptyFilterDescription")
+                : t("playbook.emptyDescription")
+            }
+            action={!searchQuery && situationFilter === "all" && !favoritesOnly ? {
+              label: t("playbook.drawFirstPlay"), icon: Plus, onClick: () => setLocation("/playbook/new"),
+            } : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -151,25 +248,49 @@ export default function Playbook() {
                 onClick={() => setLocation(`/playbook/${play.id}`)}
               >
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1">
                       {play.name}
                     </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-500 hover:text-red-700 dark:hover:text-red-400 -mt-1 -mr-1"
-                      onClick={(e) => { e.stopPropagation(); setPlayToDelete(play); }}
-                      aria-label={t("playbook.deleteName", { name: play.name })}
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-                    </Button>
+                    <div className="flex items-center gap-0.5 -mt-1 -mr-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); toggleFavoriteMutation.mutate({ id: play.id, isFavorite: play.isFavorite !== 1 }); }}
+                        aria-label={play.isFavorite === 1 ? t("playbook.unfavoriteName", { name: play.name }) : t("playbook.favoriteName", { name: play.name })}
+                        aria-pressed={play.isFavorite === 1}
+                      >
+                        <Star className={cn("w-4 h-4", play.isFavorite === 1 ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); duplicatePlayMutation.mutate(play); }}
+                        aria-label={t("playbook.duplicateAction", { name: play.name })}
+                      >
+                        <Copy className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-700 dark:hover:text-red-400"
+                        onClick={(e) => { e.stopPropagation(); setPlayToDelete(play); }}
+                        aria-label={t("playbook.deleteName", { name: play.name })}
+                      >
+                        <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary">{t(`categories.play.${play.category}`, play.category)}</Badge>
                     <Badge variant="outline" className="capitalize">{t(`playbook.courtType.${play.courtType}`, play.courtType)}</Badge>
+                    {play.situation && (
+                      <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 dark:border-orange-900/40 dark:text-orange-300 dark:bg-orange-950/40">
+                        {t(`categories.playSituation.${play.situation}`, play.situation)}
+                      </Badge>
+                    )}
                   </div>
                   {play.notes && (
                     <p className="text-sm text-muted-foreground line-clamp-2">{play.notes}</p>

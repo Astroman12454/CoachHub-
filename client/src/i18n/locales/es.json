@@ -123,6 +123,16 @@
       "defense": "Defensa",
       "inbound": "Saque",
       "special": "Especial"
+    },
+    "playSituation": {
+      "out_of_bounds_baseline": "Saque de fondo",
+      "out_of_bounds_sideline": "Saque de banda",
+      "last_shot": "Último tiro",
+      "press_break": "Ruptura de presión",
+      "vs_zone": "Vs. zona",
+      "vs_man": "Vs. hombre a hombre",
+      "fast_break": "Contraataque",
+      "after_timeout": "Después de tiempo muerto"
     }
   },
   "dashboard": {
@@ -594,6 +604,7 @@
     "newPlay": "Nueva Jugada",
     "emptyTitle": "Aún No Hay Jugadas",
     "emptyDescription": "Dibuja tu primera jugada en una cancha de baloncesto — coloca a tus jugadores, dibuja el movimiento y anímala paso a paso.",
+    "emptyFilterDescription": "Ninguna jugada coincide con tu búsqueda o filtros actuales.",
     "drawFirstPlay": "Dibujar Primera Jugada",
     "deleteName": "Eliminar {{name}}",
     "courtType": {
@@ -605,7 +616,17 @@
     "notPracticedYet": "Aún no practicada",
     "tapToViewOrEdit": "Toca para ver o editar",
     "deleteConfirmTitle": "¿Eliminar jugada?",
-    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\". No se puede deshacer."
+    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\". No se puede deshacer.",
+    "searchPlaceholder": "Buscar jugadas...",
+    "filterBySituation": "Filtrar por situación",
+    "allSituations": "Todas las Situaciones",
+    "favoritesOnly": "Solo favoritas",
+    "favoriteName": "Marcar como favorita {{name}}",
+    "unfavoriteName": "Quitar de favoritas {{name}}",
+    "couldntUpdateFavorite": "No se pudo actualizar el favorito",
+    "duplicateAction": "Duplicar {{name}}",
+    "duplicateName": "{{name}} (copia)",
+    "couldntDuplicate": "No se pudo duplicar la jugada"
   },
   "playEditor": {
     "nameRequired": "Nombre requerido",
@@ -631,6 +652,8 @@
     "court": "Cancha",
     "halfCourt": "Media Cancha",
     "fullCourt": "Cancha Completa",
+    "situation": "Situación",
+    "noSituation": "Sin situación específica",
     "exportingEllipsis": "Exportando…",
     "exportPdf": "Exportar PDF",
     "savingEllipsis": "Guardando…",
