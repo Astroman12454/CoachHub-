@@ -236,6 +236,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // How many sessions use each exercise, and when it was last used — powers
+  // the library's "recently used" sort. Keyed by exercise id as a string to
+  // match trainingSessions.exerciseIds' own string-array storage. Must be
+  // registered ahead of GET /:id below, or "usage-stats" gets swallowed as
+  // an :id path parameter.
+  app.get("/api/exercises/usage-stats", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const stats = await storage.getExerciseUsageStats(accountId);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exercise usage stats" });
+    }
+  });
+
   app.get("/api/exercises/:id", async (req, res) => {
     try {
       const id = parseId(req, res);
@@ -311,6 +326,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete exercise" });
+    }
+  });
+
+  const setExerciseFavoriteSchema = z.object({ isFavorite: z.boolean() });
+
+  // Favoriting is a personal organizational flag, not "editing an exercise's
+  // content" — deliberately not behind canUseCustomExercises, so a free-plan
+  // coach can still star entries in the shared starter library.
+  app.put("/api/exercises/:id/favorite", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { isFavorite } = setExerciseFavoriteSchema.parse(req.body);
+      const exercise = await storage.setExerciseFavorite(id, accountId, isFavorite);
+
+      if (!exercise) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+
+      res.json(exercise);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Share link — same unguessable-token pattern as the player portal (see
+  // /api/players/:id/portal-link below), not plan-gated: viewing an
+  // exercise you already have isn't "creating a custom exercise."
+  app.post("/api/exercises/:id/share-link", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const token = await storage.getOrCreateExerciseShareToken(id, accountId);
+      if (!token) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+      res.json({ token });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create share link" });
+    }
+  });
+
+  app.delete("/api/exercises/:id/share-link", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const revoked = await storage.revokeExerciseShareToken(id, accountId);
+      if (!revoked) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to revoke share link" });
+    }
+  });
+
+  // Public, read-only — reachable by anyone with the link, same as
+  // /api/portal/:token (see the requireAuth exemption in server/auth.ts).
+  app.get("/api/exercise-share/:token", portalRateLimiter, async (req, res) => {
+    try {
+      const exercise = await storage.getExerciseByShareToken(req.params.token);
+      if (!exercise) {
+        return res.status(404).json({ message: "Link not found or no longer active" });
+      }
+      // Only what a viewer of the drill itself needs — never the owning
+      // account's id.
+      const { id, name, description, category, duration, difficulty, instructions, imageUrl } = exercise;
+      res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load shared exercise" });
     }
   });
 

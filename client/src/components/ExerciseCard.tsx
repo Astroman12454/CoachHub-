@@ -1,24 +1,29 @@
 import { useState } from "react";
-import { Pencil, Trash2, Clock, ArrowRight } from "lucide-react";
+import { Pencil, Trash2, Clock, ArrowRight, Star, Copy, Share2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 interface ExerciseCardProps {
   exercise: Exercise;
   onClick?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onToggleFavorite?: () => void;
+  onDuplicate?: () => void;
+  onShare?: () => void;
 }
 
-export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: ExerciseCardProps) {
+export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onToggleFavorite, onDuplicate, onShare }: ExerciseCardProps) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
   const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
   const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
   const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
+  const isFavorite = exercise.isFavorite === 1;
 
   return (
     <div
@@ -38,37 +43,71 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete }: Ex
           </Badge>
         </div>
 
-        {(onEdit || onDelete) ? (
-          // Always visible on mobile/tablet (no hover to reveal them on
-          // touch); fades in on hover only once there's room to spare on
-          // desktop.
-          <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
-            {onEdit && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                aria-label={t("exerciseCard.editName", { name: exercise.name })}
-              >
-                <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-              </button>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
-                aria-label={t("exerciseCard.deleteName", { name: exercise.name })}
-              >
-                <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+              className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 data-[favorite=true]:opacity-100 transition-opacity duration-200"
+              data-favorite={isFavorite}
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? t("exerciseCard.unfavoriteName", { name: exercise.name }) : t("exerciseCard.favoriteName", { name: exercise.name })}
+            >
+              <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
+            </button>
+          )}
+          {(onEdit || onDelete || onDuplicate || onShare) ? (
+            // Always visible on mobile/tablet (no hover to reveal them on
+            // touch); fades in on hover only once there's room to spare on
+            // desktop.
+            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
+              {onShare && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onShare(); }}
+                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
+                  aria-label={t("exerciseCard.shareName", { name: exercise.name })}
+                >
+                  <Share2 className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              )}
+              {onDuplicate && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
+                  aria-label={t("exerciseCard.duplicateName", { name: exercise.name })}
+                >
+                  <Copy className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              )}
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
+                  aria-label={t("exerciseCard.editName", { name: exercise.name })}
+                >
+                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                  className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
+                  aria-label={t("exerciseCard.deleteName", { name: exercise.name })}
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
+            </div>
+          )}
+        </div>
       </div>
 
       {exercise.imageUrl && !imageFailed ? (

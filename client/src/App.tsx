@@ -32,6 +32,7 @@ const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 const Portal = lazy(() => import("@/pages/Portal"));
+const ExerciseShare = lazy(() => import("@/pages/ExerciseShare"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const CoachSettings = lazy(() => import("@/pages/CoachSettings"));
@@ -153,6 +154,14 @@ function App() {
                   component={() => (
                     <Suspense fallback={<PageLoadingFallback />}>
                       <Portal />
+                    </Suspense>
+                  )}
+                />
+                <Route
+                  path="/exercise/:token"
+                  component={() => (
+                    <Suspense fallback={<PageLoadingFallback />}>
+                      <ExerciseShare />
                     </Suspense>
                   )}
                 />

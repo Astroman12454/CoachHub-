@@ -107,6 +107,15 @@ export interface IStorage {
   createExercise(accountId: number, exercise: InsertExercise): Promise<Exercise>;
   updateExercise(id: number, accountId: number, exercise: Partial<InsertExercise>): Promise<Exercise | undefined>;
   deleteExercise(id: number, accountId: number): Promise<boolean>;
+  setExerciseFavorite(id: number, accountId: number, isFavorite: boolean): Promise<Exercise | undefined>;
+  // How many training sessions (across every team on the account) reference
+  // each exercise, and the most recent session date that used it — derived
+  // from trainingSessions.exerciseIds rather than a stored counter, since
+  // that array is the single source of truth for "what's in a session".
+  getExerciseUsageStats(accountId: number): Promise<Record<string, { count: number; lastUsedDate: string | null }>>;
+  getOrCreateExerciseShareToken(id: number, accountId: number): Promise<string | undefined>;
+  revokeExerciseShareToken(id: number, accountId: number): Promise<boolean>;
+  getExerciseByShareToken(token: string): Promise<Exercise | undefined>;
 
   // Physical test methods — the templates are scoped by account (shared
   // across that account's teams, same as exercises); results are recorded
@@ -428,6 +437,55 @@ export class DatabaseStorage implements IStorage {
       .delete(exercises)
       .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async setExerciseFavorite(id: number, accountId: number, isFavorite: boolean): Promise<Exercise | undefined> {
+    const [exercise] = await db
+      .update(exercises)
+      .set({ isFavorite: isFavorite ? 1 : 0 })
+      .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)))
+      .returning();
+    return exercise || undefined;
+  }
+
+  async getExerciseUsageStats(accountId: number): Promise<Record<string, { count: number; lastUsedDate: string | null }>> {
+    const teamsForAccount = await this.getTeamsByAccount(accountId);
+    const stats: Record<string, { count: number; lastUsedDate: string | null }> = {};
+    for (const team of teamsForAccount) {
+      const sessions = await this.getAllTrainingSessions(team.id);
+      for (const session of sessions) {
+        for (const exerciseId of session.exerciseIds ?? []) {
+          const entry = stats[exerciseId] ?? { count: 0, lastUsedDate: null };
+          entry.count++;
+          if (!entry.lastUsedDate || session.date > entry.lastUsedDate) entry.lastUsedDate = session.date;
+          stats[exerciseId] = entry;
+        }
+      }
+    }
+    return stats;
+  }
+
+  async getOrCreateExerciseShareToken(id: number, accountId: number): Promise<string | undefined> {
+    const exercise = await this.getExerciseById(id, accountId);
+    if (!exercise) return undefined;
+    if (exercise.shareToken) return exercise.shareToken;
+
+    const token = crypto.randomBytes(24).toString("hex");
+    await db.update(exercises).set({ shareToken: token }).where(eq(exercises.id, id));
+    return token;
+  }
+
+  async revokeExerciseShareToken(id: number, accountId: number): Promise<boolean> {
+    const result = await db
+      .update(exercises)
+      .set({ shareToken: null })
+      .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getExerciseByShareToken(token: string): Promise<Exercise | undefined> {
+    const [exercise] = await db.select().from(exercises).where(eq(exercises.shareToken, token));
+    return exercise || undefined;
   }
 
   // Physical test methods

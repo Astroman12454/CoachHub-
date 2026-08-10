@@ -365,6 +365,70 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("exercise library — favoriting toggles the star and filters by favorites-only", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+
+    const star = page.locator('button[aria-label^="Favorite "]').first();
+    await star.click();
+    await expect(page.locator('button[aria-label^="Unfavorite "]').first()).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button:has-text("Favorites only")');
+    await expect(page.locator('button[aria-label^="Unfavorite "]').first()).toBeVisible();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library — sort by recently used", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    await page.getByLabel("Sort by").click();
+    await page.click("text=Recently used");
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library — duplicate flow pre-fills the form", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Duplicate "]').first().click();
+    await page.waitForSelector("text=Duplicate Exercise");
+    await expect(page.getByLabel("Exercise Name")).toHaveValue(/\(copy\)$/);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library — share dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Share "]').first().click();
+    await page.waitForSelector("text=Share Link");
+    await expect(page.locator('input[aria-label="Share link"]')).toHaveValue(/\/exercise\//);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise share page (public, no session)", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Share "]').first().click();
+    await page.waitForSelector("text=Share Link");
+    const input = page.locator('input[aria-label="Share link"]');
+    await expect(input).toHaveValue(/\/exercise\//);
+    const url = await input.inputValue();
+
+    await page.goto(url);
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("physical tests", async ({ page }) => {
     await login(page);
     await page.goto("/physical-tests");

@@ -655,7 +655,12 @@
     "emptyDescription": "Empieza añadiendo tu primer ejercicio a la biblioteca.",
     "addFirstExercise": "Añadir Primer Ejercicio",
     "deleteConfirmTitle": "¿Eliminar ejercicio?",
-    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\". No se puede deshacer."
+    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\". No se puede deshacer.",
+    "sortBy": "Ordenar por",
+    "sortDefault": "Por defecto",
+    "sortRecentlyUsed": "Usados recientemente",
+    "favoritesOnly": "Solo favoritos",
+    "couldntUpdateFavorite": "No se pudo actualizar el favorito"
   },
   "exerciseForm": {
     "updatedSuccessfully": "Ejercicio actualizado con éxito",
@@ -675,11 +680,37 @@
     "instructionsOptional": "Instrucciones (Opcional)",
     "instructionsPlaceholder": "Instrucciones detalladas del ejercicio...",
     "imageUrlOptional": "URL de Imagen (Opcional)",
-    "createExercise": "Crear Ejercicio"
+    "createExercise": "Crear Ejercicio",
+    "duplicateExercise": "Duplicar Ejercicio",
+    "duplicateName": "{{name}} (copia)"
   },
   "exerciseCard": {
     "editName": "Editar {{name}}",
-    "deleteName": "Eliminar {{name}}"
+    "deleteName": "Eliminar {{name}}",
+    "favoriteName": "Marcar como favorito {{name}}",
+    "unfavoriteName": "Quitar de favoritos {{name}}",
+    "shareName": "Compartir {{name}}",
+    "duplicateName": "Duplicar {{name}}"
+  },
+  "exerciseShareDialog": {
+    "shareLink": "Enlace para Compartir",
+    "shareLinkLower": "Enlace para compartir",
+    "dialogDescription": "Comparte este enlace de solo lectura de \"{{name}}\". Cualquiera con el enlace puede ver los detalles del ejercicio — no necesita cuenta.",
+    "copyLink": "Copiar enlace",
+    "generatingEllipsis": "Generando…",
+    "copied": "Copiado",
+    "copiedDescription": "Enlace del ejercicio copiado al portapapeles.",
+    "revokeLink": "Revocar Enlace",
+    "linkRevoked": "Enlace revocado",
+    "linkRevokedDescription": "El enlace anterior ya no funciona. Puedes generar uno nuevo cuando quieras.",
+    "couldntCreateLink": "No se pudo crear el enlace",
+    "couldntRevokeLink": "No se pudo revocar el enlace",
+    "done": "Listo"
+  },
+  "exerciseShare": {
+    "linkNotAvailable": "Enlace no disponible",
+    "linkNotAvailableDescription": "Este enlace pudo haber sido revocado o ya no es válido.",
+    "instructions": "Instrucciones"
   },
   "physicalTests": {
     "subtitle": "Definí pruebas físicas y seguí los resultados de cada jugador en el tiempo",

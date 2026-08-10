@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Dumbbell } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Dumbbell, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
 import ExerciseForm from "@/components/ExerciseForm";
+import ExerciseShareDialog from "@/components/ExerciseShareDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -16,10 +17,13 @@ import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import type { Exercise } from "@shared/schema";
 import { canUseCustomExercises } from "@shared/entitlements";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
+
+type ExerciseUsageStats = Record<string, { count: number; lastUsedDate: string | null }>;
 
 export default function ExerciseLibrary() {
   const { t } = useTranslation();
@@ -27,22 +31,59 @@ export default function ExerciseLibrary() {
   const initialCategory = new URLSearchParams(search).get("category") ?? "all";
   const { account } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const canEditExercises = canUseCustomExercises(account?.plan ?? "free");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"default" | "recentlyUsed">("default");
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [duplicatingExercise, setDuplicatingExercise] = useState<Exercise | null>(null);
+  const [sharingExercise, setSharingExercise] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
 
   const { data: exercises = [], isLoading, isError, refetch } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
   });
 
+  const { data: usageStats = {} } = useQuery<ExerciseUsageStats>({
+    queryKey: ['/api/exercises/usage-stats'],
+  });
+
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/exercises",
     errorMessage: t("exerciseLibrary.failedToDelete"),
+  });
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async ({ id, isFavorite }: { id: number; isFavorite: boolean }) =>
+      apiRequest("PUT", `/api/exercises/${id}/favorite`, { isFavorite }),
+    // Flips the star immediately — the same instant-feedback pattern as
+    // Players' active/inactive toggle.
+    onMutate: async ({ id, isFavorite }) => {
+      const queryKey = ['/api/exercises'];
+      await queryClient.cancelQueries({ queryKey });
+      const previousExercises = queryClient.getQueryData<Exercise[]>(queryKey);
+
+      queryClient.setQueryData<Exercise[]>(queryKey, (old = []) =>
+        old.map(ex => ex.id === id ? { ...ex, isFavorite: isFavorite ? 1 : 0 } : ex)
+      );
+
+      return { previousExercises, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousExercises);
+      }
+      toast({
+        title: t("exerciseLibrary.couldntUpdateFavorite"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
   });
 
   const confirmDeleteExercise = () => {
@@ -68,20 +109,49 @@ export default function ExerciseLibrary() {
     setIsCreateFormOpen(true);
   };
 
-  // Filter exercises; exercises mid-undo-window are hidden immediately
-  // rather than waiting on the server.
+  const handleDuplicateClick = (exercise: Exercise) => {
+    if (!canEditExercises) {
+      toast({
+        title: t("sessionModal.freePlan"),
+        description: t("exerciseLibrary.upgradeToCreate"),
+        action: (
+          <ToastAction altText={t("sessionModal.upgrade")} onClick={() => startCheckout()}>
+            {t("sessionModal.upgrade")}
+          </ToastAction>
+        ),
+      });
+      return;
+    }
+    setDuplicatingExercise(exercise);
+  };
+
+  // Filter (and optionally sort) exercises; exercises mid-undo-window are
+  // hidden immediately rather than waiting on the server.
   const filteredExercises = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return exercises.filter(exercise => {
+    const filtered = exercises.filter(exercise => {
       if (isPendingDelete(exercise.id)) return false;
       const matchesSearch = exercise.name.toLowerCase().includes(query) ||
                            exercise.description.toLowerCase().includes(query);
       const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
       const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
+      const matchesFavorite = !favoritesOnly || exercise.isFavorite === 1;
 
-      return matchesSearch && matchesCategory && matchesDifficulty;
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesFavorite;
     });
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter, isPendingDelete]);
+
+    if (sortBy === "recentlyUsed") {
+      return [...filtered].sort((a, b) => {
+        const dateA = usageStats[a.id.toString()]?.lastUsedDate;
+        const dateB = usageStats[b.id.toString()]?.lastUsedDate;
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB.localeCompare(dateA);
+      });
+    }
+    return filtered;
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, favoritesOnly, sortBy, usageStats, isPendingDelete]);
 
   if (isLoading) {
     return (
@@ -159,6 +229,27 @@ export default function ExerciseLibrary() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as "default" | "recentlyUsed")}>
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("exerciseLibrary.sortBy")}>
+                <SelectValue placeholder={t("exerciseLibrary.sortBy")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">{t("exerciseLibrary.sortDefault")}</SelectItem>
+                <SelectItem value="recentlyUsed">{t("exerciseLibrary.sortRecentlyUsed")}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              type="button"
+              variant="outline"
+              aria-pressed={favoritesOnly}
+              onClick={() => setFavoritesOnly((prev) => !prev)}
+              className={favoritesOnly ? "border-basketball-orange text-basketball-orange bg-basketball-orange/5" : ""}
+            >
+              <Star className={`w-4 h-4 mr-1.5 ${favoritesOnly ? "fill-basketball-orange" : ""}`} strokeWidth={1.75} aria-hidden="true" />
+              {t("exerciseLibrary.favoritesOnly")}
+            </Button>
           </div>
 
           <Button
@@ -176,11 +267,11 @@ export default function ExerciseLibrary() {
             icon={Dumbbell}
             title={t("exerciseLibrary.emptyTitle")}
             description={
-              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
+              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all" || favoritesOnly
                 ? t("exerciseLibrary.emptyFilterDescription")
                 : t("exerciseLibrary.emptyDescription")
             }
-            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" ? {
+            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && !favoritesOnly ? {
               label: t("exerciseLibrary.addFirstExercise"),
               icon: Plus,
               onClick: handleAddExerciseClick,
@@ -194,6 +285,9 @@ export default function ExerciseLibrary() {
                   exercise={exercise}
                   onEdit={canEditExercises ? () => setEditingExercise(exercise) : undefined}
                   onDelete={canEditExercises ? () => setExerciseToDelete(exercise) : undefined}
+                  onToggleFavorite={() => toggleFavoriteMutation.mutate({ id: exercise.id, isFavorite: exercise.isFavorite !== 1 })}
+                  onDuplicate={() => handleDuplicateClick(exercise)}
+                  onShare={() => setSharingExercise(exercise)}
                 />
               </div>
             ))}
@@ -215,6 +309,19 @@ export default function ExerciseLibrary() {
           exercise={editingExercise}
         />
       )}
+
+      {duplicatingExercise && (
+        <ExerciseForm
+          isOpen={!!duplicatingExercise}
+          onClose={() => setDuplicatingExercise(null)}
+          duplicateFrom={duplicatingExercise}
+        />
+      )}
+
+      <ExerciseShareDialog
+        exercise={sharingExercise}
+        onOpenChange={(open) => !open && setSharingExercise(null)}
+      />
 
       <ConfirmDialog
         open={!!exerciseToDelete}

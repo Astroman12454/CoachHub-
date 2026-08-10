@@ -91,6 +91,15 @@ export const exercises = pgTable("exercises", {
   difficulty: text("difficulty").notNull(), // easy, medium, hard
   instructions: text("instructions"),
   imageUrl: text("image_url"),
+  // 1 for favorited, 0 otherwise — same integer-flag convention as
+  // players.isActive. Toggled through its own endpoint (not the general
+  // create/edit form), so it's never plan-gated the way editing an
+  // exercise's content is.
+  isFavorite: integer("is_favorite").default(0),
+  // Unguessable (24 random bytes) credential for a public read-only view of
+  // this one exercise — same portalToken pattern as players. Null until a
+  // coach first generates a share link.
+  shareToken: text("share_token").unique(),
 });
 
 export const trainingSessions = pgTable("training_sessions", {

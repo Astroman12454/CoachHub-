@@ -655,7 +655,12 @@
     "emptyDescription": "Get started by adding your first exercise to the library.",
     "addFirstExercise": "Add First Exercise",
     "deleteConfirmTitle": "Delete exercise?",
-    "deleteConfirmDescription": "This will permanently delete \"{{name}}\". This can't be undone."
+    "deleteConfirmDescription": "This will permanently delete \"{{name}}\". This can't be undone.",
+    "sortBy": "Sort by",
+    "sortDefault": "Default",
+    "sortRecentlyUsed": "Recently used",
+    "favoritesOnly": "Favorites only",
+    "couldntUpdateFavorite": "Couldn't update favorite"
   },
   "exerciseForm": {
     "updatedSuccessfully": "Exercise updated successfully",
@@ -675,11 +680,37 @@
     "instructionsOptional": "Instructions (Optional)",
     "instructionsPlaceholder": "Detailed instructions for the exercise...",
     "imageUrlOptional": "Image URL (Optional)",
-    "createExercise": "Create Exercise"
+    "createExercise": "Create Exercise",
+    "duplicateExercise": "Duplicate Exercise",
+    "duplicateName": "{{name}} (copy)"
   },
   "exerciseCard": {
     "editName": "Edit {{name}}",
-    "deleteName": "Delete {{name}}"
+    "deleteName": "Delete {{name}}",
+    "favoriteName": "Favorite {{name}}",
+    "unfavoriteName": "Unfavorite {{name}}",
+    "shareName": "Share {{name}}",
+    "duplicateName": "Duplicate {{name}}"
+  },
+  "exerciseShareDialog": {
+    "shareLink": "Share Link",
+    "shareLinkLower": "Share link",
+    "dialogDescription": "Share this read-only link to \"{{name}}\". Anyone with the link can view the drill's details — no account needed.",
+    "copyLink": "Copy link",
+    "generatingEllipsis": "Generating…",
+    "copied": "Copied",
+    "copiedDescription": "Exercise link copied to clipboard.",
+    "revokeLink": "Revoke Link",
+    "linkRevoked": "Link revoked",
+    "linkRevokedDescription": "The old link no longer works. You can generate a new one anytime.",
+    "couldntCreateLink": "Couldn't create link",
+    "couldntRevokeLink": "Couldn't revoke link",
+    "done": "Done"
+  },
+  "exerciseShare": {
+    "linkNotAvailable": "Link not available",
+    "linkNotAvailableDescription": "This link may have been revoked or is no longer valid.",
+    "instructions": "Instructions"
   },
   "physicalTests": {
     "subtitle": "Define fitness tests and track every player's results over time",

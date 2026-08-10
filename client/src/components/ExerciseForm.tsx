@@ -20,11 +20,16 @@ interface ExerciseFormProps {
   isOpen: boolean;
   onClose: () => void;
   exercise?: Exercise | null;
+  /** A drill to prefill from when creating a variant — everything is
+   * copied over, but this still creates a brand-new exercise (POST, not
+   * PUT): `exercise` stays unset, so `isEditing` is false. */
+  duplicateFrom?: Exercise | null;
 }
 
-export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseFormProps) {
+export default function ExerciseForm({ isOpen, onClose, exercise, duplicateFrom }: ExerciseFormProps) {
   const { t } = useTranslation();
   const isEditing = !!exercise;
+  const source = exercise ?? duplicateFrom ?? null;
   const restoreFocus = useDialogFocusReturn(isOpen);
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
@@ -34,13 +39,13 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
   const form = useForm<ExerciseFormData>({
     resolver: zodResolver(insertExerciseSchema),
     defaultValues: {
-      name: exercise?.name ?? "",
-      description: exercise?.description ?? "",
-      category: (exercise?.category as ExerciseCategory) ?? "shooting",
-      duration: exercise?.duration ?? 15,
-      difficulty: (exercise?.difficulty as DifficultyLevel) ?? "medium",
-      instructions: exercise?.instructions ?? "",
-      imageUrl: exercise?.imageUrl ?? "",
+      name: duplicateFrom ? t("exerciseForm.duplicateName", { name: duplicateFrom.name }) : source?.name ?? "",
+      description: source?.description ?? "",
+      category: (source?.category as ExerciseCategory) ?? "shooting",
+      duration: source?.duration ?? 15,
+      difficulty: (source?.difficulty as DifficultyLevel) ?? "medium",
+      instructions: source?.instructions ?? "",
+      imageUrl: source?.imageUrl ?? "",
     },
   });
 
@@ -61,7 +66,9 @@ export default function ExerciseForm({ isOpen, onClose, exercise }: ExerciseForm
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">{isEditing ? t("exerciseForm.editExercise") : t("exerciseForm.createNewExercise")}</DialogTitle>
+          <DialogTitle className="font-display uppercase tracking-tight">
+            {isEditing ? t("exerciseForm.editExercise") : duplicateFrom ? t("exerciseForm.duplicateExercise") : t("exerciseForm.createNewExercise")}
+          </DialogTitle>
           <DialogDescription className="sr-only">
             {t("exerciseForm.dialogDescription")}
           </DialogDescription>

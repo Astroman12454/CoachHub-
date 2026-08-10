@@ -243,7 +243,10 @@ export function setupAuth(app: Express) {
 // hit by an external scheduler (no coach session at all, possibly not even
 // a browser), and is protected by its own CRON_SECRET check inside the
 // route handler instead — see server/routes.ts.
-const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/"];
+// /exercise-share/ is the same kind of public, token-scoped read as /portal/
+// above — a coach shares a link to one drill instead of the recipient
+// needing an account.
+const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/", "/exercise-share/"];
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (PUBLIC_API_PREFIXES.some((prefix) => req.path.startsWith(prefix))) return next();
