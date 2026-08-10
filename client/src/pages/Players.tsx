@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle, Pencil } from "lucide-react";
+import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle, Pencil, Crown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
@@ -27,6 +27,7 @@ export default function Players() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [filterActive, setFilterActive] = useState<string>("all");
+  const [filterPosition, setFilterPosition] = useState<string>("all");
   const [portalPlayer, setPortalPlayer] = useState<Player | null>(null);
   const [isBalancerOpen, setIsBalancerOpen] = useState(false);
 
@@ -83,6 +84,17 @@ export default function Players() {
     updatePlayerMutation.mutate({ id: player.id, isActive: newStatus });
   };
 
+  // Every position actually present on the roster, in the order players
+  // occur — the filter dropdown only ever offers positions a coach could
+  // plausibly want to isolate, not the full fixed position list.
+  const presentPositions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const player of players) {
+      seen.add(player.position || t("players.noPosition"));
+    }
+    return Array.from(seen);
+  }, [players, t]);
+
   // Filter players
   const filteredPlayers = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -92,10 +104,12 @@ export default function Players() {
       const matchesStatus = filterActive === "all" ||
                            (filterActive === "active" && player.isActive === 1) ||
                            (filterActive === "inactive" && player.isActive === 0);
+      const matchesPosition = filterPosition === "all" ||
+                           (player.position || t("players.noPosition")) === filterPosition;
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesPosition;
     });
-  }, [players, searchQuery, filterActive]);
+  }, [players, searchQuery, filterActive, filterPosition, t]);
 
   // Group players by position
   const playersByPosition = useMemo(() => {
@@ -159,7 +173,7 @@ export default function Players() {
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {/* Filters and Add Button */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div className="flex items-center">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Select value={filterActive} onValueChange={setFilterActive}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("players.filterByStatus")}>
                 <SelectValue placeholder={t("players.filterByStatus")} />
@@ -168,6 +182,17 @@ export default function Players() {
                 <SelectItem value="all">{t("players.allPlayers")}</SelectItem>
                 <SelectItem value="active">{t("players.activePlayers")}</SelectItem>
                 <SelectItem value="inactive">{t("players.inactivePlayers")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterPosition} onValueChange={setFilterPosition}>
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("players.filterByPosition")}>
+                <SelectValue placeholder={t("players.filterByPosition")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("players.allPositions")}</SelectItem>
+                {presentPositions.map((position) => (
+                  <SelectItem key={position} value={position}>{position}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -225,11 +250,11 @@ export default function Players() {
             icon={Users}
             title={t("players.emptyTitle")}
             description={
-              searchQuery || filterActive !== "all"
+              searchQuery || filterActive !== "all" || filterPosition !== "all"
                 ? t("players.emptyFilterDescription")
                 : t("players.emptyDescription")
             }
-            action={!searchQuery && filterActive === "all" ? {
+            action={!searchQuery && filterActive === "all" && filterPosition === "all" ? {
               label: t("players.addFirstPlayer"),
               icon: UserPlus,
               onClick: () => setIsCreateModalOpen(true),
@@ -277,7 +302,12 @@ export default function Players() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between mb-1 gap-2">
-                              <h3 className="font-display font-semibold uppercase tracking-tight text-foreground truncate">{player.name}</h3>
+                              <h3 className="font-display font-semibold uppercase tracking-tight text-foreground truncate flex items-center gap-1.5">
+                                {player.name}
+                                {player.isCaptain === 1 && (
+                                  <Crown className="w-3.5 h-3.5 text-basketball-orange shrink-0" strokeWidth={2} role="img" aria-label={t("players.captainBadge")} />
+                                )}
+                              </h3>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {injuredPlayerIds.has(player.id) && (
                                   <Badge variant="destructive" className="gap-1">

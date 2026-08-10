@@ -138,3 +138,80 @@ describe("players — jersey number", () => {
     expect(second.body.jerseyNumber).toBe(5);
   });
 });
+
+describe("players — captain, dominant hand, emergency contact, medical notes", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("creates a player with all four fields set, and returns them back", async () => {
+    const agent = await signedInAgent(app);
+    const res = await agent.post("/api/players").send({
+      name: "Casey Nguyen",
+      isCaptain: 1,
+      dominantHand: "left",
+      emergencyContactName: "Pat Nguyen",
+      emergencyContactPhone: "555-0100",
+      medicalNotes: "Mild asthma, carries an inhaler",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.isCaptain).toBe(1);
+    expect(res.body.dominantHand).toBe("left");
+    expect(res.body.emergencyContactName).toBe("Pat Nguyen");
+    expect(res.body.emergencyContactPhone).toBe("555-0100");
+    expect(res.body.medicalNotes).toBe("Mild asthma, carries an inhaler");
+  });
+
+  it("defaults isCaptain to 0 and the rest to null when omitted", async () => {
+    const agent = await signedInAgent(app);
+    const res = await agent.post("/api/players").send({ name: "Sam" });
+    expect(res.status).toBe(201);
+    expect(res.body.isCaptain).toBe(0);
+    expect(res.body.dominantHand).toBeNull();
+    expect(res.body.emergencyContactName).toBeNull();
+    expect(res.body.emergencyContactPhone).toBeNull();
+    expect(res.body.medicalNotes).toBeNull();
+  });
+
+  it("rejects a dominant hand outside left/right", async () => {
+    const agent = await signedInAgent(app);
+    const res = await agent.post("/api/players").send({ name: "Sam", dominantHand: "both" });
+    expect(res.status).toBe(400);
+  });
+
+  it("allows more than one captain on the same team", async () => {
+    const agent = await signedInAgent(app);
+    const first = await agent.post("/api/players").send({ name: "Player One", isCaptain: 1 });
+    const second = await agent.post("/api/players").send({ name: "Player Two", isCaptain: 1 });
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    expect(second.body.isCaptain).toBe(1);
+  });
+
+  it("updates and clears the emergency contact and medical notes", async () => {
+    const agent = await signedInAgent(app);
+    const created = await agent.post("/api/players").send({
+      name: "Alex",
+      emergencyContactName: "Original Name",
+      medicalNotes: "Original notes",
+    });
+
+    const updated = await agent.put(`/api/players/${created.body.id}`).send({
+      emergencyContactName: "Updated Name",
+      medicalNotes: "Updated notes",
+    });
+    expect(updated.status).toBe(200);
+    expect(updated.body.emergencyContactName).toBe("Updated Name");
+    expect(updated.body.medicalNotes).toBe("Updated notes");
+
+    const cleared = await agent.put(`/api/players/${created.body.id}`).send({
+      emergencyContactName: null,
+      medicalNotes: null,
+    });
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.emergencyContactName).toBeNull();
+    expect(cleared.body.medicalNotes).toBeNull();
+  });
+});

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity, Crown, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -237,8 +237,11 @@ export default function PlayerProfile() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">
+              <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight flex items-center gap-2">
                 {player.name}
+                {player.isCaptain === 1 && (
+                  <Crown className="w-5 h-5 text-basketball-orange shrink-0" strokeWidth={2} role="img" aria-label={t("players.captainBadge")} />
+                )}
               </h2>
               <Badge
                 variant={player.isActive === 1 ? "default" : "secondary"}
@@ -258,6 +261,7 @@ export default function PlayerProfile() {
                 player.position,
                 player.birthDate ? t("players.ageValue", { count: calculateAge(player.birthDate) ?? 0 }) : null,
                 player.height ? t("players.heightValue", { count: player.height }) : null,
+                player.dominantHand ? t(`playerForm.dominantHandOptions.${player.dominantHand}`) : null,
               ].filter(Boolean).join(" · ")}
             </p>
           </div>
@@ -342,6 +346,33 @@ export default function PlayerProfile() {
             </CardContent>
           </Card>
         </div>
+
+        {(player.emergencyContactName || player.emergencyContactPhone || player.medicalNotes) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Phone className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+                {t("playerProfile.emergencyInfo")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {(player.emergencyContactName || player.emergencyContactPhone) && (
+                <p>
+                  <span className="text-muted-foreground">{t("playerProfile.emergencyContact")}: </span>
+                  <span className="text-foreground font-medium">
+                    {[player.emergencyContactName, player.emergencyContactPhone].filter(Boolean).join(" — ")}
+                  </span>
+                </p>
+              )}
+              {player.medicalNotes && (
+                <p>
+                  <span className="text-muted-foreground">{t("playerForm.medicalNotes")}: </span>
+                  <span className="text-foreground whitespace-pre-wrap">{player.medicalNotes}</span>
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-3">

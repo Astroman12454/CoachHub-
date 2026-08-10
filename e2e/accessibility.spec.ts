@@ -441,6 +441,32 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("players — filter by position", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('[aria-label="Filter by position"]').click();
+    await page.locator('[role="option"]').first().click();
+    await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("players — edit player form open, with captain, dominant hand, and emergency contact filled", async ({ page }) => {
+    await login(page);
+    await page.goto("/players");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Edit "]').first().click();
+    await page.waitForSelector("text=Edit Player");
+    await page.getByLabel("Dominant Hand").click();
+    await page.click('[role="option"]:has-text("Left")');
+    await page.fill('input[placeholder*="Jane García"]', "Pat García");
+    await page.fill('input[type="tel"]', "555-0100");
+    await page.fill('textarea', "Mild asthma, carries an inhaler");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("players — portal link dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/players");

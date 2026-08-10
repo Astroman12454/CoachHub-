@@ -171,6 +171,19 @@ export const players = pgTable("players", {
   birthDate: text("birth_date"),
   // Centimeters — null until the coach records one.
   height: integer("height"),
+  // 'left' | 'right', null until recorded.
+  dominantHand: text("dominant_hand").$type<"left" | "right">(),
+  // Free text — a name and a phone number, not two structured fields, since
+  // a coach jotting this down mid-registration shouldn't have to fill in a
+  // rigid form. Null until the coach records one.
+  emergencyContactName: text("emergency_contact_name"),
+  emergencyContactPhone: text("emergency_contact_phone"),
+  // Allergies, conditions, anything a coach needs to know in an emergency —
+  // free text, null until recorded.
+  medicalNotes: text("medical_notes"),
+  // 1 for the team captain, 0 otherwise — same integer-flag convention as
+  // isActive. Not unique: a coach naming co-captains shouldn't be blocked.
+  isCaptain: integer("is_captain").default(0),
   // Unguessable (24 random bytes) credential for the public read-only player
   // portal — a coach shares a link built from this instead of the parent
   // needing an account. Null until the coach first generates a link.
@@ -524,6 +537,10 @@ export const insertPlayerSchema = createInsertSchema(players).omit({
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date").nullish(),
   height: z.number().int().min(50, "Enter a height in centimeters").max(260, "Enter a height in centimeters").nullish(),
   jerseyNumber: z.number().int().min(0, "Enter a jersey number").max(99, "Enter a jersey number").nullish(),
+  dominantHand: z.enum(["left", "right"]).nullish(),
+  emergencyContactName: z.string().max(100, "Name is too long").nullish(),
+  emergencyContactPhone: z.string().max(30, "Phone number is too long").nullish(),
+  medicalNotes: z.string().max(1000, "Notes are too long").nullish(),
 });
 
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({

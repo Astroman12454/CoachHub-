@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,11 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
       jerseyNumber: player?.jerseyNumber ?? undefined,
       birthDate: player?.birthDate ?? "",
       height: player?.height ?? undefined,
+      dominantHand: player?.dominantHand ?? undefined,
+      emergencyContactName: player?.emergencyContactName ?? "",
+      emergencyContactPhone: player?.emergencyContactPhone ?? "",
+      medicalNotes: player?.medicalNotes ?? "",
+      isCaptain: player?.isCaptain ?? 0,
     },
   });
 
@@ -63,7 +69,13 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
     // Empty string means "not entered" here, but the field is a nullable
     // date column — send null instead of "" so it clears cleanly on an
     // edit rather than failing the schema's date-format check.
-    savePlayerMutation.mutate({ ...data, birthDate: data.birthDate || null });
+    savePlayerMutation.mutate({
+      ...data,
+      birthDate: data.birthDate || null,
+      emergencyContactName: data.emergencyContactName || null,
+      emergencyContactPhone: data.emergencyContactPhone || null,
+      medicalNotes: data.medicalNotes || null,
+    });
   };
 
   return (
@@ -179,26 +191,113 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
 
             <FormField
               control={form.control}
-              name="isActive"
+              name="dominantHand"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      {t("playerForm.activePlayer")}
-                    </FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      {t("playerForm.activePlayerDescription")}
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value === 1}
-                      onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
-                    />
-                  </FormControl>
+                <FormItem>
+                  <FormLabel>{t("playerForm.dominantHand")}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("playerForm.selectDominantHand")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="left">{t("playerForm.dominantHandOptions.left")}</SelectItem>
+                      <SelectItem value="right">{t("playerForm.dominantHandOptions.right")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="emergencyContactName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("playerForm.emergencyContactName")}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t("playerForm.emergencyContactNamePlaceholder")} {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emergencyContactPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("playerForm.emergencyContactPhone")}</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder={t("playerForm.emergencyContactPhonePlaceholder")} {...field} value={field.value ?? ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="medicalNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("playerForm.medicalNotes")}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t("playerForm.medicalNotesPlaceholder")}
+                      rows={2}
+                      className="resize-none"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <FormLabel className="text-sm">
+                      {t("playerForm.activePlayer")}
+                    </FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value === 1}
+                        onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isCaptain"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <FormLabel className="text-sm">
+                      {t("playerForm.captain")}
+                    </FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value === 1}
+                        onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button
