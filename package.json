@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:push": "drizzle-kit push",
-    "db:reset": "tsx server/scripts/reset-schema.ts"
+    "db:reset": "tsx server/scripts/reset-schema.ts",
+    "backfill-starter-content": "tsx server/scripts/backfill-starter-content.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

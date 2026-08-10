@@ -68,6 +68,7 @@ export interface IStorage {
   createAccount(email: string, passwordHash: string): Promise<Account>;
   getAccountByEmail(email: string): Promise<Account | undefined>;
   getAccountById(id: number): Promise<Account | undefined>;
+  getAllAccounts(): Promise<Account[]>;
   getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined>;
   setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void>;
   setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void>;
@@ -244,6 +245,12 @@ export class DatabaseStorage implements IStorage {
   async getAccountById(id: number): Promise<Account | undefined> {
     const [account] = await db.select().from(accounts).where(eq(accounts.id, id));
     return account || undefined;
+  }
+
+  // Ops/backfill use only (see server/scripts/backfill-starter-content.ts)
+  // — nothing in the request-serving app lists every account at once.
+  async getAllAccounts(): Promise<Account[]> {
+    return await db.select().from(accounts);
   }
 
   async getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined> {
