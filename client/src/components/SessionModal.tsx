@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Loader2, Check, BookmarkPlus, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, Check, BookmarkPlus, Trash2, Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import type { Exercise, Play, PhysicalTest, TrainingSession, SessionTemplate } from "@shared/schema";
+import { DIFFICULTY_LEVELS } from "@shared/schema";
 import { canGenerateAiSessionPlan } from "@shared/entitlements";
 import { CATEGORY_COLORS } from "@/lib/types";
 
@@ -93,6 +94,8 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     () => source?.exerciseIds ?? []
   );
   const [exerciseCategory, setExerciseCategory] = useState<string>("all");
+  const [exerciseDifficulty, setExerciseDifficulty] = useState<string>("all");
+  const [exerciseSearch, setExerciseSearch] = useState("");
 
   // Playbook plays this session will practice — same id-tracking rationale
   // as selectedExerciseIds above.
@@ -183,10 +186,17 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     },
   });
 
-  // Filter exercises by category
-  const filteredExercises = exerciseCategory === "all"
-    ? exercises
-    : exercises.filter(ex => ex.category === exerciseCategory);
+  // Filter exercises by category, difficulty, and a name/description search —
+  // the starter library alone is 40 exercises now, so scrolling through one
+  // long "All Categories" list to find a specific drill stopped being
+  // practical.
+  const filteredExercises = exercises.filter(ex => {
+    const matchesCategory = exerciseCategory === "all" || ex.category === exerciseCategory;
+    const matchesDifficulty = exerciseDifficulty === "all" || ex.difficulty === exerciseDifficulty;
+    const query = exerciseSearch.trim().toLowerCase();
+    const matchesSearch = !query || ex.name.toLowerCase().includes(query) || ex.description.toLowerCase().includes(query);
+    return matchesCategory && matchesDifficulty && matchesSearch;
+  });
 
   const saveSessionMutation = useSaveMutation<SessionFormData>({
     endpoint: "/api/training-sessions",
@@ -509,23 +519,49 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
 
               <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.addExercises")}</h3>
               <div className="border border-border rounded-lg p-4">
-                <div className="flex items-center space-x-4 mb-4">
-                  <Select value={exerciseCategory} onValueChange={setExerciseCategory}>
-                    <SelectTrigger className="w-48" aria-label={t("sessionModal.filterByCategory")}>
-                      <SelectValue placeholder={t("sessionModal.filterByCategory")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t("sessionModal.allCategories")}</SelectItem>
-                      <SelectItem value="shooting">{t("categories.exercise.shooting")}</SelectItem>
-                      <SelectItem value="dribbling">{t("categories.exercise.dribbling")}</SelectItem>
-                      <SelectItem value="defense">{t("categories.exercise.defense")}</SelectItem>
-                      <SelectItem value="passing">{t("categories.exercise.passing")}</SelectItem>
-                      <SelectItem value="conditioning">{t("categories.exercise.conditioning")}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
+                    <Input
+                      value={exerciseSearch}
+                      onChange={(e) => setExerciseSearch(e.target.value)}
+                      placeholder={t("sessionModal.searchExercisesPlaceholder")}
+                      aria-label={t("sessionModal.searchExercisesPlaceholder")}
+                      className="pl-8"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Select value={exerciseCategory} onValueChange={setExerciseCategory}>
+                      <SelectTrigger className="w-40 sm:w-48" aria-label={t("sessionModal.filterByCategory")}>
+                        <SelectValue placeholder={t("sessionModal.filterByCategory")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t("sessionModal.allCategories")}</SelectItem>
+                        <SelectItem value="shooting">{t("categories.exercise.shooting")}</SelectItem>
+                        <SelectItem value="dribbling">{t("categories.exercise.dribbling")}</SelectItem>
+                        <SelectItem value="defense">{t("categories.exercise.defense")}</SelectItem>
+                        <SelectItem value="passing">{t("categories.exercise.passing")}</SelectItem>
+                        <SelectItem value="conditioning">{t("categories.exercise.conditioning")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={exerciseDifficulty} onValueChange={setExerciseDifficulty}>
+                      <SelectTrigger className="w-36 sm:w-40" aria-label={t("sessionModal.filterByDifficulty")}>
+                        <SelectValue placeholder={t("sessionModal.filterByDifficulty")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t("sessionModal.allDifficulties")}</SelectItem>
+                        {DIFFICULTY_LEVELS.map(level => (
+                          <SelectItem key={level} value={level}>{t(`categories.difficulty.${level}`, level)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* Available Exercises */}
+                {filteredExercises.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">{t("sessionModal.noExercisesMatchFilters")}</p>
+                ) : (
                 <div
                   className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto"
                   tabIndex={0}
@@ -552,6 +588,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </div>
 

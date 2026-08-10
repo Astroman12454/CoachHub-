@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Calendar, MapPin, Trash2, Plus, Trophy, Menu, BellRing } from "lucide-react";
+import { Calendar, MapPin, Trash2, Plus, Trophy, Menu, BellRing, Percent, TrendingUp, TrendingDown, Flame } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import GameModal from "@/components/GameModal";
 import PlayerStatsTable from "@/components/PlayerStatsTable";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
+import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { computeSeasonRecord } from "@/lib/seasonRecord";
 import type { Game } from "@shared/schema";
 
 // Local midnight, formatted as the same "YYYY-MM-DD" the API stores dates
@@ -83,16 +85,8 @@ export default function Games() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [games, isPendingDelete]);
 
-  const record = useMemo(() => {
-    let wins = 0, losses = 0, ties = 0;
-    for (const g of games) {
-      if (g.teamScore == null || g.opponentScore == null) continue;
-      if (g.teamScore > g.opponentScore) wins++;
-      else if (g.teamScore < g.opponentScore) losses++;
-      else ties++;
-    }
-    return { wins, losses, ties };
-  }, [games]);
+  const { wins, losses, ties, winPct, avgPointDiff, streak } = useMemo(() => computeSeasonRecord(games), [games]);
+  const hasDecidedGames = wins + losses + ties > 0;
 
   const confirmDeleteGame = () => {
     if (gameToDelete) {
@@ -115,7 +109,7 @@ export default function Games() {
           <div>
             <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight">{t("nav.games")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {games.length > 0 ? t("games.record", { wins: record.wins, losses: record.losses, ties: record.ties > 0 ? `-${record.ties}` : "" }) : t("games.trackResults")}
+              {games.length > 0 ? t("games.record", { wins, losses, ties: ties > 0 ? `-${ties}` : "" }) : t("games.trackResults")}
             </p>
           </div>
         </div>
@@ -181,6 +175,35 @@ export default function Games() {
             action={{ label: t("games.logFirstGame"), icon: Plus, onClick: () => setIsCreateOpen(true) }}
           />
         ) : (
+          <>
+          {hasDecidedGames && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatCard
+                label={t("games.statsRecord")}
+                value={`${wins}-${losses}${ties > 0 ? `-${ties}` : ""}`}
+                icon={Trophy}
+                color="orange"
+              />
+              <StatCard
+                label={t("games.statsWinPct")}
+                value={winPct !== null ? `${winPct}%` : "–"}
+                icon={Percent}
+                color="success"
+              />
+              <StatCard
+                label={t("games.statsPointDiff")}
+                value={avgPointDiff !== null ? `${avgPointDiff > 0 ? "+" : ""}${avgPointDiff.toFixed(1)}` : "–"}
+                icon={avgPointDiff !== null && avgPointDiff < 0 ? TrendingDown : TrendingUp}
+                color="court"
+              />
+              <StatCard
+                label={t("games.statsStreak")}
+                value={streak ? `${streak.won ? "W" : "L"}${streak.count}` : "–"}
+                icon={Flame}
+                color="violet"
+              />
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedGames.map((game, index) => (
               <Card
@@ -250,6 +273,7 @@ export default function Games() {
               </Card>
             ))}
           </div>
+          </>
         )}
       </main>
 

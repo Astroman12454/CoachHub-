@@ -191,6 +191,24 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — search and filter exercises by difficulty", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    await page.fill('input[aria-label="Search exercises..."]', "Sprint");
+    await page.waitForLoadState("networkidle");
+    const resultsAfterSearch = await scan(page);
+    expect(summarize(resultsAfterSearch.violations)).toEqual([]);
+
+    await page.fill('input[aria-label="Search exercises..."]', "");
+    await page.locator('[aria-label="Filter by difficulty"]').click();
+    await page.click('[role="option"]:has-text("Hard")');
+    await page.waitForLoadState("networkidle");
+    const resultsAfterDifficulty = await scan(page);
+    expect(summarize(resultsAfterDifficulty.violations)).toEqual([]);
+  });
+
   test("training sessions — generate with AI panel open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
@@ -611,6 +629,23 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/games");
     await page.waitForLoadState("networkidle");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("games — season record stat cards, with a decided game logged", async ({ page }) => {
+    await login(page);
+    await page.request.post("/api/games", {
+      data: {
+        opponent: "E2E Rivals",
+        date: new Date().toISOString().split("T")[0],
+        teamScore: 60,
+        opponentScore: 50,
+      },
+    });
+    await page.goto("/games");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Win %");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
