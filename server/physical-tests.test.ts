@@ -118,7 +118,90 @@ describe("physical tests", () => {
         ],
       });
       expect(res.status).toBe(201);
-      expect(res.body).toHaveLength(2);
+      expect(res.body.results).toHaveLength(2);
+      expect(res.body.newRecordPlayerIds).toEqual([]);
+    });
+
+    it("does not flag a player's first-ever result as a new record — there's nothing to beat yet", async () => {
+      const { agent } = await signedInAgent(app);
+      const test = await agent.post("/api/physical-tests").send(sprintTest());
+      const player = await agent.post("/api/players").send({ name: "Riley" });
+
+      const res = await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-01",
+        results: [{ playerId: player.body.id, value: 9.8 }],
+      });
+      expect(res.body.newRecordPlayerIds).toEqual([]);
+    });
+
+    it("flags a new personal record on a timed (lower-is-better) test, and not a worse result", async () => {
+      const { agent } = await signedInAgent(app);
+      const test = await agent.post("/api/physical-tests").send(sprintTest());
+      const player = await agent.post("/api/players").send({ name: "Riley" });
+
+      await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-01",
+        results: [{ playerId: player.body.id, value: 9.8 }],
+      });
+
+      const worse = await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-08",
+        results: [{ playerId: player.body.id, value: 10.1 }],
+      });
+      expect(worse.body.newRecordPlayerIds).toEqual([]);
+
+      const faster = await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-15",
+        results: [{ playerId: player.body.id, value: 9.5 }],
+      });
+      expect(faster.body.newRecordPlayerIds).toEqual([player.body.id]);
+    });
+
+    it("flags a new personal record on a reps-style (higher-is-better) test", async () => {
+      const { agent } = await signedInAgent(app);
+      const test = await agent.post("/api/physical-tests").send({ name: "Push-ups", unit: "reps", lowerIsBetter: 0 });
+      const player = await agent.post("/api/players").send({ name: "Riley" });
+
+      await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-01",
+        results: [{ playerId: player.body.id, value: 20 }],
+      });
+
+      const worse = await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-08",
+        results: [{ playerId: player.body.id, value: 18 }],
+      });
+      expect(worse.body.newRecordPlayerIds).toEqual([]);
+
+      const better = await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-15",
+        results: [{ playerId: player.body.id, value: 25 }],
+      });
+      expect(better.body.newRecordPlayerIds).toEqual([player.body.id]);
+    });
+
+    it("only flags the players who actually beat their own record in a mixed batch", async () => {
+      const { agent } = await signedInAgent(app);
+      const test = await agent.post("/api/physical-tests").send(sprintTest());
+      const playerA = await agent.post("/api/players").send({ name: "Riley" });
+      const playerB = await agent.post("/api/players").send({ name: "Sam" });
+
+      await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-01",
+        results: [
+          { playerId: playerA.body.id, value: 9.8 },
+          { playerId: playerB.body.id, value: 10.4 },
+        ],
+      });
+
+      const res = await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+        date: "2026-08-08",
+        results: [
+          { playerId: playerA.body.id, value: 9.2 }, // faster — new record
+          { playerId: playerB.body.id, value: 10.9 }, // slower — not a record
+        ],
+      });
+      expect(res.body.newRecordPlayerIds).toEqual([playerA.body.id]);
     });
 
     it("rejects a batch containing a player from a different team", async () => {

@@ -457,6 +457,57 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("physical tests — beating a previous result shows the new personal record toast", async ({ page }) => {
+    await login(page);
+    // A unique name per run — a fixed name would collide with players left
+    // over from earlier runs and pick up their result history, throwing off
+    // the personal-record comparison this test is checking.
+    const playerName = `E2E PR Player ${Date.now()}`;
+    await page.request.post("/api/players", { data: { name: playerName, isActive: 1 } });
+
+    await page.goto("/physical-tests");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Record Results")');
+    await page.waitForSelector("text=Record Results — E2E Sprint Test");
+    await page.getByLabel(playerName, { exact: true }).fill("9.8");
+    await page.click('button:has-text("Save Results")');
+    await page.waitForSelector("text=Results saved");
+
+    await page.click('button:has-text("Record Results")');
+    await page.waitForSelector("text=Record Results — E2E Sprint Test");
+    // Sprint test is lower-is-better (seconds) — a faster time than the 9.8
+    // recorded above is a new personal record.
+    await page.getByLabel(playerName, { exact: true }).fill("9.2");
+    await page.click('button:has-text("Save Results")');
+    await page.waitForSelector("text=New personal record!");
+    // Same pre-existing Radix Toast a11y issue disabled in the command-bar
+    // error-toast test above — not introduced by this feature.
+    const results = await scan(page, { disableRules: ["aria-hidden-focus", "list", "aria-allowed-role"] });
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("player profile — physical test evolution chart", async ({ page }) => {
+    await login(page);
+    const playerRes = await page.request.post("/api/players", { data: { name: "E2E Chart Player", isActive: 1 } });
+    const player = await playerRes.json();
+    const testsRes = await page.request.get("/api/physical-tests");
+    const tests = await testsRes.json();
+    const sprintTest = tests.find((t: { name: string }) => t.name === "E2E Sprint Test");
+    await page.request.post(`/api/physical-tests/${sprintTest.id}/results`, {
+      data: { date: "2026-01-01", results: [{ playerId: player.id, value: 10.0 }] },
+    });
+    await page.request.post(`/api/physical-tests/${sprintTest.id}/results`, {
+      data: { date: "2026-02-01", results: [{ playerId: player.id, value: 9.5 }] },
+    });
+
+    await page.goto(`/players/${player.id}`);
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("E2E Sprint Test")');
+    await page.waitForSelector('svg[aria-label^="Trend chart"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("player profile — physical test recorded", async ({ page }) => {
     await login(page);
     await page.goto("/physical-tests");

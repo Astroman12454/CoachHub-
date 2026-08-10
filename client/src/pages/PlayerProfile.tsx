@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity, Crown, Phone, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity, Crown, Phone, Clock, Calendar, Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import SkillRadarChart from "@/components/SkillRadarChart";
@@ -19,18 +19,12 @@ import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
-import { calculateAge } from "@/lib/time";
+import { calculateAge, formatPlainDate } from "@/lib/time";
+import PhysicalTestChart from "@/components/PhysicalTestChart";
 import { SKILL_CATEGORIES } from "@shared/schema";
 import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerPhysicalTestHistory } from "@shared/schema";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-
-// Plain "YYYY-MM-DD" dates (no time/zone info) need a forced local-midnight
-// parse — `new Date("2026-08-08")` parses as UTC midnight, which
-// `toLocaleDateString` can then roll back a day in timezones behind UTC.
-function formatPlainDate(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
 
 // `createdAt`/`ratedAt` are typed Date in the DB schema, but arrive over the
 // wire as ISO strings once JSON-serialized — accepting both here means
@@ -41,7 +35,7 @@ function formatDateTime(value: string | Date): string {
 
 // A "YYYY-MM" bucket key (from the attendance monthly breakdown) rendered as
 // "August 2026" — parsed as day 1 at local midnight for the same reason as
-// formatPlainDate above.
+// formatPlainDate (lib/time).
 function formatMonthLabel(month: string): string {
   return new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
@@ -113,6 +107,7 @@ export default function PlayerProfile() {
   });
 
   const [expandedDrill, setExpandedDrill] = useState<string | null>(null);
+  const [expandedTest, setExpandedTest] = useState<number | null>(null);
   const drillSummary = useMemo(() => {
     const byDrill = new Map<string, { made: number; total: number; shots: { id: number; x: number; y: number; made: number }[] }>();
     for (const attempt of drillAttempts) {
@@ -517,20 +512,45 @@ export default function PlayerProfile() {
                   const previous = test.results[1];
                   const delta = previous ? latest.value - previous.value : null;
                   const improved = delta !== null && delta !== 0 ? (test.lowerIsBetter ? delta < 0 : delta > 0) : null;
+                  const best = test.lowerIsBetter ? Math.min(...test.results.map((r) => r.value)) : Math.max(...test.results.map((r) => r.value));
+                  const isPersonalRecord = test.results.length > 1 && latest.value === best;
+                  const canExpand = test.results.length > 1;
+                  const isExpanded = expandedTest === test.testId;
                   return (
-                    <li key={test.testId} className="flex items-center justify-between gap-3 text-sm border-t border-border pt-2.5 first:border-0 first:pt-0">
-                      <div className="min-w-0">
-                        <span className="font-medium text-foreground truncate">{test.testName}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{formatPlainDate(latest.date)}</span>
+                    <li key={test.testId} className="border-t border-border pt-2.5 first:border-0 first:pt-0">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <div className="min-w-0">
+                          {canExpand ? (
+                            <button
+                              type="button"
+                              className="font-medium text-foreground truncate underline decoration-dotted underline-offset-2 text-left"
+                              onClick={() => setExpandedTest(isExpanded ? null : test.testId)}
+                              aria-expanded={isExpanded}
+                            >
+                              {test.testName}
+                            </button>
+                          ) : (
+                            <span className="font-medium text-foreground truncate">{test.testName}</span>
+                          )}
+                          <span className="text-xs text-muted-foreground ml-2">{formatPlainDate(latest.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
+                          {isPersonalRecord && (
+                            <Trophy className="w-3.5 h-3.5 text-basketball-orange" strokeWidth={1.75} aria-label={t("playerProfile.personalRecord")} />
+                          )}
+                          <span className="font-semibold text-foreground">{latest.value} {test.unit}</span>
+                          {delta !== null && delta !== 0 && (
+                            <span className={improved ? "text-success" : "text-red-600"}>
+                              {delta > 0 ? "+" : ""}{delta.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
-                        <span className="font-semibold text-foreground">{latest.value} {test.unit}</span>
-                        {delta !== null && delta !== 0 && (
-                          <span className={improved ? "text-success" : "text-red-600"}>
-                            {delta > 0 ? "+" : ""}{delta.toFixed(1)}
-                          </span>
-                        )}
-                      </div>
+                      {isExpanded && (
+                        <div className="mt-2">
+                          <PhysicalTestChart results={[...test.results].reverse()} unit={test.unit} lowerIsBetter={test.lowerIsBetter} />
+                        </div>
+                      )}
                     </li>
                   );
                 })}

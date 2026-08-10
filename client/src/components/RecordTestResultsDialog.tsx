@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
-import type { Player, PhysicalTest } from "@shared/schema";
+import type { Player, PhysicalTest, RecordPhysicalTestResultsResponse } from "@shared/schema";
 
 interface RecordTestResultsDialogProps {
   test: PhysicalTest | null;
@@ -23,7 +23,7 @@ function todayIsoDate(): string {
 // player gets a row, prefilled with their most recent result so re-testing
 // the roster doesn't start from a blank table.
 export default function RecordTestResultsDialog({ test, onOpenChange }: RecordTestResultsDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const open = !!test;
   const restoreFocus = useDialogFocusReturn(open);
   const { toast } = useToast();
@@ -57,11 +57,23 @@ export default function RecordTestResultsDialog({ test, onOpenChange }: RecordTe
       const results = activePlayers
         .map((p) => ({ playerId: p.id, value: parseFloat(values[p.id] ?? "") }))
         .filter((r) => !isNaN(r.value));
-      return apiRequest("POST", `/api/physical-tests/${test!.id}/results`, { date, results });
+      const res = await apiRequest("POST", `/api/physical-tests/${test!.id}/results`, { date, results });
+      return (await res.json()) as RecordPhysicalTestResultsResponse;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/physical-tests/${test?.id}/latest`] });
-      toast({ title: t("recordTestResultsDialog.savedTitle"), description: t("recordTestResultsDialog.savedDescription") });
+      if (data.newRecordPlayerIds.length > 0) {
+        const names = activePlayers
+          .filter((p) => data.newRecordPlayerIds.includes(p.id))
+          .map((p) => p.name);
+        const formattedNames = new Intl.ListFormat(i18n.language, { style: "long", type: "conjunction" }).format(names);
+        toast({
+          title: t("recordTestResultsDialog.newRecordTitle"),
+          description: t("recordTestResultsDialog.newRecordDescription", { names: formattedNames, count: names.length }),
+        });
+      } else {
+        toast({ title: t("recordTestResultsDialog.savedTitle"), description: t("recordTestResultsDialog.savedDescription") });
+      }
       handleOpenChange(false);
     },
     onError: (error) => {

@@ -397,6 +397,7 @@
     "deleteInjuryConfirmDescription": "This can't be undone.",
     "physicalTests": "Physical Tests",
     "noPhysicalTestsYet": "No physical test results yet — record them from the Physical Tests page.",
+    "personalRecord": "Personal record",
     "drillStats": "Drill Stats",
     "noDrillStatsYet": "No drills logged yet — track attempts from a session's attendance screen.",
     "shotChartFor": "Shot chart for {{drillName}}"
@@ -455,6 +456,14 @@
   },
   "skillRadarChart": {
     "ariaLabel": "Skill radar chart"
+  },
+  "physicalTestChart": {
+    "ariaLabel": "Trend chart: from {{first}} to {{last}} {{unit}}, trending {{trend}}",
+    "trend": {
+      "up": "up",
+      "down": "down",
+      "flat": "flat"
+    }
   },
   "scrimmageBalancer": {
     "openButton": "Balance Teams",
@@ -755,7 +764,10 @@
     "save": "Save Results",
     "savedTitle": "Results saved",
     "savedDescription": "The team's results were recorded.",
-    "couldntSave": "Couldn't save results"
+    "couldntSave": "Couldn't save results",
+    "newRecordTitle": "New personal record!",
+    "newRecordDescription_one": "{{names}} just beat their personal best.",
+    "newRecordDescription_other": "{{names}} just beat their personal bests."
   },
   "schedule": {
     "failedToUpdateAttendance": "Failed to update attendance",

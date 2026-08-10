@@ -484,8 +484,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "One or more players don't belong to the current team." });
       }
 
+      // Snapshot each player's best-ever value before inserting the new
+      // results, so we can tell who just beat their own personal record —
+      // a player with no prior result doesn't count (nothing to beat yet).
+      const previousBests = await storage.getBestPhysicalTestValues(id, results.map((r) => r.playerId), test.lowerIsBetter === 1);
       const saved = await storage.recordPhysicalTestResults(id, date, results);
-      res.status(201).json(saved);
+      const newRecordPlayerIds = results
+        .filter((r) => {
+          const prevBest = previousBests[r.playerId];
+          if (prevBest === undefined) return false;
+          return test.lowerIsBetter === 1 ? r.value < prevBest : r.value > prevBest;
+        })
+        .map((r) => r.playerId);
+
+      res.status(201).json({ results: saved, newRecordPlayerIds });
     } catch (error) {
       res.status(400).json({ message: "Invalid physical test results" });
     }

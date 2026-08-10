@@ -637,6 +637,14 @@ export type PhysicalTest = typeof physicalTests.$inferSelect;
 export type PhysicalTestResult = typeof physicalTestResults.$inferSelect;
 export type RecordPhysicalTestResults = z.infer<typeof recordPhysicalTestResultsSchema>;
 
+// The shape of POST /api/physical-tests/:id/results — newRecordPlayerIds is
+// every player whose submitted value beat their own prior best on this test
+// (direction-aware; a player with no prior result isn't included).
+export interface RecordPhysicalTestResultsResponse {
+  results: PhysicalTestResult[];
+  newRecordPlayerIds: number[];
+}
+
 // One player's full history for one test template, newest-first — the
 // shape returned by GET /api/players/:id/physical-test-results.
 export interface PlayerPhysicalTestHistory {

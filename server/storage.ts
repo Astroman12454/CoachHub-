@@ -61,7 +61,7 @@ import {
   type PlayerPhysicalTestHistory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc } from "drizzle-orm";
+import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -128,6 +128,12 @@ export interface IStorage {
   recordPhysicalTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<PhysicalTestResult[]>;
   getLatestPhysicalTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>>;
   getPhysicalTestResultsForPlayer(playerId: number): Promise<PlayerPhysicalTestHistory[]>;
+  // Each player's best-ever value for this test before a new result is
+  // recorded — direction-aware (lower is better for timed tests). Used to
+  // tell whether an incoming result is a new personal record; a player with
+  // no prior result is left out of the map entirely, since there's no
+  // record for them to beat yet.
+  getBestPhysicalTestValues(testId: number, playerIds: number[], lowerIsBetter: boolean): Promise<Record<number, number>>;
 
   // Training Session methods (scoped by team)
   getAllTrainingSessions(teamId: number): Promise<TrainingSession[]>;
@@ -530,6 +536,23 @@ export class DatabaseStorage implements IStorage {
       .insert(physicalTestResults)
       .values(results.map((r) => ({ testId, playerId: r.playerId, value: r.value, date })))
       .returning();
+  }
+
+  async getBestPhysicalTestValues(testId: number, playerIds: number[], lowerIsBetter: boolean): Promise<Record<number, number>> {
+    if (playerIds.length === 0) return {};
+    const rows = await db
+      .select({ playerId: physicalTestResults.playerId, value: physicalTestResults.value })
+      .from(physicalTestResults)
+      .where(and(eq(physicalTestResults.testId, testId), inArray(physicalTestResults.playerId, playerIds)));
+
+    const bests: Record<number, number> = {};
+    for (const row of rows) {
+      const current = bests[row.playerId];
+      if (current === undefined || (lowerIsBetter ? row.value < current : row.value > current)) {
+        bests[row.playerId] = row.value;
+      }
+    }
+    return bests;
   }
 
   async getLatestPhysicalTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>> {

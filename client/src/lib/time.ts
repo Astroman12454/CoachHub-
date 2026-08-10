@@ -13,12 +13,20 @@ export function addMinutesToClock(startTime: string, minutes: number): string | 
   return `${hour12}:${minute.toString().padStart(2, "0")} ${period}`;
 }
 
+// Plain "YYYY-MM-DD" dates (no time/zone info) need a forced local-midnight
+// parse — `new Date("2026-08-08")` parses as UTC midnight, which
+// `toLocaleDateString` can then roll back a day in timezones behind UTC.
+export function formatPlainDate(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+
 // Whole years elapsed since a "YYYY-MM-DD" birth date, as of today — the
 // naive `currentYear - birthYear` is off by one for anyone whose birthday
 // hasn't happened yet this calendar year, so this checks month/day too.
 // Parsed at local noon (not midnight) so the date itself never shifts a
-// day from timezone rounding, the same class of bug formatPlainDate
-// (PlayerProfile) guards against for other plain-date fields.
+// day from timezone rounding, the same class of bug formatPlainDate below
+// guards against for other plain-date fields.
 export function calculateAge(birthDate: string): number | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate);
   if (!match) return null;

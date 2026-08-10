@@ -397,6 +397,7 @@
     "deleteInjuryConfirmDescription": "Esto no se puede deshacer.",
     "physicalTests": "Pruebas Físicas",
     "noPhysicalTestsYet": "Todavía no hay resultados de pruebas físicas — registralos desde la página de Pruebas Físicas.",
+    "personalRecord": "Récord personal",
     "drillStats": "Estadísticas de Ejercicios",
     "noDrillStatsYet": "Aún no hay ejercicios registrados — registra intentos desde la pantalla de asistencia de una sesión.",
     "shotChartFor": "Mapa de tiros de {{drillName}}"
@@ -455,6 +456,14 @@
   },
   "skillRadarChart": {
     "ariaLabel": "Gráfico de radar de habilidades"
+  },
+  "physicalTestChart": {
+    "ariaLabel": "Gráfico de evolución: de {{first}} a {{last}} {{unit}}, tendencia {{trend}}",
+    "trend": {
+      "up": "en aumento",
+      "down": "en baja",
+      "flat": "estable"
+    }
   },
   "scrimmageBalancer": {
     "openButton": "Equilibrar Equipos",
@@ -755,7 +764,10 @@
     "save": "Guardar Resultados",
     "savedTitle": "Resultados guardados",
     "savedDescription": "Se registraron los resultados del equipo.",
-    "couldntSave": "No se pudieron guardar los resultados"
+    "couldntSave": "No se pudieron guardar los resultados",
+    "newRecordTitle": "¡Nuevo récord personal!",
+    "newRecordDescription_one": "{{names}} acaba de superar su mejor marca personal.",
+    "newRecordDescription_other": "{{names}} acaban de superar su mejor marca personal."
   },
   "schedule": {
     "failedToUpdateAttendance": "No se pudo actualizar la asistencia",
