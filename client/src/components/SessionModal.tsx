@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
-import type { Exercise, Play, TrainingSession, SessionTemplate } from "@shared/schema";
+import type { Exercise, Play, PhysicalTest, TrainingSession, SessionTemplate } from "@shared/schema";
 import { canGenerateAiSessionPlan } from "@shared/entitlements";
 import { CATEGORY_COLORS } from "@/lib/types";
 
@@ -105,6 +105,17 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     setSelectedPlayIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
 
+  // Physical tests to run at the start of this session, before the exercise
+  // sequence — same id-tracking rationale as selectedExerciseIds above.
+  const { data: physicalTests = [] } = useQuery<PhysicalTest[]>({ queryKey: ["/api/physical-tests"] });
+  const [selectedTestIds, setSelectedTestIds] = useState<string[]>(
+    () => source?.testIds ?? []
+  );
+  const toggleTest = (testId: number) => {
+    const id = testId.toString();
+    setSelectedTestIds(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  };
+
   const { data: templates = [] } = useQuery<SessionTemplate[]>({ queryKey: ["/api/session-templates"] });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
@@ -119,6 +130,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     form.setValue("notes", template.notes ?? "", { shouldDirty: true });
     setSelectedExerciseIds(template.exerciseIds ?? []);
     setSelectedPlayIds(template.playIds ?? []);
+    setSelectedTestIds(template.testIds ?? []);
   };
 
   const saveTemplateMutation = useMutation({
@@ -128,6 +140,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
         duration: form.getValues("duration"),
         exerciseIds: selectedExerciseIds,
         playIds: selectedPlayIds,
+        testIds: selectedTestIds,
         notes: form.getValues("notes") || null,
       });
       return res.json();
@@ -186,6 +199,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
       form.reset();
       setSelectedExerciseIds([]);
       setSelectedPlayIds([]);
+      setSelectedTestIds([]);
     },
   });
 
@@ -195,6 +209,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
       ...data,
       exerciseIds: selectedExerciseIds,
       playIds: selectedPlayIds,
+      testIds: selectedTestIds,
     });
   };
 
@@ -434,6 +449,49 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                 </FormItem>
               )}
             />
+
+            {/* Physical Tests — shown before exercises so the form itself
+                mirrors the order Training Mode runs them in: physical block
+                first, technical exercises after. */}
+            {physicalTests.length > 0 && (
+              <div>
+                <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.physicalTestsToPractice")}</h3>
+                <div className="border border-border rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {t("sessionModal.physicalTestsToPracticeDescription")}
+                  </p>
+                  <div
+                    className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto"
+                    tabIndex={0}
+                    role="region"
+                    aria-label={t("sessionModal.physicalTestsToPracticeAriaLabel")}
+                  >
+                    {physicalTests.map(test => {
+                      const selected = selectedTestIds.includes(test.id.toString());
+                      return (
+                        <button
+                          type="button"
+                          key={test.id}
+                          onClick={() => toggleTest(test.id)}
+                          aria-pressed={selected}
+                          className={`flex items-center justify-between gap-2 border rounded-lg p-3 text-left transition-all ${
+                            selected
+                              ? "border-basketball-orange bg-basketball-orange/5"
+                              : "border-border hover:border-basketball-orange hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <span className="font-medium text-foreground truncate block">{test.name}</span>
+                            <Badge variant="secondary" className="mt-1 text-xs">{test.unit}</Badge>
+                          </div>
+                          {selected && <Check className="w-4 h-4 text-basketball-orange flex-shrink-0" strokeWidth={2.5} aria-hidden="true" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Exercise Selection */}
             <div>

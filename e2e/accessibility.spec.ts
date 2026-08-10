@@ -180,6 +180,17 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — physical tests picker", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    await page.waitForSelector("text=Physical Tests");
+    await page.locator('[aria-label="Physical tests to practice"] button').first().click();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("training sessions — generate with AI panel open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
@@ -255,6 +266,35 @@ test.describe("accessibility (axe)", () => {
     const session = await sessionRes.json();
     await page.goto(`/training-sessions/${session.id}/live`);
     await page.waitForSelector("text=Exercise 1 of 2");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training mode — physical test recorded before the exercise sequence", async ({ page }) => {
+    await login(page);
+    const [exercisesRes, testsRes] = await Promise.all([
+      page.request.get("/api/exercises"),
+      page.request.get("/api/physical-tests"),
+    ]);
+    const exercises = await exercisesRes.json();
+    const tests = await testsRes.json();
+    const sprintTest = tests.find((t: { name: string }) => t.name === "E2E Sprint Test");
+    const sessionRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E Training Mode Session — Physical + Technical",
+        date: new Date().toISOString().split("T")[0],
+        time: "17:00",
+        duration: 60,
+        testIds: [sprintTest.id.toString()],
+        exerciseIds: exercises.slice(0, 1).map((e: { id: number }) => e.id.toString()),
+        notes: null,
+      },
+    });
+    const session = await sessionRes.json();
+    await page.goto(`/training-sessions/${session.id}/live`);
+    await page.waitForSelector("text=Physical tests today");
+    await page.click(`button:has-text("${sprintTest.name}")`);
+    await page.waitForSelector("text=Record Results — E2E Sprint Test");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });

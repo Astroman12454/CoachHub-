@@ -98,6 +98,10 @@ export const trainingSessions = pgTable("training_sessions", {
   duration: integer("duration").notNull(), // in minutes
   exerciseIds: text("exercise_ids").array().default([]), // array of exercise IDs
   playIds: text("play_ids").array().default([]), // array of playbook play IDs practiced this session
+  // Physical tests to run at the start of this session, before the exercise
+  // sequence — lets a session combine a physical block (testing) with the
+  // technical block (exercises) that follows it in Training Mode.
+  testIds: text("test_ids").array().default([]),
   notes: text("notes"),
   attendanceCount: integer("attendance_count").default(0),
   totalPlayers: integer("total_players").default(18),
@@ -119,6 +123,7 @@ export const sessionTemplates = pgTable("session_templates", {
   duration: integer("duration").notNull(),
   exerciseIds: text("exercise_ids").array().default([]),
   playIds: text("play_ids").array().default([]),
+  testIds: text("test_ids").array().default([]),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -460,6 +460,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return playIds.filter(id => ownedIds.has(id));
   }
 
+  // Same defense-in-depth as sanitizeExerciseIds above — physical tests are
+  // scoped by accountId, not team, same as exercises.
+  async function sanitizeTestIds(accountId: number, testIds: string[] | null | undefined) {
+    if (!testIds || testIds.length === 0) return testIds;
+    const owned = await storage.getAllPhysicalTests(accountId);
+    const ownedIds = new Set(owned.map(t => t.id.toString()));
+    return testIds.filter(id => ownedIds.has(id));
+  }
+
   const generatePlanSchema = z.object({
     instructions: z.string().max(500).optional(),
   });
@@ -546,6 +555,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionData = insertTrainingSessionSchema.parse(req.body);
       sessionData.exerciseIds = await sanitizeExerciseIds(req.session.accountId!, sessionData.exerciseIds);
       sessionData.playIds = await sanitizePlayIds(req.session.currentTeamId!, sessionData.playIds);
+      sessionData.testIds = await sanitizeTestIds(req.session.accountId!, sessionData.testIds);
       const session = await storage.createTrainingSession(req.session.currentTeamId!, sessionData);
       res.status(201).json(session);
     } catch (error) {
@@ -563,6 +573,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (updateData.playIds) {
         updateData.playIds = await sanitizePlayIds(req.session.currentTeamId!, updateData.playIds);
+      }
+      if (updateData.testIds) {
+        updateData.testIds = await sanitizeTestIds(req.session.accountId!, updateData.testIds);
       }
       const session = await storage.updateTrainingSession(id, req.session.currentTeamId!, updateData);
 
@@ -610,6 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = insertSessionTemplateSchema.parse(req.body);
       data.exerciseIds = await sanitizeExerciseIds(req.session.accountId!, data.exerciseIds);
       data.playIds = await sanitizePlayIds(teamId, data.playIds);
+      data.testIds = await sanitizeTestIds(req.session.accountId!, data.testIds);
       const template = await storage.createSessionTemplate(teamId, data);
       res.status(201).json(template);
     } catch (error) {
