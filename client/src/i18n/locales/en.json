@@ -692,7 +692,9 @@
     "sortDefault": "Default",
     "sortRecentlyUsed": "Recently used",
     "favoritesOnly": "Favorites only",
-    "couldntUpdateFavorite": "Couldn't update favorite"
+    "couldntUpdateFavorite": "Couldn't update favorite",
+    "community": "Community",
+    "couldntUpdateCommunityShare": "Couldn't update community sharing"
   },
   "exerciseForm": {
     "updatedSuccessfully": "Exercise updated successfully",
@@ -712,6 +714,8 @@
     "instructionsOptional": "Instructions (Optional)",
     "instructionsPlaceholder": "Detailed instructions for the exercise...",
     "imageUrlOptional": "Image URL (Optional)",
+    "minPlayersOptional": "Minimum Players (Optional)",
+    "minPlayersPlaceholder": "e.g., 6",
     "createExercise": "Create Exercise",
     "duplicateExercise": "Duplicate Exercise",
     "duplicateName": "{{name}} (copy)"
@@ -722,7 +726,24 @@
     "favoriteName": "Favorite {{name}}",
     "unfavoriteName": "Unfavorite {{name}}",
     "shareName": "Share {{name}}",
-    "duplicateName": "Duplicate {{name}}"
+    "duplicateName": "Duplicate {{name}}",
+    "shareCommunityName": "Add {{name}} to the community",
+    "unshareCommunityName": "Remove {{name}} from the community",
+    "minPlayers_one": "Min {{count}} player",
+    "minPlayers_other": "Min {{count}} players"
+  },
+  "communityExercises": {
+    "title": "Community Exercises",
+    "subtitle": "Browse and import drills other coaches have shared publicly",
+    "backToLibrary": "Back to library",
+    "emptyTitle": "No Community Exercises Yet",
+    "emptyDescription": "No coach has shared an exercise to the community yet — share one of your own from the Exercise Library.",
+    "emptyFilterDescription": "No community exercises match your current filters.",
+    "import": "Import",
+    "importName": "Import {{name}}",
+    "imported": "Exercise imported",
+    "importedDescription": "\"{{name}}\" was added to your library.",
+    "couldntImport": "Couldn't import exercise"
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",

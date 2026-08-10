@@ -413,6 +413,71 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("exercise library — create exercise form with a minimum players value", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.click('button:has-text("Add Exercise")');
+    await page.waitForSelector("text=Create New Exercise");
+    await page.fill('input[placeholder="e.g., 6"]', "6");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library — sharing to the community toggles the globe icon", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+
+    const shareToggle = page.locator('button[aria-label^="Add "][aria-label*="to the community"]').first();
+    await shareToggle.click();
+    await expect(page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first()).toHaveAttribute("aria-pressed", "true");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Revoke so this shared seeded account doesn't leave exercises shared
+    // to the community across unrelated test runs.
+    await page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first().click();
+  });
+
+  test("community exercises page", async ({ page }) => {
+    await login(page);
+    // Ensure at least one exercise is shared so the page isn't in its empty
+    // state for this scan.
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    await page.request.put(`/api/exercises/${exercises[0].id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Community Exercises");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.put(`/api/exercises/${exercises[0].id}/share-community`, { data: { shared: false } });
+  });
+
+  test("community exercises — imports a shared drill into the library", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Community Drill", description: "Shared for import testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Community Drill");
+    await page.locator('button[aria-label="Import E2E Community Drill"]').first().click();
+    await page.waitForSelector("text=Exercise imported");
+    await page.click('button[aria-label="Close"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Clean up what this test created so repeat runs don't accumulate
+    // duplicate "E2E Community Drill" entries in the shared dev DB.
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("exercise share page (public, no session)", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");

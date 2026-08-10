@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, Clock, ArrowRight, Star, Copy, Share2 } from "lucide-react";
+import { Pencil, Trash2, Clock, ArrowRight, Star, Copy, Share2, Globe, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
@@ -14,9 +14,10 @@ interface ExerciseCardProps {
   onToggleFavorite?: () => void;
   onDuplicate?: () => void;
   onShare?: () => void;
+  onToggleCommunityShare?: () => void;
 }
 
-export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onToggleFavorite, onDuplicate, onShare }: ExerciseCardProps) {
+export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onToggleFavorite, onDuplicate, onShare, onToggleCommunityShare }: ExerciseCardProps) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
@@ -24,6 +25,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
   const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
   const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
   const isFavorite = exercise.isFavorite === 1;
+  const isSharedToCommunity = exercise.sharedToCommunity === 1;
 
   return (
     <div
@@ -56,11 +58,22 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
               <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
             </button>
           )}
-          {(onEdit || onDelete || onDuplicate || onShare) ? (
+          {(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare) ? (
             // Always visible on mobile/tablet (no hover to reveal them on
             // touch); fades in on hover only once there's room to spare on
             // desktop.
             <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
+              {onToggleCommunityShare && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onToggleCommunityShare(); }}
+                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
+                  aria-pressed={isSharedToCommunity}
+                  aria-label={isSharedToCommunity ? t("exerciseCard.unshareCommunityName", { name: exercise.name }) : t("exerciseCard.shareCommunityName", { name: exercise.name })}
+                >
+                  <Globe className={cn("w-3.5 h-3.5", isSharedToCommunity ? "text-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
+                </button>
+              )}
               {onShare && (
                 <button
                   type="button"
@@ -130,9 +143,17 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
       </h3>
       <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{exercise.description}</p>
 
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-        <span className="text-xs font-medium">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="text-xs font-medium">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
+        </div>
+        {!!exercise.minPlayers && (
+          <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="text-xs font-medium">{t("exerciseCard.minPlayers", { count: exercise.minPlayers })}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -692,7 +692,9 @@
     "sortDefault": "Por defecto",
     "sortRecentlyUsed": "Usados recientemente",
     "favoritesOnly": "Solo favoritos",
-    "couldntUpdateFavorite": "No se pudo actualizar el favorito"
+    "couldntUpdateFavorite": "No se pudo actualizar el favorito",
+    "community": "Comunidad",
+    "couldntUpdateCommunityShare": "No se pudo actualizar el uso compartido con la comunidad"
   },
   "exerciseForm": {
     "updatedSuccessfully": "Ejercicio actualizado con éxito",
@@ -712,6 +714,8 @@
     "instructionsOptional": "Instrucciones (Opcional)",
     "instructionsPlaceholder": "Instrucciones detalladas del ejercicio...",
     "imageUrlOptional": "URL de Imagen (Opcional)",
+    "minPlayersOptional": "Mínimo de Jugadores (Opcional)",
+    "minPlayersPlaceholder": "ej., 6",
     "createExercise": "Crear Ejercicio",
     "duplicateExercise": "Duplicar Ejercicio",
     "duplicateName": "{{name}} (copia)"
@@ -722,7 +726,24 @@
     "favoriteName": "Marcar como favorito {{name}}",
     "unfavoriteName": "Quitar de favoritos {{name}}",
     "shareName": "Compartir {{name}}",
-    "duplicateName": "Duplicar {{name}}"
+    "duplicateName": "Duplicar {{name}}",
+    "shareCommunityName": "Añadir {{name}} a la comunidad",
+    "unshareCommunityName": "Quitar {{name}} de la comunidad",
+    "minPlayers_one": "Mín {{count}} jugador",
+    "minPlayers_other": "Mín {{count}} jugadores"
+  },
+  "communityExercises": {
+    "title": "Ejercicios de la Comunidad",
+    "subtitle": "Explora e importa ejercicios que otros entrenadores compartieron públicamente",
+    "backToLibrary": "Volver a la biblioteca",
+    "emptyTitle": "Aún No Hay Ejercicios de la Comunidad",
+    "emptyDescription": "Ningún entrenador compartió un ejercicio con la comunidad todavía — comparte uno de los tuyos desde la Biblioteca de Ejercicios.",
+    "emptyFilterDescription": "Ningún ejercicio de la comunidad coincide con tus filtros actuales.",
+    "import": "Importar",
+    "importName": "Importar {{name}}",
+    "imported": "Ejercicio importado",
+    "importedDescription": "\"{{name}}\" se añadió a tu biblioteca.",
+    "couldntImport": "No se pudo importar el ejercicio"
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",

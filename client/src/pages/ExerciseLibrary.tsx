@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { useSearch } from "wouter";
+import { useSearch, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Dumbbell, Star } from "lucide-react";
+import { Plus, Dumbbell, Star, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
@@ -28,6 +28,7 @@ type ExerciseUsageStats = Record<string, { count: number; lastUsedDate: string |
 export default function ExerciseLibrary() {
   const { t } = useTranslation();
   const search = useSearch();
+  const [, setLocation] = useLocation();
   const initialCategory = new URLSearchParams(search).get("category") ?? "all";
   const { account } = useAuth();
   const { toast } = useToast();
@@ -80,6 +81,32 @@ export default function ExerciseLibrary() {
       }
       toast({
         title: t("exerciseLibrary.couldntUpdateFavorite"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleCommunityShareMutation = useMutation({
+    mutationFn: async ({ id, shared }: { id: number; shared: boolean }) =>
+      apiRequest("PUT", `/api/exercises/${id}/share-community`, { shared }),
+    onMutate: async ({ id, shared }) => {
+      const queryKey = ['/api/exercises'];
+      await queryClient.cancelQueries({ queryKey });
+      const previousExercises = queryClient.getQueryData<Exercise[]>(queryKey);
+
+      queryClient.setQueryData<Exercise[]>(queryKey, (old = []) =>
+        old.map(ex => ex.id === id ? { ...ex, sharedToCommunity: shared ? 1 : 0 } : ex)
+      );
+
+      return { previousExercises, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousExercises);
+      }
+      toast({
+        title: t("exerciseLibrary.couldntUpdateCommunityShare"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -252,13 +279,24 @@ export default function ExerciseLibrary() {
             </Button>
           </div>
 
-          <Button
-            className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
-            onClick={handleAddExerciseClick}
-          >
-            <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            {t("exerciseLibrary.addExercise")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setLocation("/exercise-library/community")}
+            >
+              <Globe className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+              {t("exerciseLibrary.community")}
+            </Button>
+            <Button
+              className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
+              onClick={handleAddExerciseClick}
+            >
+              <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+              {t("exerciseLibrary.addExercise")}
+            </Button>
+          </div>
         </div>
 
         {/* Exercise Grid */}
@@ -288,6 +326,7 @@ export default function ExerciseLibrary() {
                   onToggleFavorite={() => toggleFavoriteMutation.mutate({ id: exercise.id, isFavorite: exercise.isFavorite !== 1 })}
                   onDuplicate={() => handleDuplicateClick(exercise)}
                   onShare={() => setSharingExercise(exercise)}
+                  onToggleCommunityShare={() => toggleCommunityShareMutation.mutate({ id: exercise.id, shared: exercise.sharedToCommunity !== 1 })}
                 />
               </div>
             ))}

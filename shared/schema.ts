@@ -112,6 +112,14 @@ export const exercises = pgTable("exercises", {
   // this one exercise — same portalToken pattern as players. Null until a
   // coach first generates a share link.
   shareToken: text("share_token").unique(),
+  // How many players the drill needs to run at all — a coach's own note for
+  // planning around attendance, not enforced anywhere.
+  minPlayers: integer("min_players"),
+  // 1 when a coach has opted this exercise into the cross-account community
+  // library (GET /api/community-exercises) for other coaches to browse and
+  // import — same integer-flag convention as isFavorite, toggled through its
+  // own ungated endpoint since opting in isn't "creating custom content".
+  sharedToCommunity: integer("shared_to_community").default(0),
 });
 
 export const trainingSessions = pgTable("training_sessions", {
@@ -513,6 +521,7 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
   category: z.enum(EXERCISE_CATEGORIES),
   duration: z.number().int().min(1, "Duration must be at least 1 minute"),
   difficulty: z.enum(DIFFICULTY_LEVELS),
+  minPlayers: z.number().int().min(1, "Must be at least 1 player").nullish(),
 });
 
 export const insertPhysicalTestSchema = createInsertSchema(physicalTests).omit({

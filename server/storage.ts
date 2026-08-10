@@ -116,6 +116,14 @@ export interface IStorage {
   getOrCreateExerciseShareToken(id: number, accountId: number): Promise<string | undefined>;
   revokeExerciseShareToken(id: number, accountId: number): Promise<boolean>;
   getExerciseByShareToken(token: string): Promise<Exercise | undefined>;
+  setExerciseCommunityShare(id: number, accountId: number, shared: boolean): Promise<Exercise | undefined>;
+  // Cross-account by design — every exercise any coach has opted into the
+  // community library, not scoped to the requesting account.
+  getCommunityExercises(): Promise<Exercise[]>;
+  // Copies a shared exercise into the importing account as a brand-new,
+  // private row (fresh id, isFavorite/shareToken/sharedToCommunity all
+  // reset) — importing never mutates or links back to the original.
+  importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined>;
 
   // Physical test methods — the templates are scoped by account (shared
   // across that account's teams, same as exercises); results are recorded
@@ -493,6 +501,43 @@ export class DatabaseStorage implements IStorage {
   async getExerciseByShareToken(token: string): Promise<Exercise | undefined> {
     const [exercise] = await db.select().from(exercises).where(eq(exercises.shareToken, token));
     return exercise || undefined;
+  }
+
+  async setExerciseCommunityShare(id: number, accountId: number, shared: boolean): Promise<Exercise | undefined> {
+    const [exercise] = await db
+      .update(exercises)
+      .set({ sharedToCommunity: shared ? 1 : 0 })
+      .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)))
+      .returning();
+    return exercise || undefined;
+  }
+
+  async getCommunityExercises(): Promise<Exercise[]> {
+    return await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
+  }
+
+  async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {
+    const [source] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, id), eq(exercises.sharedToCommunity, 1)));
+    if (!source) return undefined;
+
+    const [imported] = await db
+      .insert(exercises)
+      .values({
+        accountId,
+        name: source.name,
+        description: source.description,
+        category: source.category,
+        duration: source.duration,
+        difficulty: source.difficulty,
+        instructions: source.instructions,
+        imageUrl: source.imageUrl,
+        minPlayers: source.minPlayers,
+      })
+      .returning();
+    return imported;
   }
 
   // Physical test methods

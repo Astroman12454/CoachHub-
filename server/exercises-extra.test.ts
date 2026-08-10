@@ -175,3 +175,115 @@ describe("exercise favorites, usage stats and sharing", () => {
     expect(stillWorks.status).toBe(200);
   });
 });
+
+describe("exercise minimum players", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("saves and returns minPlayers, defaulting to null when omitted", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const withMin = await agent.post("/api/exercises").send(exerciseBody({ minPlayers: 6 }));
+    expect(withMin.status).toBe(201);
+    expect(withMin.body.minPlayers).toBe(6);
+
+    const withoutMin = await agent.post("/api/exercises").send(exerciseBody());
+    expect(withoutMin.body.minPlayers).toBeNull();
+  });
+
+  it("rejects a minPlayers value below 1", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const res = await agent.post("/api/exercises").send(exerciseBody({ minPlayers: 0 }));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("community exercise library", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("toggles community sharing — available on the free plan, unlike creating exercises", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+
+    const share = await agent.put(`/api/exercises/${create.body.id}/share-community`).send({ shared: true });
+    expect(share.status).toBe(200);
+    expect(share.body.sharedToCommunity).toBe(1);
+
+    const unshare = await agent.put(`/api/exercises/${create.body.id}/share-community`).send({ shared: false });
+    expect(unshare.status).toBe(200);
+    expect(unshare.body.sharedToCommunity).toBe(0);
+  });
+
+  it("scopes community-share toggling to the owning account — an outsider gets 404", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const create = await owner.post("/api/exercises").send(exerciseBody());
+
+    const { agent: outsider } = await signedInAgent(app);
+    const res = await outsider.put(`/api/exercises/${create.body.id}/share-community`).send({ shared: true });
+    expect(res.status).toBe(404);
+  });
+
+  it("lists exercises shared by any account, never leaking accountId or unshared exercises", async () => {
+    const { agent: ownerA } = await signedInPaidAgent(app);
+    const shared = await ownerA.post("/api/exercises").send(exerciseBody({ name: "Shared Drill", minPlayers: 4 }));
+    await ownerA.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
+    const notShared = await ownerA.post("/api/exercises").send(exerciseBody({ name: "Private Drill" }));
+
+    const { agent: ownerB } = await signedInPaidAgent(app);
+    const res = await ownerB.get("/api/community-exercises");
+    expect(res.status).toBe(200);
+
+    const names = res.body.map((ex: { name: string }) => ex.name);
+    expect(names).toContain("Shared Drill");
+    expect(names).not.toContain("Private Drill");
+
+    const found = res.body.find((ex: { name: string }) => ex.name === "Shared Drill");
+    expect(found).toMatchObject({ minPlayers: 4, category: "shooting" });
+    expect(found.accountId).toBeUndefined();
+  });
+
+  it("imports a community exercise as a fresh, private copy under the importer's account", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const shared = await owner.post("/api/exercises").send(exerciseBody({ name: "Shared Drill", minPlayers: 4 }));
+    await owner.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
+    await owner.put(`/api/exercises/${shared.body.id}/favorite`).send({ isFavorite: true });
+
+    const { agent: importer } = await signedInPaidAgent(app);
+    const imported = await importer.post(`/api/community-exercises/${shared.body.id}/import`);
+    expect(imported.status).toBe(201);
+    expect(imported.body).toMatchObject({ name: "Shared Drill", minPlayers: 4, isFavorite: 0, sharedToCommunity: 0 });
+    expect(imported.body.id).not.toBe(shared.body.id);
+    expect(imported.body.shareToken).toBeNull();
+
+    const inLibrary = await importer.get("/api/exercises");
+    expect(inLibrary.body.map((ex: { id: number }) => ex.id)).toContain(imported.body.id);
+  });
+
+  it("rejects importing on the free plan", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const shared = await owner.post("/api/exercises").send(exerciseBody());
+    await owner.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
+
+    const { agent: freeImporter } = await signedInAgent(app);
+    const res = await freeImporter.post(`/api/community-exercises/${shared.body.id}/import`);
+    expect(res.status).toBe(403);
+  });
+
+  it("404s importing an exercise that isn't shared or doesn't exist", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const notShared = await owner.post("/api/exercises").send(exerciseBody());
+
+    const { agent: importer } = await signedInPaidAgent(app);
+    const res = await importer.post(`/api/community-exercises/${notShared.body.id}/import`);
+    expect(res.status).toBe(404);
+
+    const unknown = await importer.post("/api/community-exercises/999999/import");
+    expect(unknown.status).toBe(404);
+  });
+});

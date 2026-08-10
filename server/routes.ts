@@ -451,6 +451,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const setCommunityShareSchema = z.object({ shared: z.boolean() });
+
+  // Opting in/out of the community library is a personal visibility choice,
+  // not "editing" the exercise — same rationale as favoriting, deliberately
+  // not behind canUseCustomExercises.
+  app.put("/api/exercises/:id/share-community", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { shared } = setCommunityShareSchema.parse(req.body);
+      const exercise = await storage.setExerciseCommunityShare(id, accountId, shared);
+
+      if (!exercise) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+
+      res.json(exercise);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Cross-account by design — any signed-in coach can browse what other
+  // coaches have opted to share, same as browsing their own library. Never
+  // exposes which account shared a given exercise.
+  app.get("/api/community-exercises", async (req, res) => {
+    try {
+      const shared = await storage.getCommunityExercises();
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers })
+      ));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch community exercises" });
+    }
+  });
+
+  // Importing copies the drill into your own library, so it's gated the
+  // same as creating any other custom exercise.
+  app.post("/api/community-exercises/:id/import", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!canUseCustomExercises(account?.plan ?? "free")) {
+        return res.status(403).json({ message: "Upgrade to a paid plan to import community exercises." });
+      }
+
+      const imported = await storage.importCommunityExercise(id, accountId);
+      if (!imported) {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.status(201).json(imported);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to import exercise" });
+    }
+  });
+
   // Physical test routes — templates scoped by account, shared across that
   // account's teams (and, for a Club coach, across the whole club — see
   // resolveEffectiveAccountId), same as exercises. No plan gate: physical

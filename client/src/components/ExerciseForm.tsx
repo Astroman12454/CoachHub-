@@ -46,6 +46,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise, duplicateFrom 
       difficulty: (source?.difficulty as DifficultyLevel) ?? "medium",
       instructions: source?.instructions ?? "",
       imageUrl: source?.imageUrl ?? "",
+      minPlayers: source?.minPlayers ?? null,
     },
   });
 
@@ -155,6 +156,26 @@ export default function ExerciseForm({ isOpen, onClose, exercise, duplicateFrom 
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="minPlayers"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("exerciseForm.minPlayersOptional")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder={t("exerciseForm.minPlayersPlaceholder")}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
