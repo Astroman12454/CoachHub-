@@ -79,7 +79,19 @@ export const teams = pgTable("teams", {
   // of its own "reuse the most recent session's duration" fallback — null
   // until a coach sets one, so nothing changes for a team that never does.
   defaultSessionDuration: integer("default_session_duration"),
+  // A plain image URL (same convention as exercises.imageUrl — no upload
+  // pipeline), shown next to the team name in the sidebar's team switcher.
+  logoUrl: text("logo_url"),
+  // One of TEAM_THEME_COLORS, or null for the app's default orange. Applied
+  // client-side by overriding the --basketball-orange* CSS variables (see
+  // client/src/lib/teamTheme.ts) — a fixed, pre-vetted palette rather than a
+  // free-form color picker, so every option keeps the WCAG AA contrast the
+  // default orange was deliberately tuned for.
+  themeColor: text("theme_color"),
 });
+
+export const TEAM_THEME_COLORS = ["blue", "green", "purple", "red", "teal"] as const;
+export type TeamThemeColor = typeof TEAM_THEME_COLORS[number];
 
 export const exercises = pgTable("exercises", {
   id: serial("id").primaryKey(),
@@ -484,6 +496,8 @@ export const insertTeamSchema = createInsertSchema(teams).omit({
 }).extend({
   name: z.string().min(1, "Team name is required"),
   defaultSessionDuration: z.number().int().min(1, "Duration must be at least 1 minute").nullish(),
+  logoUrl: z.string().max(2000).nullish(),
+  themeColor: z.enum(TEAM_THEME_COLORS).nullish(),
 });
 
 // These `.extend()` calls are the single source of truth for validation on

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { UserPlus, X, Mail, Clock } from "lucide-react";
+import { UserPlus, X, Mail, Clock, Check, Download, Loader2 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,9 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { SESSION_QUERY_KEY } from "@/lib/queryClient";
-import { CLUB_PLAN_SEAT_LIMIT } from "@shared/schema";
+import { TEAM_THEME_PRESETS } from "@/lib/teamTheme";
+import { cn } from "@/lib/utils";
+import { CLUB_PLAN_SEAT_LIMIT, TEAM_THEME_COLORS, type TeamThemeColor } from "@shared/schema";
 
 interface CoachMember {
   memberAccountId: number;
@@ -41,17 +43,23 @@ export default function CoachSettings() {
   const [email, setEmail] = useState("");
   const [removeTarget, setRemoveTarget] = useState<CoachMember | null>(null);
   const [defaultDuration, setDefaultDuration] = useState<string>("");
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [themeColor, setThemeColor] = useState<TeamThemeColor | null>(null);
 
   useEffect(() => {
     setDefaultDuration(currentTeam?.defaultSessionDuration ? String(currentTeam.defaultSessionDuration) : "");
-  }, [currentTeam?.id, currentTeam?.defaultSessionDuration]);
+    setLogoUrl(currentTeam?.logoUrl ?? "");
+    setThemeColor((currentTeam?.themeColor as TeamThemeColor | null) ?? null);
+  }, [currentTeam?.id, currentTeam?.defaultSessionDuration, currentTeam?.logoUrl, currentTeam?.themeColor]);
 
   const { data, isLoading } = useQuery<CoachesResponse>({ queryKey: ["/api/coaches"] });
 
-  const saveDefaultDurationMutation = useMutation({
-    mutationFn: async (value: string) =>
+  const savePreferencesMutation = useMutation({
+    mutationFn: async () =>
       apiRequest("PUT", `/api/teams/${currentTeamId}`, {
-        defaultSessionDuration: value ? Number(value) : null,
+        defaultSessionDuration: defaultDuration ? Number(defaultDuration) : null,
+        logoUrl: logoUrl.trim() || null,
+        themeColor,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [SESSION_QUERY_KEY] });
@@ -60,6 +68,32 @@ export default function CoachSettings() {
     onError: (error) => {
       toast({
         title: t("coachSettings.couldntSavePreferences"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("GET", `/api/teams/${currentTeamId}/export`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `coachhub-backup-${(currentTeam?.name ?? "team").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${dateStamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+    onError: (error) => {
+      toast({
+        title: t("coachSettings.couldntExportBackup"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -117,12 +151,12 @@ export default function CoachSettings() {
               {t("coachSettings.teamPreferences")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <label htmlFor="default-session-duration" className="text-sm font-medium text-foreground mb-2 block">
-              {t("coachSettings.defaultSessionDuration")}
-            </label>
-            <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.defaultSessionDurationDescription")}</p>
-            <div className="flex flex-col sm:flex-row gap-2">
+          <CardContent className="space-y-5">
+            <div>
+              <label htmlFor="default-session-duration" className="text-sm font-medium text-foreground mb-2 block">
+                {t("coachSettings.defaultSessionDuration")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.defaultSessionDurationDescription")}</p>
               <Select value={defaultDuration || "none"} onValueChange={(v) => setDefaultDuration(v === "none" ? "" : v)}>
                 <SelectTrigger id="default-session-duration" className="w-full sm:w-56">
                   <SelectValue placeholder={t("coachSettings.noDefault")} />
@@ -135,15 +169,101 @@ export default function CoachSettings() {
                   <SelectItem value="150">{t("sessionModal.minutesOption", { count: 150 })}</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                type="button"
-                onClick={() => saveDefaultDurationMutation.mutate(defaultDuration)}
-                disabled={saveDefaultDurationMutation.isPending || !currentTeamId}
-                className="basketball-orange basketball-orange-hover text-white sm:w-auto"
-              >
-                {saveDefaultDurationMutation.isPending ? t("common.saving") : t("common.save")}
-              </Button>
             </div>
+
+            <div>
+              <label htmlFor="team-logo-url" className="text-sm font-medium text-foreground mb-2 block">
+                {t("coachSettings.teamLogo")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.teamLogoDescription")}</p>
+              <div className="flex items-center gap-3">
+                {logoUrl.trim() && (
+                  <img
+                    src={logoUrl.trim()}
+                    alt=""
+                    className="w-10 h-10 rounded-md object-cover border border-border flex-shrink-0"
+                    onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                  />
+                )}
+                <Input
+                  id="team-logo-url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder={t("coachSettings.teamLogoPlaceholder")}
+                  aria-label={t("coachSettings.teamLogo")}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <span className="text-sm font-medium text-foreground mb-2 block">{t("coachSettings.teamColor")}</span>
+              <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.teamColorDescription")}</p>
+              <div className="flex items-center gap-2 flex-wrap" role="group" aria-label={t("coachSettings.teamColor")}>
+                <button
+                  type="button"
+                  onClick={() => setThemeColor(null)}
+                  aria-pressed={themeColor === null}
+                  aria-label={t("coachSettings.defaultOrange")}
+                  title={t("coachSettings.defaultOrange")}
+                  className={cn(
+                    "w-8 h-8 rounded-full basketball-orange flex items-center justify-center border-2 transition-colors",
+                    themeColor === null ? "border-foreground" : "border-transparent"
+                  )}
+                >
+                  {themeColor === null && <Check className="w-4 h-4 text-white" strokeWidth={2.5} aria-hidden="true" />}
+                </button>
+                {TEAM_THEME_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setThemeColor(color)}
+                    aria-pressed={themeColor === color}
+                    aria-label={t(`coachSettings.themeColors.${color}`)}
+                    title={t(`coachSettings.themeColors.${color}`)}
+                    style={{ backgroundColor: TEAM_THEME_PRESETS[color].base }}
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors",
+                      themeColor === color ? "border-foreground" : "border-transparent"
+                    )}
+                  >
+                    {themeColor === color && <Check className="w-4 h-4 text-white" strokeWidth={2.5} aria-hidden="true" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => savePreferencesMutation.mutate()}
+              disabled={savePreferencesMutation.isPending || !currentTeamId}
+              className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
+            >
+              {savePreferencesMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("coachSettings.exportBackup")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.exportBackupDescription")}</p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => exportMutation.mutate()}
+              disabled={exportMutation.isPending || !currentTeamId}
+            >
+              {exportMutation.isPending
+                ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
+                : <Download className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />}
+              {exportMutation.isPending ? t("coachSettings.exportingEllipsis") : t("coachSettings.downloadBackup")}
+            </Button>
           </CardContent>
         </Card>
 

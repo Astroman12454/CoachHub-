@@ -34,6 +34,7 @@ function TeamSwitcher() {
   const { t } = useTranslation();
   const { teams, currentTeamId, switchTeam } = useAuth();
   const [isNewTeamOpen, setIsNewTeamOpen] = useState(false);
+  const currentTeam = teams.find((team) => team.id === currentTeamId);
 
   const handleChange = (value: string) => {
     if (value === NEW_TEAM_VALUE) {
@@ -51,7 +52,11 @@ function TeamSwitcher() {
           aria-label={t("sidebar.switchTeam")}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <ChevronsUpDown className="w-3.5 h-3.5 flex-shrink-0 text-rail-muted" strokeWidth={1.75} aria-hidden="true" />
+            {currentTeam?.logoUrl ? (
+              <img src={currentTeam.logoUrl} alt="" className="w-4 h-4 rounded-sm object-cover flex-shrink-0" />
+            ) : (
+              <ChevronsUpDown className="w-3.5 h-3.5 flex-shrink-0 text-rail-muted" strokeWidth={1.75} aria-hidden="true" />
+            )}
             <SelectValue placeholder={t("sidebar.selectTeam")} />
           </div>
         </SelectTrigger>

@@ -1,6 +1,8 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTheme } from "next-themes";
 import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
+import { applyTeamTheme } from "@/lib/teamTheme";
 import type { Team, Plan } from "@shared/schema";
 
 interface AccountInfo {
@@ -42,10 +44,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const { resolvedTheme } = useTheme();
 
   const { data, isLoading } = useQuery<SessionResponse>({
     queryKey: [SESSION_QUERY_KEY],
   });
+
+  const currentTeam = data?.teams?.find((team) => team.id === data.currentTeamId);
+  useEffect(() => {
+    applyTeamTheme(currentTeam?.themeColor, resolvedTheme === "dark");
+  }, [currentTeam?.themeColor, resolvedTheme]);
 
   const signupMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {

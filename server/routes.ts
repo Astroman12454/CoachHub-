@@ -219,6 +219,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // A one-shot JSON snapshot of everything under this team — roster,
+  // schedule, attendance, games/stats, plays/steps, and physical-test
+  // history — for a coach who wants a personal backup or wants to move the
+  // season's data elsewhere. Not a restore/import path, just an export.
+  app.get("/api/teams/:id/export", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const team = await storage.getTeamById(id, accountId);
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+
+      const [players, teamSessions, teamGames, teamPlays, teamPhysicalTests] = await Promise.all([
+        storage.getAllPlayers(id),
+        storage.getAllTrainingSessions(id),
+        storage.getAllGames(id),
+        storage.getAllPlays(id),
+        storage.getAllPhysicalTests(accountId),
+      ]);
+
+      const [attendanceBySession, gamesWithStats, playsWithSteps, physicalTestHistory] = await Promise.all([
+        Promise.all(teamSessions.map((s) => storage.getAttendanceBySession(s.id))),
+        Promise.all(teamGames.map(async (g) => ({ ...g, stats: await storage.getGameStats(g.id) }))),
+        Promise.all(teamPlays.map(async (p) => ({ ...p, steps: await storage.getPlaySteps(p.id) }))),
+        Promise.all(players.map(async (p) => ({
+          playerId: p.id,
+          playerName: p.name,
+          history: await storage.getPhysicalTestResultsForPlayer(p.id),
+        }))),
+      ]);
+
+      res.json({
+        exportedAt: new Date().toISOString(),
+        team: { name: team.name, logoUrl: team.logoUrl, themeColor: team.themeColor },
+        players,
+        trainingSessions: teamSessions,
+        attendance: attendanceBySession.flat(),
+        games: gamesWithStats,
+        plays: playsWithSteps,
+        physicalTests: teamPhysicalTests,
+        physicalTestHistory,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to export team data" });
+    }
+  });
+
   // Exercise routes — scoped by account, shared across that account's teams
   // (and, for a Club coach, across the whole club — see
   // resolveEffectiveAccountId).

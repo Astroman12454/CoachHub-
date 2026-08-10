@@ -981,6 +981,58 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("coach settings page — sets a team logo and theme color", async ({ page }) => {
+    await login(page);
+    await page.goto("/settings/coaches");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Team Preferences");
+
+    await page.fill('input[aria-label="Team Logo"]', "https://example.com/logo.png");
+    await page.click('button[aria-label="Blue"]');
+    await page.click('button:has-text("Save")');
+    await page.waitForSelector("text=Preferences saved");
+    await expect(page.locator('button[aria-label="Blue"]')).toHaveAttribute("aria-pressed", "true");
+    await page.click('button[aria-label="Close"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Restore the default so this shared seeded account doesn't carry a
+    // custom theme into unrelated tests/runs.
+    await page.click('button[aria-label="Default (orange)"]');
+    await page.click('button:has-text("Save")');
+    await page.waitForSelector("text=Preferences saved");
+  });
+
+  test("team theme color — every preset keeps white-on-fill text at WCAG AA contrast", async ({ page }) => {
+    await login(page);
+    const teamsRes = await page.request.get("/api/teams");
+    const teamId = (await teamsRes.json())[0].id;
+
+    for (const color of ["blue", "green", "purple", "red", "teal"]) {
+      await page.request.put(`/api/teams/${teamId}`, { data: { themeColor: color } });
+      await page.goto("/dashboard");
+      await page.waitForLoadState("networkidle");
+      const results = await scan(page);
+      expect(summarize(results.violations), `theme color: ${color}`).toEqual([]);
+    }
+
+    await page.request.put(`/api/teams/${teamId}`, { data: { themeColor: null } });
+  });
+
+  test("coach settings page — downloads a team data backup", async ({ page }) => {
+    await login(page);
+    await page.goto("/settings/coaches");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Export Backup");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.click('button:has-text("Download Backup")'),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^coachhub-backup-.*\.json$/);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("coach settings page — invite sent, shows in pending list", async ({ page }) => {
     await login(page);
     await page.goto("/settings/coaches");
