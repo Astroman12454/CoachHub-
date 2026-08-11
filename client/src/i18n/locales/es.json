@@ -179,6 +179,7 @@
   },
   "commandBar": {
     "placeholder": "Prueba \"crea un entrenamiento mañana a las 18:00\" o \"repite el entrenamiento del martes\"",
+    "placeholderShort": "Prueba \"crea un entrenamiento mañana\"",
     "submit": "Ejecutar comando",
     "freePlan": "Plan gratis",
     "upgradeToUse": "Mejora a un plan de pago para usar comandos en lenguaje natural.",
@@ -1020,6 +1021,14 @@
     "teamNamePlaceholder": "ej., Equipo Junior",
     "creatingEllipsis": "Creando...",
     "createTeam": "Crear Equipo"
+  },
+  "renameTeamDialog": {
+    "title": "Renombrar Equipo",
+    "dialogDescription": "Cambia el nombre visible de este equipo.",
+    "teamName": "Nombre del Equipo",
+    "renamedToast": "Equipo renombrado",
+    "couldntRename": "No se pudo renombrar el equipo",
+    "triggerAriaLabel": "Renombrar {{name}}"
   },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Activity } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Activity, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import BrandMark from "@/components/BrandMark";
 import NewTeamDialog from "@/components/NewTeamDialog";
+import RenameTeamDialog from "@/components/RenameTeamDialog";
 import { useTranslation } from "react-i18next";
 
 const navigation = [
@@ -34,6 +35,7 @@ function TeamSwitcher() {
   const { t } = useTranslation();
   const { teams, currentTeamId, switchTeam } = useAuth();
   const [isNewTeamOpen, setIsNewTeamOpen] = useState(false);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
   const currentTeam = teams.find((team) => team.id === currentTeamId);
 
   const handleChange = (value: string) => {
@@ -45,36 +47,50 @@ function TeamSwitcher() {
   };
 
   return (
-    <div className="px-3 pt-3">
-      <Select value={currentTeamId?.toString() ?? ""} onValueChange={handleChange}>
-        <SelectTrigger
-          className="bg-white/5 border-rail-border text-rail-foreground hover:bg-white/10 focus:ring-basketball-orange"
-          aria-label={t("sidebar.switchTeam")}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            {currentTeam?.logoUrl ? (
-              <img src={currentTeam.logoUrl} alt="" className="w-4 h-4 rounded-sm object-cover flex-shrink-0" />
-            ) : (
-              <ChevronsUpDown className="w-3.5 h-3.5 flex-shrink-0 text-rail-muted" strokeWidth={1.75} aria-hidden="true" />
-            )}
-            <SelectValue placeholder={t("sidebar.selectTeam")} />
-          </div>
-        </SelectTrigger>
-        <SelectContent>
-          {teams.map((team) => (
-            <SelectItem key={team.id} value={team.id.toString()}>
-              {team.name}
+    <div className="px-3 pt-3 flex items-center gap-1.5">
+      <div className="flex-1 min-w-0">
+        <Select value={currentTeamId?.toString() ?? ""} onValueChange={handleChange}>
+          <SelectTrigger
+            className="bg-white/5 border-rail-border text-rail-foreground hover:bg-white/10 focus:ring-basketball-orange"
+            aria-label={t("sidebar.switchTeam")}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {currentTeam?.logoUrl ? (
+                <img src={currentTeam.logoUrl} alt="" className="w-4 h-4 rounded-sm object-cover flex-shrink-0" />
+              ) : (
+                <ChevronsUpDown className="w-3.5 h-3.5 flex-shrink-0 text-rail-muted" strokeWidth={1.75} aria-hidden="true" />
+              )}
+              <SelectValue placeholder={t("sidebar.selectTeam")} />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            {teams.map((team) => (
+              <SelectItem key={team.id} value={team.id.toString()}>
+                {team.name}
+              </SelectItem>
+            ))}
+            <SelectItem value={NEW_TEAM_VALUE}>
+              <span className="flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                {t("sidebar.newTeam")}
+              </span>
             </SelectItem>
-          ))}
-          <SelectItem value={NEW_TEAM_VALUE}>
-            <span className="flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
-              {t("sidebar.newTeam")}
-            </span>
-          </SelectItem>
-        </SelectContent>
-      </Select>
+          </SelectContent>
+        </Select>
+      </div>
+      {currentTeam && (
+        <button
+          type="button"
+          onClick={() => setIsRenameOpen(true)}
+          aria-label={t("renameTeamDialog.triggerAriaLabel", { name: currentTeam.name })}
+          title={t("renameTeamDialog.triggerAriaLabel", { name: currentTeam.name })}
+          className="w-9 h-9 flex-shrink-0 rounded-md flex items-center justify-center text-rail-muted hover:bg-white/10 hover:text-rail-foreground transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      )}
       <NewTeamDialog open={isNewTeamOpen} onOpenChange={setIsNewTeamOpen} />
+      <RenameTeamDialog open={isRenameOpen} onOpenChange={setIsRenameOpen} team={currentTeam ?? null} />
     </div>
   );
 }

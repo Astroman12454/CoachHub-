@@ -251,7 +251,7 @@ export default function TrainingMode() {
           </Button>
           <Button
             size="sm"
-            className="basketball-orange basketball-orange-hover text-white"
+            className="h-11 basketball-orange basketball-orange-hover text-white"
             onClick={() => setIsFinishConfirmOpen(true)}
             disabled={updateSessionMutation.isPending}
           >
@@ -343,13 +343,13 @@ export default function TrainingMode() {
             </CircularTimer>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(10)}>
+              <Button variant="outline" size="sm" className="h-11 bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(10)}>
                 +10{t("trainingMode.secondsAbbrev")}
               </Button>
-              <Button variant="outline" size="sm" className="bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(30)}>
+              <Button variant="outline" size="sm" className="h-11 bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(30)}>
                 +30{t("trainingMode.secondsAbbrev")}
               </Button>
-              <Button variant="outline" size="sm" className="bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(60)}>
+              <Button variant="outline" size="sm" className="h-11 bg-transparent text-rail-foreground border-rail-border hover:bg-white/10" onClick={() => addSeconds(60)}>
                 +1{t("trainingMode.minuteAbbrev")}
               </Button>
             </div>
