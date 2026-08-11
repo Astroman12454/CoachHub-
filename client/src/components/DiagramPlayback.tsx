@@ -3,6 +3,7 @@ import { Play, Pause } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import BasketballCourt from "@/components/BasketballCourt";
 import PlayStepMarks from "@/components/PlayStepMarks";
+import { tokensAtProgress } from "@/lib/playAnimation";
 import type { Token, Drawing } from "@shared/schema";
 
 interface DiagramStep {
@@ -51,20 +52,11 @@ export default function DiagramPlayback({ courtType, steps }: DiagramPlaybackPro
         stopPlayback();
         return;
       }
-      const fromMap = new Map(from.tokens.map((t) => [t.id, t]));
-      const toMap = new Map(to.tokens.map((t) => [t.id, t]));
-      const allIds = Array.from(new Set([...Array.from(fromMap.keys()), ...Array.from(toMap.keys())]));
       const start = performance.now();
 
       function frame(now: number) {
         const progress = Math.min(1, (now - start) / STEP_DURATION);
-        const tokens: Token[] = allIds.map((id) => {
-          const a = fromMap.get(id);
-          const b = toMap.get(id);
-          if (a && b) return { ...b, x: a.x + (b.x - a.x) * progress, y: a.y + (b.y - a.y) * progress };
-          return (b ?? a)!;
-        });
-        setPlaybackTokens(tokens);
+        setPlaybackTokens(tokensAtProgress(from, to, progress));
 
         if (progress < 1) {
           rafRef.current = requestAnimationFrame(frame);
@@ -107,11 +99,6 @@ export default function DiagramPlayback({ courtType, steps }: DiagramPlaybackPro
             role="img"
             aria-label={t("diagramPlayback.diagramPreview")}
           >
-            <defs>
-              <marker id="play-arrowhead" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" fill="context-stroke" />
-              </marker>
-            </defs>
             <PlayStepMarks tokens={displayTokens} drawings={displayDrawings} toViewBoxY={toViewBoxY} />
           </svg>
         </div>

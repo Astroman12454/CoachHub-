@@ -641,6 +641,7 @@
     "tools": {
       "move": "Move",
       "ball": "Ball",
+      "cone": "Cone",
       "moveArrow": "Move Arrow",
       "pass": "Pass",
       "dribble": "Dribble",
@@ -648,6 +649,8 @@
       "text": "Text",
       "erase": "Erase"
     },
+    "undo": "Undo",
+    "redo": "Redo",
     "loadingPlay": "Loading play…",
     "playName": "Play name",
     "category": "Category",
@@ -796,6 +799,7 @@
       "offense": "Offense",
       "defense": "Defense",
       "ball": "Ball",
+      "cone": "Cone",
       "moveArrow": "Move Arrow",
       "pass": "Pass",
       "dribble": "Dribble",
@@ -803,6 +807,8 @@
       "text": "Text",
       "erase": "Erase"
     },
+    "undo": "Undo",
+    "redo": "Redo",
     "colorSwatch": "Color {{color}}",
     "diagramCanvas": "Diagram canvas",
     "fullCourtDiagramEditor": "Full court diagram editor",

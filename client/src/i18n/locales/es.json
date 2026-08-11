@@ -641,6 +641,7 @@
     "tools": {
       "move": "Mover",
       "ball": "Balón",
+      "cone": "Cono",
       "moveArrow": "Flecha de Movimiento",
       "pass": "Pase",
       "dribble": "Bote",
@@ -648,6 +649,8 @@
       "text": "Texto",
       "erase": "Borrar"
     },
+    "undo": "Deshacer",
+    "redo": "Rehacer",
     "loadingPlay": "Cargando jugada…",
     "playName": "Nombre de la jugada",
     "category": "Categoría",
@@ -796,6 +799,7 @@
       "offense": "Ataque",
       "defense": "Defensa",
       "ball": "Balón",
+      "cone": "Cono",
       "moveArrow": "Flecha de Movimiento",
       "pass": "Pase",
       "dribble": "Bote",
@@ -803,6 +807,8 @@
       "text": "Texto",
       "erase": "Borrar"
     },
+    "undo": "Deshacer",
+    "redo": "Rehacer",
     "colorSwatch": "Color {{color}}",
     "diagramCanvas": "Lienzo del diagrama",
     "fullCourtDiagramEditor": "Editor de diagrama de cancha completa",

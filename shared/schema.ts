@@ -385,13 +385,14 @@ export const PLAY_SITUATIONS = [
   "fast_break",
   "after_timeout",
 ] as const;
-export const TOKEN_TYPES = ["offense", "defense", "ball"] as const;
+export const TOKEN_TYPES = ["offense", "defense", "ball", "cone"] as const;
 export const DRAWING_TOOLS = ["move", "pass", "dribble", "screen", "text"] as const;
 
 // Each step is a full board snapshot (every token's position, plus the
 // drawings — arrows/annotations — for that step's transition). Animating a
-// play just tweens token x/y between consecutive steps and shows that
-// step's drawings; nothing more clever than that.
+// play tweens token x/y between consecutive steps, following a matching
+// drawing's curve when one exists (see client/src/lib/playAnimation.ts)
+// instead of a straight line, and shows that step's drawings.
 export const tokenSchema = z.object({
   id: z.string(),
   type: z.enum(TOKEN_TYPES),
@@ -403,7 +404,11 @@ export const tokenSchema = z.object({
 export const drawingSchema = z.object({
   id: z.string(),
   tool: z.enum(DRAWING_TOOLS),
-  points: z.array(z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) })).min(1),
+  // A dragged arrow/line is recorded as a multi-point curve (see
+  // client/src/lib/playDrawing.ts's smoothPath), not just its two
+  // endpoints — capped well above what the editor's own resampling ever
+  // produces, just as a payload-size backstop.
+  points: z.array(z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) })).min(1).max(40),
   text: z.string().max(60).optional(),
   color: z.string().max(20).optional(),
 });

@@ -31,11 +31,6 @@ export default function PlayDiagram({ courtType, tokens, drawings, className }: 
           role="img"
           aria-label={t("playbook.playDiagram")}
         >
-          <defs>
-            <marker id="play-arrowhead" markerWidth="6" markerHeight="6" refX="4.5" refY="3" orient="auto">
-              <path d="M0,0 L6,3 L0,6 Z" fill="context-stroke" />
-            </marker>
-          </defs>
           <PlayStepMarks tokens={tokens} drawings={drawings} toViewBoxY={toViewBoxY} />
         </svg>
       </div>
