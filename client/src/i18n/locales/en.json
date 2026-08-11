@@ -954,6 +954,8 @@
   "trainingMode": {
     "exit": "Exit training mode",
     "finish": "Finish",
+    "finishConfirmTitle": "Finish this training session?",
+    "finishConfirmDescription": "This marks the session as completed and can't be undone from here. Make sure you're actually done — not just checking something mid-practice.",
     "stepProgress": "Exercise {{current}} of {{total}}",
     "next": "Next: {{name}}",
     "previous": "Previous exercise",

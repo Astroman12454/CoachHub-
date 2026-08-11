@@ -954,6 +954,8 @@
   "trainingMode": {
     "exit": "Salir del modo entrenamiento",
     "finish": "Finalizar",
+    "finishConfirmTitle": "¿Finalizar este entrenamiento?",
+    "finishConfirmDescription": "Esto marca la sesión como completada y no se puede deshacer desde aquí. Asegúrate de haber terminado de verdad, no de estar revisando algo a mitad del entrenamiento.",
     "stepProgress": "Ejercicio {{current}} de {{total}}",
     "next": "Siguiente: {{name}}",
     "previous": "Ejercicio anterior",

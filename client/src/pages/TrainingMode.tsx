@@ -5,6 +5,7 @@ import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyN
 import { useTranslation } from "react-i18next";
 import AttendanceModal from "@/components/AttendanceModal";
 import RecordTestResultsDialog from "@/components/RecordTestResultsDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import { useSwipe } from "@/hooks/use-swipe";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { haptic } from "@/lib/haptics";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { isSoundEnabled, setSoundEnabled, playTimerDone, playSessionFinish } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/types";
@@ -81,6 +83,13 @@ export default function TrainingMode() {
   const [isNoteOpen, setIsNoteOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
   const [recordingTest, setRecordingTest] = useState<PhysicalTest | null>(null);
+  const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
+  // A smaller timer on a phone-sized viewport claims noticeably less
+  // vertical space, which matters here specifically: on a real phone (as
+  // opposed to this container's max-width), the pause/skip controls below
+  // the timer could otherwise land below the fold — the one thing a coach
+  // mid-drill is most likely to reach for.
+  const isMobile = useIsMobile();
   const [soundEnabled, setSoundEnabledState] = useState(() => isSoundEnabled());
   const startedRef = useRef(false);
 
@@ -243,7 +252,7 @@ export default function TrainingMode() {
           <Button
             size="sm"
             className="basketball-orange basketball-orange-hover text-white"
-            onClick={handleFinish}
+            onClick={() => setIsFinishConfirmOpen(true)}
             disabled={updateSessionMutation.isPending}
           >
             <CheckCircle2 className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
@@ -252,7 +261,7 @@ export default function TrainingMode() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
+      <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 gap-3 sm:gap-6">
         {/* Physical block — shown first, before the technical exercise
             sequence below, so the session reads as physical-then-technical
             the way it was planned in SessionModal. Not stepped through with
@@ -294,7 +303,7 @@ export default function TrainingMode() {
                 instead of silently swapping text in place. */}
             <div
               key={currentExercise.id}
-              className="fade-in w-full max-w-lg bg-card text-card-foreground rounded-xl p-6 shadow-2xl touch-pan-y"
+              className="fade-in w-full max-w-lg bg-card text-card-foreground rounded-xl p-4 sm:p-6 shadow-2xl touch-pan-y"
               {...swipeHandlers}
             >
               <div className="flex items-center justify-between gap-2 mb-3">
@@ -322,10 +331,10 @@ export default function TrainingMode() {
                 needs to read in under a second: huge, high-contrast, with a
                 ring that fills the periphery for anyone not looking dead at
                 the number, and a color/pulse shift in the final 10s. */}
-            <CircularTimer progress={progress} urgent={isUrgent} size={252} strokeWidth={5}>
+            <CircularTimer progress={progress} urgent={isUrgent} size={isMobile ? 200 : 252} strokeWidth={5}>
               <div
                 className={cn(
-                  "font-display font-bold text-6xl sm:text-7xl tabular-nums tracking-tight transition-colors",
+                  "font-display font-bold text-5xl sm:text-7xl tabular-nums tracking-tight transition-colors",
                   isUrgent ? "text-destructive" : "text-basketball-orange"
                 )}
               >
@@ -455,6 +464,16 @@ export default function TrainingMode() {
       />
 
       <RecordTestResultsDialog test={recordingTest} onOpenChange={(open) => !open && setRecordingTest(null)} />
+
+      <ConfirmDialog
+        open={isFinishConfirmOpen}
+        onOpenChange={setIsFinishConfirmOpen}
+        title={t("trainingMode.finishConfirmTitle")}
+        description={t("trainingMode.finishConfirmDescription")}
+        confirmLabel={t("trainingMode.finish")}
+        isPending={updateSessionMutation.isPending}
+        onConfirm={handleFinish}
+      />
     </div>
   );
 }
