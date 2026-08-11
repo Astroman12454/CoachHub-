@@ -164,6 +164,39 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("dashboard — repeat last session opens the duplicate modal prefilled to a future date", async ({ page }) => {
+    await login(page);
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    const createRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E Repeat Source Session",
+        date: "2020-01-01",
+        time: "17:00",
+        duration: 60,
+        exerciseIds: exercises.slice(0, 1).map((e: { id: number }) => e.id.toString()),
+        notes: null,
+      },
+    });
+    const created = await createRes.json();
+    await page.request.put(`/api/training-sessions/${created.id}`, { data: { status: "completed" } });
+
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Repeat Last Session")');
+    await page.waitForSelector("text=Duplicate Training Session");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Prefilled with the source session's exercises and a date in the future
+    // (not the 2020 date it was duplicated from).
+    await expect(page.locator('input[name="date"]')).toHaveValue(/^20[2-9]\d-\d{2}-\d{2}$/);
+    const dateValue = await page.locator('input[name="date"]').inputValue();
+    expect(dateValue >= new Date().toISOString().split("T")[0]).toBe(true);
+
+    await page.request.delete(`/api/training-sessions/${created.id}`);
+  });
+
   test("training sessions", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");

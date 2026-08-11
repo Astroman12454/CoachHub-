@@ -17,7 +17,7 @@ import AIRecommendationsModal from "@/components/AIRecommendationsModal";
 import RecentExercisesCard from "@/components/RecentExercisesCard";
 import { computeInsights } from "@/lib/insights";
 import { useAuth } from "@/hooks/use-auth";
-import type { Exercise, TrainingSession } from "@shared/schema";
+import type { Exercise, TrainingSession, RecurringPracticeSlot } from "@shared/schema";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -38,6 +38,10 @@ export default function Dashboard() {
 
   const { data: exercises = [], isLoading: exercisesLoading, isError: exercisesError, refetch: refetchExercises } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
+  });
+
+  const { data: recurringSlots = [] } = useQuery<RecurringPracticeSlot[]>({
+    queryKey: ['/api/recurring-slots'],
   });
 
   const currentTeam = useMemo(() => teams.find((team) => team.id === currentTeamId), [teams, currentTeamId]);
@@ -70,6 +74,38 @@ export default function Dashboard() {
       .sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)))
       .slice(0, 3);
   }, [sessions, todayString]);
+
+  // Most recently completed session, for the "repeat last session" shortcut —
+  // most recent by date, then by time within that date.
+  const lastCompletedSession = useMemo(() => {
+    return [...sessions]
+      .filter((s) => s.status === "completed")
+      .sort((a, b) => (a.date === b.date ? b.time.localeCompare(a.time) : b.date.localeCompare(a.date)))[0] ?? null;
+  }, [sessions]);
+
+  // Next date to prefill the duplicate onto: the soonest upcoming date that
+  // matches a recurring slot's weekday, or tomorrow if the team has none.
+  const nextRepeatDate = useMemo(() => {
+    const tomorrow = new Date(`${todayString}T00:00:00Z`);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    if (recurringSlots.length === 0) {
+      return tomorrow.toISOString().split("T")[0];
+    }
+    const slotDays = new Set(recurringSlots.map((slot) => slot.dayOfWeek));
+    const candidate = new Date(tomorrow);
+    for (let i = 0; i < 7; i++) {
+      if (slotDays.has(candidate.getUTCDay())) {
+        return candidate.toISOString().split("T")[0];
+      }
+      candidate.setUTCDate(candidate.getUTCDate() + 1);
+    }
+    return tomorrow.toISOString().split("T")[0];
+  }, [recurringSlots, todayString]);
+
+  const handleRepeatLastSession = () => {
+    if (!lastCompletedSession) return;
+    setDuplicateFromSession({ ...lastCompletedSession, date: nextRepeatDate });
+  };
 
   // Get recent exercises (last 3 added)
   const recentExercises = exercises.slice(-3);
@@ -182,6 +218,7 @@ export default function Dashboard() {
             <QuickActionsCard
               onCreateSession={() => setIsSessionModalOpen(true)}
               onNavigate={navigateToPage}
+              onRepeatLastSession={lastCompletedSession ? handleRepeatLastSession : undefined}
             />
             <ExerciseCategoriesCard
               exercisesByCategory={exercisesByCategory}

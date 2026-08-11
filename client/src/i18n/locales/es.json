@@ -144,6 +144,7 @@
     "avgAttendance": "Asistencia Media",
     "quickActions": "Acciones Rápidas",
     "createTrainingSession": "Crear Sesión de Entrenamiento",
+    "repeatLastSession": "Repetir Última Sesión",
     "addNewExercise": "Añadir Nuevo Ejercicio",
     "addPlayer": "Añadir Jugador",
     "recentExercises": "Ejercicios Recientes",
