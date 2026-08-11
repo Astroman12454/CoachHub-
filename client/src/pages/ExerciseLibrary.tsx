@@ -327,6 +327,7 @@ export default function ExerciseLibrary() {
                   onDuplicate={() => handleDuplicateClick(exercise)}
                   onShare={() => setSharingExercise(exercise)}
                   onToggleCommunityShare={() => toggleCommunityShareMutation.mutate({ id: exercise.id, shared: exercise.sharedToCommunity !== 1 })}
+                  onOpenDiagram={canEditExercises ? () => setLocation(`/exercise-library/${exercise.id}/diagram`) : undefined}
                 />
               </div>
             ))}

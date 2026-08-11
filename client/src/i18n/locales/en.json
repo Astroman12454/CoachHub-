@@ -732,7 +732,8 @@
     "shareCommunityName": "Add {{name}} to the community",
     "unshareCommunityName": "Remove {{name}} from the community",
     "minPlayers_one": "Min {{count}} player",
-    "minPlayers_other": "Min {{count}} players"
+    "minPlayers_other": "Min {{count}} players",
+    "diagramName": "Diagram for {{name}}"
   },
   "communityExercises": {
     "title": "Community Exercises",
@@ -765,7 +766,55 @@
   "exerciseShare": {
     "linkNotAvailable": "Link not available",
     "linkNotAvailableDescription": "This link may have been revoked or is no longer valid.",
-    "instructions": "Instructions"
+    "instructions": "Instructions",
+    "diagram": "Diagram"
+  },
+  "diagramPlayback": {
+    "diagramPreview": "Diagram preview",
+    "stopPlayback": "Stop playback",
+    "playAnimation": "Play animation",
+    "stepNumber": "Step {{number}}"
+  },
+  "exerciseDiagramEditor": {
+    "loadingEllipsis": "Loading…",
+    "diagramFor": "Diagram for",
+    "court": "Court",
+    "halfCourt": "Half Court",
+    "fullCourt": "Full Court",
+    "removeDiagram": "Remove Diagram",
+    "saveDiagram": "Save Diagram",
+    "savingEllipsis": "Saving…",
+    "saved": "Diagram saved",
+    "savedDescription": "The animated diagram is saved.",
+    "couldntSave": "Couldn't save",
+    "diagramRemoved": "Diagram removed",
+    "couldntRemove": "Couldn't remove diagram",
+    "removeDiagramConfirmTitle": "Remove this diagram?",
+    "removeDiagramConfirmDescription": "This deletes every step of the animated diagram. This can't be undone.",
+    "tools": {
+      "move": "Move",
+      "offense": "Offense",
+      "defense": "Defense",
+      "ball": "Ball",
+      "moveArrow": "Move Arrow",
+      "pass": "Pass",
+      "dribble": "Dribble",
+      "screen": "Screen",
+      "text": "Text",
+      "erase": "Erase"
+    },
+    "colorSwatch": "Color {{color}}",
+    "diagramCanvas": "Diagram canvas",
+    "fullCourtDiagramEditor": "Full court diagram editor",
+    "halfCourtDiagramEditor": "Half court diagram editor",
+    "annotationText": "Annotation text",
+    "stopPlayback": "Stop playback",
+    "playAnimation": "Play animation",
+    "stepNumber": "Step {{number}}",
+    "deleteStep": "Delete step {{number}}",
+    "step": "Step",
+    "deleteStepConfirmTitle": "Delete this step?",
+    "deleteStepConfirmDescription": "This removes it from the diagram's sequence. This can't be undone."
   },
   "physicalTests": {
     "subtitle": "Define fitness tests and track every player's results over time",

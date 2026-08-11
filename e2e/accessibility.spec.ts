@@ -521,6 +521,98 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("exercise diagram editor — opens for an exercise", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[aria-label^="Diagram for "]').first().click();
+    await page.waitForSelector("text=Save Diagram");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise diagram editor — draws a step, plays the animation, and saves", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Diagram Drill", description: "For diagram editor testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+
+    await page.goto(`/exercise-library/${exercise.id}/diagram`);
+    await page.waitForSelector("text=Save Diagram");
+
+    // Place an offense token, then add a second step so playback has
+    // something to animate between.
+    await page.click('button[aria-label="Offense"]');
+    const canvas = page.locator('svg[aria-label="Half court diagram editor"]');
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas not found");
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+
+    await page.getByRole("button", { name: "Step", exact: true }).click();
+    await expect(page.locator('button[aria-pressed="true"]', { hasText: "Step 2" })).toBeVisible();
+
+    await page.click('button[aria-label="Play animation"]');
+    await page.waitForTimeout(300);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.click('button:has-text("Save Diagram")');
+    await page.waitForURL(/\/exercise-library$/);
+
+    // Clean up what this test created so repeat runs don't accumulate
+    // duplicate "E2E Diagram Drill" entries in the shared dev DB.
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
+  test("exercise diagram editor — remove diagram confirm dialog", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Diagram Removal Drill", description: "For diagram removal testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/diagram`, {
+      data: { courtType: "half", steps: [{ tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] }] },
+    });
+
+    await page.goto(`/exercise-library/${exercise.id}/diagram`);
+    await page.waitForSelector("text=Remove Diagram");
+    await page.click('button:has-text("Remove Diagram")');
+    await page.waitForSelector("text=Remove this diagram?");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
+  test("exercise share page — renders the animated diagram when the exercise has one", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Shared Diagram Drill", description: "For share-page diagram testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/diagram`, {
+      data: {
+        courtType: "half",
+        steps: [
+          { tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] },
+          { tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 50 }], drawings: [] },
+        ],
+      },
+    });
+    const link = await page.request.post(`/api/exercises/${exercise.id}/share-link`);
+    const { token } = await link.json();
+
+    await page.goto(`/exercise/${token}`);
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Diagram");
+    await expect(page.locator('button[aria-label="Play animation"]')).toBeVisible();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("physical tests", async ({ page }) => {
     await login(page);
     await page.goto("/physical-tests");

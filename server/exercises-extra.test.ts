@@ -287,3 +287,146 @@ describe("community exercise library", () => {
     expect(unknown.status).toBe(404);
   });
 });
+
+function diagramBody(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    courtType: "half",
+    steps: [
+      { tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] },
+      { tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 50 }], drawings: [] },
+    ],
+    ...overrides,
+  };
+}
+
+describe("exercise diagrams", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("saves a diagram and returns its steps, gated to paid plans", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+
+    const save = await agent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+    expect(save.status).toBe(200);
+    expect(save.body.courtType).toBe("half");
+    expect(save.body.steps).toHaveLength(2);
+    expect(save.body.steps[0]).toMatchObject({ stepIndex: 0 });
+    expect(save.body.steps[1]).toMatchObject({ stepIndex: 1 });
+    expect(save.body.steps[0].tokens).toMatchObject([{ id: "o1", x: 50, y: 90 }]);
+
+    const fetched = await agent.get(`/api/exercises/${create.body.id}`);
+    expect(fetched.status).toBe(200);
+    expect(fetched.body.steps).toHaveLength(2);
+  });
+
+  it("rejects adding a diagram on the free plan", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const create = await owner.post("/api/exercises").send(exerciseBody());
+
+    const { agent: freeAgent } = await signedInAgent(app);
+    const res = await freeAgent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+    expect(res.status).toBe(403);
+  });
+
+  it("scopes saving a diagram to the owning account — an outsider gets 404", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const create = await owner.post("/api/exercises").send(exerciseBody());
+
+    const { agent: outsider } = await signedInPaidAgent(app);
+    const res = await outsider.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects a diagram with zero steps", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+
+    const res = await agent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody({ steps: [] }));
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects an invalid courtType", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+
+    const res = await agent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody({ courtType: "quarter" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("overwrites previous steps when saving again, rather than accumulating them", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+
+    await agent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+    const resave = await agent.put(`/api/exercises/${create.body.id}/diagram`).send(
+      diagramBody({ steps: [{ tokens: [], drawings: [] }] }),
+    );
+    expect(resave.status).toBe(200);
+    expect(resave.body.steps).toHaveLength(1);
+  });
+
+  it("deletes a diagram, clearing its steps, gated to paid plans", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+    await agent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+
+    const del = await agent.delete(`/api/exercises/${create.body.id}/diagram`);
+    expect(del.status).toBe(204);
+
+    const fetched = await agent.get(`/api/exercises/${create.body.id}`);
+    expect(fetched.body.steps).toHaveLength(0);
+  });
+
+  it("rejects deleting a diagram on the free plan", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const create = await owner.post("/api/exercises").send(exerciseBody());
+    await owner.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+
+    const { agent: freeAgent } = await signedInAgent(app);
+    const res = await freeAgent.delete(`/api/exercises/${create.body.id}/diagram`);
+    expect(res.status).toBe(403);
+  });
+
+  it("scopes deleting a diagram to the owning account — an outsider gets 404", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const create = await owner.post("/api/exercises").send(exerciseBody());
+    await owner.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody());
+
+    const { agent: outsider } = await signedInPaidAgent(app);
+    const res = await outsider.delete(`/api/exercises/${create.body.id}/diagram`);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns courtType and steps on the public exercise-share page", async () => {
+    const { agent } = await signedInPaidAgent(app);
+    const create = await agent.post("/api/exercises").send(exerciseBody());
+    await agent.put(`/api/exercises/${create.body.id}/diagram`).send(diagramBody({ courtType: "full" }));
+
+    const link = await agent.post(`/api/exercises/${create.body.id}/share-link`);
+    const shared = await request(app).get(`/api/exercise-share/${link.body.token}`);
+    expect(shared.status).toBe(200);
+    expect(shared.body.courtType).toBe("full");
+    expect(shared.body.steps).toHaveLength(2);
+    expect(shared.body.accountId).toBeUndefined();
+  });
+
+  it("copies a diagram's courtType and steps when importing a community exercise", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const shared = await owner.post("/api/exercises").send(exerciseBody({ name: "Shared With Diagram" }));
+    await owner.put(`/api/exercises/${shared.body.id}/diagram`).send(diagramBody({ courtType: "full" }));
+    await owner.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
+
+    const { agent: importer } = await signedInPaidAgent(app);
+    const imported = await importer.post(`/api/community-exercises/${shared.body.id}/import`);
+    expect(imported.status).toBe(201);
+    expect(imported.body.courtType).toBe("full");
+
+    const fetched = await importer.get(`/api/exercises/${imported.body.id}`);
+    expect(fetched.body.steps).toHaveLength(2);
+    expect(fetched.body.steps[0].tokens).toMatchObject([{ id: "o1", x: 50, y: 90 }]);
+  });
+});

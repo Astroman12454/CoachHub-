@@ -732,7 +732,8 @@
     "shareCommunityName": "Añadir {{name}} a la comunidad",
     "unshareCommunityName": "Quitar {{name}} de la comunidad",
     "minPlayers_one": "Mín {{count}} jugador",
-    "minPlayers_other": "Mín {{count}} jugadores"
+    "minPlayers_other": "Mín {{count}} jugadores",
+    "diagramName": "Diagrama de {{name}}"
   },
   "communityExercises": {
     "title": "Ejercicios de la Comunidad",
@@ -765,7 +766,55 @@
   "exerciseShare": {
     "linkNotAvailable": "Enlace no disponible",
     "linkNotAvailableDescription": "Este enlace pudo haber sido revocado o ya no es válido.",
-    "instructions": "Instrucciones"
+    "instructions": "Instrucciones",
+    "diagram": "Diagrama"
+  },
+  "diagramPlayback": {
+    "diagramPreview": "Vista previa del diagrama",
+    "stopPlayback": "Detener reproducción",
+    "playAnimation": "Reproducir animación",
+    "stepNumber": "Paso {{number}}"
+  },
+  "exerciseDiagramEditor": {
+    "loadingEllipsis": "Cargando…",
+    "diagramFor": "Diagrama de",
+    "court": "Cancha",
+    "halfCourt": "Media Cancha",
+    "fullCourt": "Cancha Completa",
+    "removeDiagram": "Quitar Diagrama",
+    "saveDiagram": "Guardar Diagrama",
+    "savingEllipsis": "Guardando…",
+    "saved": "Diagrama guardado",
+    "savedDescription": "El diagrama animado se guardó.",
+    "couldntSave": "No se pudo guardar",
+    "diagramRemoved": "Diagrama eliminado",
+    "couldntRemove": "No se pudo eliminar el diagrama",
+    "removeDiagramConfirmTitle": "¿Quitar este diagrama?",
+    "removeDiagramConfirmDescription": "Esto elimina todos los pasos del diagrama animado. No se puede deshacer.",
+    "tools": {
+      "move": "Mover",
+      "offense": "Ataque",
+      "defense": "Defensa",
+      "ball": "Balón",
+      "moveArrow": "Flecha de Movimiento",
+      "pass": "Pase",
+      "dribble": "Bote",
+      "screen": "Bloqueo",
+      "text": "Texto",
+      "erase": "Borrar"
+    },
+    "colorSwatch": "Color {{color}}",
+    "diagramCanvas": "Lienzo del diagrama",
+    "fullCourtDiagramEditor": "Editor de diagrama de cancha completa",
+    "halfCourtDiagramEditor": "Editor de diagrama de media cancha",
+    "annotationText": "Texto de anotación",
+    "stopPlayback": "Detener reproducción",
+    "playAnimation": "Reproducir animación",
+    "stepNumber": "Paso {{number}}",
+    "deleteStep": "Eliminar paso {{number}}",
+    "step": "Paso",
+    "deleteStepConfirmTitle": "¿Eliminar este paso?",
+    "deleteStepConfirmDescription": "Esto lo quita de la secuencia del diagrama. No se puede deshacer."
   },
   "physicalTests": {
     "subtitle": "Definí pruebas físicas y seguí los resultados de cada jugador en el tiempo",
