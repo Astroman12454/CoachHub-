@@ -19,10 +19,12 @@ export default defineConfig({
     env: {
       // Read at import time by server/db.ts; needed for server/*.test.ts
       // even though those files run in a node environment, not jsdom.
-      // Points at the same local dev Postgres instance — auth tests use
-      // randomized emails per run so they don't collide with anything
-      // created manually.
-      DATABASE_URL: "postgresql://coachhub:cf2dbcfd1c2ad8f7baac861529545a93@localhost:5432/coachhub",
+      // Defaults to this sandbox's local dev Postgres instance — auth tests
+      // use randomized emails per run so they don't collide with anything
+      // created manually — but defers to a real DATABASE_URL when one's
+      // already set (CI's Postgres service container, a different
+      // developer's local setup) instead of overriding it unconditionally.
+      DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://coachhub:cf2dbcfd1c2ad8f7baac861529545a93@localhost:5432/coachhub",
     },
   },
 });

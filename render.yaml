@@ -7,19 +7,28 @@ services:
     name: coach-hub
     env: node
     plan: free
-    # preDeployCommand isn't available on the free plan, so the schema
-    # push runs as the last build step instead — same effect (it just
-    # applies any pending table/column changes against DATABASE_URL,
-    # already set below by the time this runs), only downside is it
-    # can't run in parallel with the previous instance staying up during
-    # a paid-plan zero-downtime deploy. Fine for a single free instance.
+    # preDeployCommand isn't available on the free plan, so the migration
+    # runs as the last build step instead — same effect (it just applies
+    # any pending migrations in migrations/ against DATABASE_URL, already
+    # set below by the time this runs), only downside is it can't run in
+    # parallel with the previous instance staying up during a paid-plan
+    # zero-downtime deploy. Fine for a single free instance.
+    #
+    # db:migrate (drizzle-kit migrate), not db:push: push diffs the live
+    # database against schema.ts on every deploy and can hit an
+    # interactive "this may lose data, truncate? y/n" prompt with no way
+    # to answer it in a non-interactive build step — a deploy would just
+    # hang. migrate instead replays the versioned, reviewed SQL files
+    # already committed in migrations/ (see that folder's own note on
+    # adding a new one), so what runs in production is exactly what was
+    # tested locally — no live schema diffing, no surprise prompts.
     #
     # --include=dev is required: with NODE_ENV=production set below, a
     # plain `npm install` silently skips devDependencies — which is
     # where vite, esbuild, and drizzle-kit live, all needed right here
     # to build and migrate (only the built output needs to run without
     # them, at startCommand time).
-    buildCommand: npm install --include=dev && npm run build && npm run db:push
+    buildCommand: npm install --include=dev && npm run build && npm run db:migrate
     startCommand: npm start
     envVars:
       - key: NODE_ENV
@@ -81,3 +90,14 @@ services:
         sync: false
       - key: APP_URL
         value: https://coach-hub-g99u.onrender.com
+      # Production error monitoring (Sentry) — optional. Leave unset and
+      # the app runs exactly as before (server errors only go to stdout,
+      # client crashes only show ErrorBoundary's fallback UI). Create a
+      # free project at sentry.io for a DSN. VITE_SENTRY_DSN must be set
+      # *before* buildCommand runs above (Vite inlines it into the client
+      # bundle at build time) — setting it here does that, since Render
+      # exposes every envVar to the build step too, not just at runtime.
+      - key: SENTRY_DSN
+        sync: false
+      - key: VITE_SENTRY_DSN
+        sync: false
