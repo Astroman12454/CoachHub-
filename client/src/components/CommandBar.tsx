@@ -3,12 +3,14 @@ import { Wand2, Loader2, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import { useAuth } from "@/hooks/use-auth";
 import { canGenerateAiSessionPlan } from "@shared/entitlements";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { TrainingSession } from "@shared/schema";
 
 type ParsedCommand =
@@ -34,6 +36,12 @@ export default function CommandBar({ sessions, onCreateSession, onDuplicateSessi
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const canUseCommands = canGenerateAiSessionPlan(account?.plan ?? "free");
+  // The full two-example placeholder reads fine on desktop but gets cut
+  // off mid-word on a phone-width input with no ellipsis (native
+  // placeholder text doesn't reliably ellipsize) — a shorter, single
+  // example fits cleanly instead.
+  const isMobile = useIsMobile();
+  const placeholder = isMobile ? t("commandBar.placeholderShort") : t("commandBar.placeholder");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,12 +97,13 @@ export default function CommandBar({ sessions, onCreateSession, onDuplicateSessi
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={t("commandBar.placeholder")}
+          placeholder={placeholder}
           aria-label={t("commandBar.placeholder")}
-          className="pl-9"
+          className="pl-9 truncate"
           disabled={isSubmitting}
         />
       </div>
+      {!canUseCommands && <Badge variant="secondary" className="flex-shrink-0 text-xs">{t("sessionModal.paid")}</Badge>}
       <Button type="submit" size="icon" variant="outline" disabled={!text.trim() || isSubmitting} aria-label={t("commandBar.submit")}>
         {isSubmitting
           ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />

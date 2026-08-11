@@ -110,6 +110,33 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("dashboard — rename team from the sidebar switcher", async ({ page }) => {
+    await login(page);
+    await page.waitForLoadState("networkidle");
+    const sessionRes = await page.request.get("/api/session");
+    const session = await sessionRes.json();
+    const originalName = session.teams.find((t: { id: number }) => t.id === session.currentTeamId).name;
+
+    const pencil = page.locator('button[aria-label^="Rename "]');
+    await pencil.click();
+    await page.waitForSelector("text=Rename Team");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    const input = page.locator("#rename-team-name");
+    await input.fill("E2E Renamed Team");
+    await page.click('button:has-text("Save")');
+    await page.waitForSelector("text=Team renamed");
+    await expect(page.locator('button[aria-label^="Rename "]')).toHaveAttribute("aria-label", "Rename E2E Renamed Team");
+
+    // Restore the shared fixture's team name so other tests aren't affected.
+    await page.click('button[aria-label="Rename E2E Renamed Team"]');
+    await page.waitForSelector("text=Rename Team");
+    await page.fill("#rename-team-name", originalName);
+    await page.click('button:has-text("Save")');
+    await page.waitForSelector("text=Team renamed");
+  });
+
   test("dashboard — AI recommendations modal open", async ({ page }) => {
     await login(page);
     await page.click('button:has-text("View AI Recommendations")');

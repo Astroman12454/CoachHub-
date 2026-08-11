@@ -60,7 +60,11 @@ export default function TodayHero({ teamName, todaySession, nextSession, onStart
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {nextSession
-                  ? t("dashboard.today.nextSession", { name: nextSession.name, date: nextSession.date, time: nextSession.time })
+                  ? t("dashboard.today.nextSession", {
+                      name: nextSession.name,
+                      date: new Date(`${nextSession.date}T00:00:00`).toLocaleDateString(),
+                      time: nextSession.time,
+                    })
                   : t("dashboard.today.noSessionsHint")}
               </p>
             </>

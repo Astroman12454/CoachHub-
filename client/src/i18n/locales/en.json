@@ -179,6 +179,7 @@
   },
   "commandBar": {
     "placeholder": "Try \"create a session tomorrow at 6pm\" or \"repeat Tuesday's practice\"",
+    "placeholderShort": "Try \"create a session tomorrow\"",
     "submit": "Run command",
     "freePlan": "Free plan",
     "upgradeToUse": "Upgrade to a paid plan to use natural-language commands.",
@@ -1020,6 +1021,14 @@
     "teamNamePlaceholder": "e.g., JV Squad",
     "creatingEllipsis": "Creating...",
     "createTeam": "Create Team"
+  },
+  "renameTeamDialog": {
+    "title": "Rename Team",
+    "dialogDescription": "Change this team's display name.",
+    "teamName": "Team Name",
+    "renamedToast": "Team renamed",
+    "couldntRename": "Couldn't rename team",
+    "triggerAriaLabel": "Rename {{name}}"
   },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
