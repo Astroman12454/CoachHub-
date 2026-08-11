@@ -369,6 +369,9 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/exercise-library");
     await page.waitForLoadState("networkidle");
+    // Same fade-in/networkidle race as the "sort by recently used" test
+    // below — settle before scanning so axe doesn't sample a card mid-fade.
+    await page.waitForTimeout(700);
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -404,6 +407,13 @@ test.describe("accessibility (axe)", () => {
     await page.getByLabel("Sort by").click();
     await page.click("text=Recently used");
     await page.waitForLoadState("networkidle");
+    // The card grid re-renders with a staggered .fade-in on each card
+    // (up to ~570ms to fully settle on a library this size); networkidle
+    // fires as soon as the fetch resolves, which can be before that
+    // animation finishes, so axe occasionally samples a card mid-fade at
+    // partial opacity and reports a false color-contrast violation. Same
+    // settle-before-scan pattern used elsewhere in this file.
+    await page.waitForTimeout(700);
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
