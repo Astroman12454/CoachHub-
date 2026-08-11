@@ -365,6 +365,48 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training mode — finishing a session requires confirmation, and canceling doesn't complete it", async ({ page }) => {
+    await login(page);
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    const sessionRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E Finish Confirmation Session",
+        date: new Date().toISOString().split("T")[0],
+        time: "17:00",
+        duration: 60,
+        exerciseIds: exercises.slice(0, 1).map((e: { id: number }) => e.id.toString()),
+        notes: null,
+      },
+    });
+    const session = await sessionRes.json();
+    await page.goto(`/training-sessions/${session.id}/live`);
+    await page.waitForSelector("text=Exercise 1 of 1");
+
+    await page.click('button:has-text("Finish")');
+    await page.waitForSelector("text=Finish this training session?");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Canceling must not complete the session — an accidental tap on
+    // Finish mid-practice shouldn't silently close out the whole session.
+    await page.click('button:has-text("Cancel")');
+    await page.waitForTimeout(300);
+    const midCheck = await page.request.get(`/api/training-sessions/${session.id}`);
+    expect((await midCheck.json()).status).not.toBe("completed");
+    await expect(page).toHaveURL(new RegExp(`/training-sessions/${session.id}/live`));
+
+    // Confirming does complete it, and returns to the sessions list.
+    await page.click('button:has-text("Finish")');
+    await page.waitForSelector("text=Finish this training session?");
+    await page.click('[role="alertdialog"] button:has-text("Finish")');
+    await page.waitForURL("/training-sessions");
+    const finalCheck = await page.request.get(`/api/training-sessions/${session.id}`);
+    expect((await finalCheck.json()).status).toBe("completed");
+
+    await page.request.delete(`/api/training-sessions/${session.id}`);
+  });
+
   test("exercise library", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");

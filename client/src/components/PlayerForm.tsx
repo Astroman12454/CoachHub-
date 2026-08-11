@@ -46,7 +46,13 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
       position: player?.position ?? "Point Guard",
       isActive: player?.isActive ?? 1,
       jerseyNumber: player?.jerseyNumber ?? undefined,
-      birthDate: player?.birthDate ?? "",
+      // null, not "": unlike jerseyNumber/height (plain numbers, no format
+      // constraint on empty), birthDate is validated against a YYYY-MM-DD
+      // regex — an untouched "" default would fail that regex the moment
+      // zodResolver validates on submit, silently blocking every new
+      // player who doesn't fill in a birth date. null satisfies the
+      // schema's .nullish() the same way an unset field should.
+      birthDate: player?.birthDate ?? null,
       height: player?.height ?? undefined,
       dominantHand: player?.dominantHand ?? undefined,
       emergencyContactName: player?.emergencyContactName ?? "",
@@ -161,7 +167,12 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
                   <FormItem>
                     <FormLabel>{t("playerForm.birthDate")}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} value={field.value ?? ""} />
+                      <Input
+                        type="date"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : e.target.value)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

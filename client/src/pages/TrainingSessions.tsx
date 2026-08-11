@@ -164,12 +164,12 @@ export default function TrainingSessions() {
                 style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
               >
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1 truncate">
-                        {session.name}
-                      </CardTitle>
-                      <div className="flex items-center text-sm text-muted-foreground gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground truncate">
+                      {session.name}
+                    </CardTitle>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center text-sm text-muted-foreground gap-3 min-w-0">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                           {new Date(`${session.date}T00:00:00`).toLocaleDateString()}
@@ -179,7 +179,6 @@ export default function TrainingSessions() {
                           {session.time}
                         </span>
                       </div>
-                    </div>
                     <div className="flex items-center space-x-1 flex-shrink-0">
                       {session.status !== "completed" && session.status !== "cancelled" && (
                         <Button
@@ -235,6 +234,7 @@ export default function TrainingSessions() {
                       >
                         <Trash2 className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                       </Button>
+                    </div>
                     </div>
                   </div>
                 </CardHeader>
