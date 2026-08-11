@@ -446,9 +446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Only what a viewer of the drill itself needs — never the owning
       // account's id.
-      const { id, name, description, category, duration, difficulty, instructions, imageUrl, courtType } = exercise;
+      const { id, name, description, category, duration, difficulty, instructions, imageUrl, courtType, nameEs, descriptionEs, instructionsEs } = exercise;
       const steps = await storage.getExerciseSteps(id);
-      res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl, courtType, steps });
+      res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl, courtType, nameEs, descriptionEs, instructionsEs, steps });
     } catch (error) {
       res.status(500).json({ message: "Failed to load shared exercise" });
     }
@@ -528,8 +528,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/community-exercises", async (req, res) => {
     try {
       const shared = await storage.getCommunityExercises();
-      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers }) =>
-        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers })
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community exercises" });

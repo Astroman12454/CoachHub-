@@ -14,6 +14,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "medium",
     instructions: "Stand at the free throw line, focus on form and follow-through",
+    nameEs: "Ejercicio de Forma en Tiros Libres",
+    descriptionEs: "Trabaja la técnica constante de tiro y el acompañamiento del brazo",
+    instructionsEs: "Colócate en la línea de tiros libres, concentrándote en la forma y el acompañamiento del brazo",
     imageUrl: "https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
   },
   {
@@ -23,6 +26,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "medium",
     instructions: "Start under the basket. Lay the ball in with the right hand, catch it out of the net with the left, lay it in with the left hand, catch with the right — alternate continuously. Once comfortable, add the two-step footwork (jump stop into each layup) to build timing for game-speed finishes.",
+    nameEs: "Ejercicio Mikan",
+    descriptionEs: "Ejercicio clásico bajo el aro para trabajar el toque suave, el juego de pies y las entradas con ambas manos",
+    instructionsEs: "Comienza bajo el aro. Entra el balón con la mano derecha, recupéralo de la red con la izquierda, entra con la izquierda, recupéralo con la derecha — alterna sin parar. Cuando lo domines, agrega el juego de pies de dos pasos (parada de salto en cada entrada) para ganar ritmo en finalizaciones a velocidad de partido.",
     imageUrl: null,
   },
   {
@@ -32,6 +38,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "medium",
     instructions: "Shoot from both elbows, both wings, and the top of the key. Rebound your own shot, pass to the next line, and rotate spots after each make (or after a set number of attempts). Emphasize a quick catch-and-release, not just makes.",
+    nameEs: "Tiro por Zonas (5 Puntos)",
+    descriptionEs: "Repeticiones de tiro tras recepción a ritmo de partido desde cinco zonas reales de anotación en la cancha",
+    instructionsEs: "Tira desde ambos codos, ambos laterales y el tope de la llave. Rebota tu propio tiro, pasa a la siguiente fila y rota de zona después de cada canasta (o tras un número fijo de intentos). Prioriza una recepción y liberación rápidas, no solo los aciertos.",
     imageUrl: null,
   },
   {
@@ -41,6 +50,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "easy",
     instructions: "A passer feeds the shooter from the top of the key while the shooter relocates around the arc between reps. Catch on the move with feet already turning toward the basket, and shoot without a dribble — the goal is a quick, balanced release, not just makes.",
+    nameEs: "Repeticiones de Recepción y Tiro",
+    descriptionEs: "Repeticiones a ritmo de partido de recibir un pase y soltar el tiro en un solo movimiento",
+    instructionsEs: "Un pasador alimenta al tirador desde el tope de la llave mientras el tirador se reubica alrededor del arco entre repeticiones. Recibe en movimiento con los pies ya girando hacia el aro, y tira sin botar — el objetivo es una liberación rápida y equilibrada, no solo los aciertos.",
     imageUrl: null,
   },
   {
@@ -50,6 +62,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "medium",
     instructions: "Starting at the wing or top of the key, attack one or two dribbles toward the basket, then stop on balance and rise into a jumper. Alternate strong-hand and off-hand dribbles, and keep the first dribble hard so the pull-up is actually a threat.",
+    nameEs: "Tiro de Media Distancia Tras Bote",
+    descriptionEs: "Tiros en suspensión tras uno o dos botes para crear tu propio lanzamiento",
+    instructionsEs: "Desde el lateral o el tope de la llave, ataca uno o dos botes hacia el aro, luego detente equilibrado y sube a tirar. Alterna botes con la mano fuerte y la mano débil, y mantén el primer bote fuerte para que el tiro sea realmente una amenaza.",
     imageUrl: null,
   },
   {
@@ -59,6 +74,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "Drive from the wing or top and release a one-footed floater in the lane before reaching the restricted area, using a high arc to shoot over a taller defender. Work both the strong hand and the off hand from each side of the floor.",
+    nameEs: "Serie de Floater",
+    descriptionEs: "Floaters suaves sobre la defensa en la zona, finalizando antes de que llegue un defensor de ayuda",
+    instructionsEs: "Penetra desde el lateral o el tope y suelta un floater a una mano en la zona antes de llegar al área restringida, usando un arco alto para tirar por encima de un defensor más alto. Trabaja tanto la mano fuerte como la débil desde ambos lados de la cancha.",
     imageUrl: null,
   },
   {
@@ -68,6 +86,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "medium",
     instructions: "Shoot from five spots beyond the three-point line, rebounding your own make or miss and passing to the next shooter. Track makes out of a set number of attempts per spot to give the drill a real target to chase.",
+    nameEs: "Tiro de Triples con Ritmo",
+    descriptionEs: "Repeticiones de recepción y tiro desde más allá del arco para ganar alcance y consistencia",
+    instructionsEs: "Tira desde cinco zonas más allá de la línea de triple, recuperando tu propio acierto o fallo y pasando al siguiente tirador. Registra los aciertos sobre un número fijo de intentos por zona para darle al ejercicio un objetivo real a perseguir.",
     imageUrl: null,
   },
   {
@@ -77,6 +98,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "easy",
     instructions: "Catch on the wing or elbow, sell a real shot fake with the eyes and shoulders, then take one hard dribble past a closing-out defender into a pull-up or layup. Reset and repeat from the other side.",
+    nameEs: "Amague de Tiro y Un Bote",
+    descriptionEs: "Usa un amague de tiro para que el defensor salte, y luego ataca con un solo bote fuerte",
+    instructionsEs: "Recibe en el lateral o el codo, vende un amague de tiro real con los ojos y los hombros, y luego da un bote fuerte pasando a un defensor que cierra el espacio, hacia un tiro en suspensión o una entrada. Reinicia y repite desde el otro lado.",
     imageUrl: null,
   },
   {
@@ -86,6 +110,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "easy",
     instructions: "Dribble through cones using both hands",
+    nameEs: "Ejercicio de Conos en Zigzag",
+    descriptionEs: "Mejora el manejo de balón y la agilidad sorteando conos",
+    instructionsEs: "Bota el balón entre los conos usando ambas manos",
     imageUrl: "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
   },
   {
@@ -95,6 +122,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "hard",
     instructions: "Dribble two balls at once, stationary at first (both hands together, then alternating), then walking the length of the court. Progress to one ball high and one low, and crossovers with both balls together.",
+    nameEs: "Bote con Dos Balones",
+    descriptionEs: "Control simultáneo de dos balones para forzar que ambas manos trabajen de forma independiente",
+    instructionsEs: "Bota dos balones a la vez, primero parado (ambas manos juntas, luego alternando), y después caminando a lo largo de la cancha. Progresa a un balón alto y otro bajo, y a cambios de mano con los dos balones juntos.",
     imageUrl: null,
   },
   {
@@ -104,6 +134,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 8,
     difficulty: "medium",
     instructions: "Straddle the ball and weave it in a figure-8 pattern between your legs, staying low. Start stationary, then repeat while walking forward the length of the court.",
+    nameEs: "Bote en Ocho",
+    descriptionEs: "Control de balón bajo y ajustado, tejiendo el balón entre y alrededor de las piernas",
+    instructionsEs: "Ponte a horcajadas sobre el balón y téjelo en un patrón de ocho entre las piernas, manteniéndote bajo. Empieza parado y luego repite caminando hacia adelante a lo largo de la cancha.",
     imageUrl: null,
   },
   {
@@ -113,6 +146,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "Standing in place, string together a crossover, a between-the-legs, and a behind-the-back dribble without stopping the ball. Once the sequence is clean stationary, repeat it walking, then at game speed while advancing up the court.",
+    nameEs: "Serie de Combinaciones de Cambios de Mano",
+    descriptionEs: "Encadena cambios de mano, entre las piernas y por la espalda en una sola secuencia fluida",
+    instructionsEs: "Parado en el lugar, encadena un cambio de mano, un bote entre las piernas y uno por la espalda sin detener el balón. Cuando la secuencia salga limpia parado, repítela caminando y luego a velocidad de partido avanzando por la cancha.",
     imageUrl: null,
   },
   {
@@ -122,6 +158,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "medium",
     instructions: "Starting under one basket, dribble full speed to the opposite end using the outside hand, finish with a layup, then jog back and repeat using the other hand. Keep the ball low and out in front — a dribble that gets away is slower than a controlled one.",
+    nameEs: "Bote de Velocidad a Cancha Completa",
+    descriptionEs: "Avanza el balón por la cancha a velocidad manteniendo el control total",
+    instructionsEs: "Comenzando bajo un aro, bota a máxima velocidad hasta el extremo opuesto usando la mano exterior, finaliza con una entrada, y luego trota de regreso para repetir usando la otra mano. Mantén el balón bajo y por delante — un balón que se escapa es más lento que uno controlado.",
     imageUrl: null,
   },
   {
@@ -131,6 +170,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "hard",
     instructions: "A defender guards the ball handler one-on-one from the top of the key; the ball handler must beat them using a specific move called out beforehand (crossover, hesitation, spin move). Switch roles after each attempt so both players get reps attacking and defending.",
+    nameEs: "Movimientos de Bote 1 contra 1 en Vivo",
+    descriptionEs: "Aplica un movimiento de bote elegido contra un defensor real que reacciona",
+    instructionsEs: "Un defensor marca al atacante 1 contra 1 desde el tope de la llave; el atacante debe superarlo usando un movimiento específico anunciado de antemano (cambio de mano, amague de arranque, giro). Cambien de rol después de cada intento para que ambos jugadores practiquen atacar y defender.",
     imageUrl: null,
   },
   {
@@ -140,6 +182,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 8,
     difficulty: "easy",
     instructions: "Dribble as hard and low as possible with one hand for a set count, then switch hands without looking down at the ball. Progress from a wide stance to a staggered (one foot forward) stance to mimic a real defensive matchup.",
+    nameEs: "Serie de Bote Fuerte",
+    descriptionEs: "Botes fuertes y bajos para ganar un manejo más firme y controlado",
+    instructionsEs: "Bota tan fuerte y bajo como sea posible con una mano durante un conteo fijo, luego cambia de mano sin mirar el balón. Progresa desde una postura amplia a una postura escalonada (un pie adelantado) para imitar un enfrentamiento defensivo real.",
     imageUrl: null,
   },
   {
@@ -149,6 +194,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "hard",
     instructions: "Approach a cone or defender and change direction using either a behind-the-back or a between-the-legs dribble, alternating which one you use each rep. Keep the eyes up throughout — this drill is as much about court vision as ball control.",
+    nameEs: "Combo de Bote por la Espalda y Entre las Piernas",
+    descriptionEs: "Movimientos avanzados de cambio de dirección para desbordar a un defensor asentado",
+    instructionsEs: "Acércate a un cono o defensor y cambia de dirección usando un bote por la espalda o entre las piernas, alternando cuál usas en cada repetición. Mantén la vista arriba en todo momento — este ejercicio es tanto de visión de juego como de control de balón.",
     imageUrl: null,
   },
   {
@@ -158,6 +206,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 20,
     difficulty: "hard",
     instructions: "Maintain low stance, slide laterally without crossing feet",
+    nameEs: "Ejercicio de Desplazamientos Defensivos",
+    descriptionEs: "Desarrolla rapidez lateral y una postura defensiva correcta",
+    instructionsEs: "Mantén una postura baja, desplázate lateralmente sin cruzar los pies",
     imageUrl: "https://images.unsplash.com/photo-1518611012118-696072aa579a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
   },
   {
@@ -167,6 +218,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "medium",
     instructions: "Start in help position and sprint out to a shooter on the perimeter, chopping the feet down into a low, balanced stance on the last two steps with a high hand to contest the shot without fouling or flying by.",
+    nameEs: "Ejercicio de Cierre sobre el Tirador",
+    descriptionEs: "Técnica controlada de sprint y cierre para presionar a un tirador",
+    instructionsEs: "Comienza en posición de ayuda y esprinta hacia un tirador en el perímetro, cortando los pies en los últimos dos pasos hacia una postura baja y equilibrada, con la mano en alto para contestar el tiro sin cometer falta ni pasar de largo.",
     imageUrl: null,
   },
   {
@@ -176,6 +230,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 20,
     difficulty: "hard",
     instructions: "Four offensive players hold spots around the perimeter and reverse the ball with passes only (no dribbling, no shooting). Four defenders practice ball, deny, and help positioning, rotating every time the ball moves — the classic shell drill for team defensive shape.",
+    nameEs: "Ejercicio de Caparazón 4 contra 4",
+    descriptionEs: "Ejercicio de posicionamiento sin bote para rotaciones de marca al balón, negación y ayuda",
+    instructionsEs: "Cuatro atacantes ocupan posiciones alrededor del perímetro y mueven el balón solo con pases (sin botar, sin tirar). Cuatro defensores practican el posicionamiento de marca, negación y ayuda, rotando cada vez que el balón se mueve — el clásico ejercicio de caparazón para la forma defensiva del equipo.",
     imageUrl: null,
   },
   {
@@ -185,6 +242,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "medium",
     instructions: "An offensive player drives at moderate speed toward a defender who has already planted both feet and established a legal guarding position. The defender takes contact with a straight body, arms in, and falls safely backward rather than sideways — never step into a driving player after they've left their feet.",
+    nameEs: "Ejercicio de Carga Ofensiva",
+    descriptionEs: "Enseña a los jugadores a establecer posición temprano y a tomar una carga con seguridad",
+    instructionsEs: "Un atacante penetra a velocidad moderada hacia un defensor que ya plantó ambos pies y estableció una posición legal de marca. El defensor recibe el contacto con el cuerpo recto, los brazos pegados, y cae hacia atrás de forma segura en vez de hacia un costado — nunca se meta bajo un jugador que ya despegó del piso.",
     imageUrl: null,
   },
   {
@@ -194,6 +254,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "On a shot, each defender locates their player, makes contact, and pivots to seal them away from the basket before going to get the rebound. Only chase the ball once the box-out is secure — a missed box-out gives up more offensive rebounds than a slow reaction to the shot.",
+    nameEs: "Bloqueo de Rebote y Captura",
+    descriptionEs: "Encuentra y mantén el contacto sobre un rebotador antes de ir por el balón",
+    instructionsEs: "Ante un tiro, cada defensor ubica a su jugador, hace contacto y gira para sellarlo lejos del aro antes de ir por el rebote. Solo persigue el balón una vez asegurado el bloqueo — un bloqueo fallado cede más rebotes ofensivos que una reacción lenta al tiro.",
     imageUrl: null,
   },
   {
@@ -203,6 +266,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "hard",
     instructions: "The ball handler attacks in a zig-zag pattern from sideline to sideline down the court while the defender stays in front using slides, not crossover steps. Focus on staying low and keeping the ball handler in front rather than reaching in for a steal.",
+    nameEs: "Zigzag 1 contra 1 a Cancha Completa",
+    descriptionEs: "Desplazamientos defensivos sobre el balón a lo largo de toda la cancha contra un atacante en vivo",
+    instructionsEs: "El atacante avanza en zigzag de línea lateral a línea lateral a lo largo de la cancha mientras el defensor se mantiene al frente usando desplazamientos, no pasos cruzados. Prioriza mantenerse bajo y al frente del atacante antes que ir a robar el balón.",
     imageUrl: null,
   },
   {
@@ -212,6 +278,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "hard",
     instructions: "One defender guards a live dribbler while a second, off-ball defender starts in help position; when the dribbler drives, the help defender steps in to contain, then sprints back out to contest their own player if the ball is kicked out. Rotate through all defenders so everyone practices both roles.",
+    nameEs: "Ejercicio de Ayuda y Recuperación",
+    descriptionEs: "Rota para ayudar ante una penetración y luego recupera tu propia marca antes de que llegue el pase",
+    instructionsEs: "Un defensor marca a un atacante en vivo mientras un segundo defensor, lejos del balón, arranca en posición de ayuda; cuando el atacante penetra, el defensor de ayuda entra a contener y luego esprinta de vuelta a contestar a su propio jugador si el balón sale hacia afuera. Roten entre todos los defensores para que todos practiquen ambos roles.",
     imageUrl: null,
   },
   {
@@ -221,6 +290,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "A post player works for position on the block while the defender practices three-quarter fronting — playing on the high side to deny the direct entry pass without giving up the baseline. Rotate the post player's starting position to both blocks and both sides of the lane.",
+    nameEs: "Ejercicio de Defensa de Poste",
+    descriptionEs: "Posicionamiento frontal y a tres cuartos para negarle el balón a un jugador de poste",
+    instructionsEs: "Un jugador de poste trabaja para ganar posición en el bloqueo mientras el defensor practica el frontal a tres cuartos — jugando del lado alto para negar el pase de entrada directo sin ceder la línea de fondo. Rota la posición inicial del poste a ambos bloqueos y ambos lados de la zona.",
     imageUrl: null,
   },
   {
@@ -230,6 +302,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "Pass the ball using proper chest pass technique to targets",
+    nameEs: "Precisión en el Pase de Pecho",
+    descriptionEs: "Mejora la precisión y la técnica de pase",
+    instructionsEs: "Pasa el balón usando la técnica correcta de pase de pecho hacia los objetivos",
     imageUrl: null,
   },
   {
@@ -239,6 +314,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "Set up five players in a star (pentagon) shape. Pass and follow your pass to the back of the next line, continuing the pattern around the star. Rotate pass types (chest, bounce, overhead) each round and pick up the pace once the pattern is clean.",
+    nameEs: "Ejercicio de Pase en Estrella",
+    descriptionEs: "Patrón de pase en cinco puntos que desarrolla pases precisos y a tiempo en movimiento",
+    instructionsEs: "Ubica a cinco jugadores en forma de estrella (pentágono). Pasa y sigue tu pase hacia el final de la siguiente fila, continuando el patrón alrededor de la estrella. Rota el tipo de pase (pecho, picado, por encima de la cabeza) en cada vuelta y acelera el ritmo una vez que el patrón salga limpio.",
     imageUrl: null,
   },
   {
@@ -248,6 +326,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 8,
     difficulty: "easy",
     instructions: "Partners stand about 10 feet apart and pass back and forth as fast as possible for 30-45 seconds, alternating chest and bounce passes each set. Keep the target at chest height and the passes crisp, not lobbed.",
+    nameEs: "Pase Rápido en Parejas",
+    descriptionEs: "Pases rápidos y de corta distancia para manos ágiles y precisión en el objetivo",
+    instructionsEs: "Las parejas se paran a unos 3 metros de distancia y se pasan el balón de un lado a otro lo más rápido posible durante 30-45 segundos, alternando pases de pecho y picados en cada serie. Mantén el objetivo a la altura del pecho y los pases firmes, no en globo.",
     imageUrl: null,
   },
   {
@@ -257,6 +338,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "easy",
     instructions: "Pass to a partner using a bounce pass that hits the floor about two-thirds of the way between you, arriving at their waist. Have the receiver cut or shift position between reps so the passer has to adjust the bounce point each time, not just repeat the same pass.",
+    nameEs: "Precisión en el Pase Picado",
+    descriptionEs: "Pases picados precisos y bien calculados hacia un objetivo en movimiento",
+    instructionsEs: "Pasa a un compañero con un pase picado que toque el piso a unos dos tercios de la distancia entre ambos, llegando a la altura de la cintura. Haz que el receptor corte o cambie de posición entre repeticiones para que el pasador tenga que ajustar el punto de bote cada vez, no repetir siempre el mismo pase.",
     imageUrl: null,
   },
   {
@@ -266,6 +350,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "A coach or partner shoots and misses on purpose; the rebounder secures the ball with two hands, pivots away from pressure, and throws a quick outlet pass to a teammate sprinting up the sideline. Emphasize speed of the outlet over distance — a fast, accurate short pass beats a slow, risky long one.",
+    nameEs: "Pase de Salida y Contraataque",
+    descriptionEs: "Captura un rebote y lanza un pase de salida preciso para iniciar el contraataque",
+    instructionsEs: "Un entrenador o compañero tira y falla a propósito; el rebotador asegura el balón con las dos manos, pivota lejos de la presión y lanza un pase de salida rápido a un compañero que esprinta por la banda. Prioriza la velocidad del pase de salida sobre la distancia — un pase corto, rápido y preciso es mejor que uno largo, lento y arriesgado.",
     imageUrl: null,
   },
   {
@@ -275,6 +362,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "easy",
     instructions: "Pass to a partner then immediately cut hard toward the basket, looking for the ball to be returned in stride for a layup. Rotate passer and cutter roles, and vary the cut (backdoor vs. flash to the ball) each round.",
+    nameEs: "Pase y Corte (Dar y Seguir)",
+    descriptionEs: "Pasa, corta fuerte hacia el aro y finaliza el pase de regreso",
+    instructionsEs: "Pasa a un compañero y de inmediato corta fuerte hacia el aro, buscando que te devuelvan el balón en carrera para una entrada. Rota los roles de pasador y cortador, y varía el corte (puerta de atrás o aparecer al balón) en cada vuelta.",
     imageUrl: null,
   },
   {
@@ -284,6 +374,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "medium",
     instructions: "With players spread around the perimeter, practice throwing a one-handed or two-handed overhead skip pass diagonally across the court to the opposite wing or corner. Keep the pass on a flat, quick line — a lobbed skip pass gives the defense time to recover.",
+    nameEs: "Ejercicio de Pase Largo Cruzado",
+    descriptionEs: "Pases largos cruzando la cancha para llegar al lado débil antes de que rote la defensa",
+    instructionsEs: "Con los jugadores repartidos por el perímetro, practica un pase largo por encima de la cabeza, a una o dos manos, en diagonal hacia el lateral o la esquina opuesta. Mantén el pase en una línea plana y rápida — un pase largo en globo le da tiempo a la defensa para recuperarse.",
     imageUrl: null,
   },
   {
@@ -293,6 +386,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "medium",
     instructions: "A post player seals for position on the block while a perimeter passer waits for the target hand before delivering a firm, low pass away from the defender's reach. Practice entries from both wings and both blocks so the passer reads angles from either side.",
+    nameEs: "Pase de Entrada al Poste",
+    descriptionEs: "Entrega un pase de entrada atrapable a un jugador de poste que trabaja por su posición",
+    instructionsEs: "Un jugador de poste sella su posición en el bloqueo mientras el pasador del perímetro espera la mano objetivo antes de entregar un pase firme y bajo, lejos del alcance del defensor. Practica entradas desde ambos laterales y ambos bloqueos para que el pasador lea ángulos desde los dos lados.",
     imageUrl: null,
   },
   {
@@ -302,6 +398,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 8,
     difficulty: "hard",
     instructions: "Sprint to each line and back, touch each line",
+    nameEs: "Sprints de Líneas (Suicidios)",
+    descriptionEs: "Desarrolla resistencia cardiovascular y velocidad",
+    instructionsEs: "Esprinta hasta cada línea y de regreso, tocando cada línea",
     imageUrl: null,
   },
   {
@@ -311,6 +410,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 15,
     difficulty: "medium",
     instructions: "Three players form three lines at the baseline. The middle player passes to one side and sprints behind them to the opposite lane; the drill continues weaving up the court (pass, sprint behind, pass, sprint behind) and finishes with a layup, then jog back and repeat.",
+    nameEs: "Trenza de Tres Jugadores",
+    descriptionEs: "Ejercicio de acondicionamiento a cancha completa con pase y corte que finaliza con una entrada",
+    instructionsEs: "Tres jugadores forman tres filas en la línea de fondo. El jugador del medio pasa hacia un lado y esprinta por detrás hacia el carril opuesto; el ejercicio continúa tejiendo hacia adelante (pasar, esprintar por detrás, pasar, esprintar por detrás) y finaliza con una entrada, luego trotan de regreso para repetir.",
     imageUrl: null,
   },
   {
@@ -320,6 +422,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "hard",
     instructions: "Sprint sideline to sideline and back 17 times (34 lines) before the time cap expires. Used as both a conditioning drill and a fitness benchmark players can try to beat over the season.",
+    nameEs: "Los 17",
+    descriptionEs: "Ejercicio clásico de acondicionamiento de línea a línea contra el reloj",
+    instructionsEs: "Esprinta de línea lateral a línea lateral y de vuelta 17 veces (34 líneas) antes de que se cumpla el tiempo límite. Se usa tanto como ejercicio de acondicionamiento como prueba física que los jugadores pueden intentar superar a lo largo de la temporada.",
     imageUrl: null,
   },
   {
@@ -329,6 +434,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 8,
     difficulty: "medium",
     instructions: "In a low defensive stance, slide out to a cone or line, touch it, and slide back to center before immediately sliding to the next one, working through a full set of lines without standing upright. Keep the stance low the entire time — standing up between reps is where most of the conditioning benefit is lost.",
+    nameEs: "Desplazamientos Defensivos con Toques de Línea",
+    descriptionEs: "Combina desplazamientos defensivos con un patrón de acondicionamiento de toque de líneas",
+    instructionsEs: "En una postura defensiva baja, desplázate hacia un cono o línea, tócala y regresa deslizándote al centro antes de ir de inmediato hacia la siguiente, recorriendo un set completo de líneas sin pararte erguido. Mantén la postura baja todo el tiempo — pararse entre repeticiones es donde se pierde la mayor parte del beneficio físico.",
     imageUrl: null,
   },
   {
@@ -338,6 +446,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "medium",
     instructions: "Starting under one basket, sprint full speed to the other end, finish a layup, rebound your own make, and sprint straight back to repeat at the starting basket. Alternate finishing hands each trip to keep both sides sharp under fatigue.",
+    nameEs: "Sprints de Entradas a Cancha Completa",
+    descriptionEs: "Esprinta a lo largo de la cancha finalizando una entrada en cada extremo, ida y vuelta",
+    instructionsEs: "Comenzando bajo un aro, esprinta a máxima velocidad hasta el otro extremo, finaliza una entrada, rebota tu propia canasta y esprinta directo de regreso para repetir en el aro inicial. Alterna la mano de finalización en cada viaje para mantener ambos lados afilados bajo fatiga.",
     imageUrl: null,
   },
   {
@@ -347,6 +458,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "easy",
     instructions: "Jump rope continuously for 30-45 seconds, rest for 15-20 seconds, and repeat for the full set. Mix in single-leg hops and high-knee variations between standard sets to build ankle and calf endurance alongside the cardio work.",
+    nameEs: "Intervalos de Salto a la Cuerda",
+    descriptionEs: "Series cortas de alta intensidad con la cuerda para juego de pies y acondicionamiento",
+    instructionsEs: "Salta a la cuerda de forma continua durante 30-45 segundos, descansa 15-20 segundos, y repite durante toda la serie. Combina saltos a una pierna y variantes de rodillas altas entre series estándar para desarrollar resistencia en tobillos y pantorrillas junto con el trabajo cardiovascular.",
     imageUrl: null,
   },
   {
@@ -356,6 +470,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 10,
     difficulty: "hard",
     instructions: "Starting at one baseline corner, sprint in a star pattern touching the near free-throw line, the far sideline, the far free-throw line, and the opposite baseline corner in sequence, then reverse the pattern back. Use a stopwatch and let players try to beat their own time over the season.",
+    nameEs: "Ejercicio de la Estrella",
+    descriptionEs: "Sprints tipo suicidio combinados con toques diagonales en la cancha para una prueba de acondicionamiento de cancha completa",
+    instructionsEs: "Comenzando en una esquina de la línea de fondo, esprinta en un patrón de estrella tocando la línea de tiros libres cercana, la línea lateral lejana, la línea de tiros libres lejana y la esquina opuesta de la línea de fondo en secuencia, y luego invierte el patrón de regreso. Usa un cronómetro y deja que los jugadores intenten superar su propio tiempo a lo largo de la temporada.",
     imageUrl: null,
   },
   {
@@ -365,6 +482,9 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     duration: 12,
     difficulty: "hard",
     instructions: "Five players advance the ball full court using only passes and cuts — no dribbling — finishing with a layup, then immediately reverse direction and repeat back down the court without stopping. Keep the pace continuous for the full set; the conditioning comes from the non-stop movement, not from running in place.",
+    nameEs: "Pase Continuo 5 contra 0 a Cancha Completa",
+    descriptionEs: "Pase y corte continuo a cancha completa para desarrollar acondicionamiento a través del movimiento del baloncesto",
+    instructionsEs: "Cinco jugadores avanzan el balón a cancha completa usando solo pases y cortes — sin botar — finalizando con una entrada, y luego invierten de inmediato la dirección y repiten de regreso sin detenerse. Mantén un ritmo continuo durante toda la serie; el acondicionamiento viene del movimiento sin pausas, no de correr en el lugar.",
     imageUrl: null,
   },
 ];

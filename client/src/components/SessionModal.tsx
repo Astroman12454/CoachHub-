@@ -25,6 +25,7 @@ import type { Exercise, Play, PhysicalTest, TrainingSession, SessionTemplate } f
 import { DIFFICULTY_LEVELS } from "@shared/schema";
 import { canGenerateAiSessionPlan } from "@shared/entitlements";
 import { CATEGORY_COLORS } from "@/lib/types";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 
 interface GeneratedSessionPlan {
   name: string;
@@ -52,7 +53,7 @@ interface SessionModalProps {
 }
 
 export default function SessionModal({ isOpen, onClose, session, duplicateFrom, prefill }: SessionModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isEditing = !!session;
   const isDuplicating = !isEditing && !!duplicateFrom;
   const source = session ?? duplicateFrom ?? null;
@@ -198,7 +199,8 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     const matchesCategory = exerciseCategory === "all" || ex.category === exerciseCategory;
     const matchesDifficulty = exerciseDifficulty === "all" || ex.difficulty === exerciseDifficulty;
     const query = exerciseSearch.trim().toLowerCase();
-    const matchesSearch = !query || ex.name.toLowerCase().includes(query) || ex.description.toLowerCase().includes(query);
+    const localized = localizedExerciseText(ex, i18n.language);
+    const matchesSearch = !query || localized.name.toLowerCase().includes(query) || localized.description.toLowerCase().includes(query);
     return matchesCategory && matchesDifficulty && matchesSearch;
   });
 
@@ -592,25 +594,28 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                   role="region"
                   aria-label={t("sessionModal.availableExercises")}
                 >
-                  {filteredExercises.map(exercise => (
-                    <div
-                      key={exercise.id}
-                      className="border border-border rounded-lg p-3 hover:border-basketball-orange hover:shadow-sm transition-all cursor-pointer"
-                      onClick={() => addExercise(exercise)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge
-                          variant="secondary"
-                          className={CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS]}
-                        >
-                          {t(`categories.exercise.${exercise.category}`, exercise.category)}
-                        </Badge>
-                        <span className="text-xs tabular-nums text-muted-foreground">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
+                  {filteredExercises.map(exercise => {
+                    const localized = localizedExerciseText(exercise, i18n.language);
+                    return (
+                      <div
+                        key={exercise.id}
+                        className="border border-border rounded-lg p-3 hover:border-basketball-orange hover:shadow-sm transition-all cursor-pointer"
+                        onClick={() => addExercise(exercise)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge
+                            variant="secondary"
+                            className={CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS]}
+                          >
+                            {t(`categories.exercise.${exercise.category}`, exercise.category)}
+                          </Badge>
+                          <span className="text-xs tabular-nums text-muted-foreground">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
+                        </div>
+                        <h4 className="font-medium text-foreground mb-1">{localized.name}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{localized.description}</p>
                       </div>
-                      <h4 className="font-medium text-foreground mb-1">{exercise.name}</h4>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{exercise.description}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 )}
               </div>

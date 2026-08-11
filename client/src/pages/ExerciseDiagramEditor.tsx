@@ -17,6 +17,7 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { smoothPath, DRAWING_COLORS } from "@/lib/playDrawing";
 import { useDiagramBoard, type EditorStep, type Tool } from "@/hooks/use-diagram-board";
 import PlayStepMarks from "@/components/PlayStepMarks";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 import { COURT_TYPES } from "@shared/schema";
 import type { Exercise } from "@shared/schema";
 
@@ -26,7 +27,7 @@ import type { Exercise } from "@shared/schema";
 // the exercise's own name/description/etc. are edited elsewhere, in
 // ExerciseForm.
 export default function ExerciseDiagramEditor() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
   const exerciseId = parseInt(params.id, 10);
   const [, setLocation] = useLocation();
@@ -125,7 +126,7 @@ export default function ExerciseDiagramEditor() {
           </button>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{t("exerciseDiagramEditor.diagramFor")}</p>
-            <h1 className="font-display uppercase tracking-tight text-foreground truncate max-w-[240px]">{existingExercise?.name}</h1>
+            <h1 className="font-display uppercase tracking-tight text-foreground truncate max-w-[240px]">{existingExercise ? localizedExerciseText(existingExercise, i18n.language).name : ""}</h1>
           </div>
           <Select value={courtType} onValueChange={setCourtType}>
             <SelectTrigger className="w-32" aria-label={t("exerciseDiagramEditor.court")}><SelectValue /></SelectTrigger>

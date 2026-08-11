@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS } from "@/lib/types";
 import { addMinutesToClock } from "@/lib/time";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 import type { Exercise } from "@shared/schema";
 
 interface SessionTimelineProps {
@@ -28,7 +29,7 @@ export default function SessionTimeline({
   startTime,
   sessionDuration,
 }: SessionTimelineProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const blocks = selectedIds
     .map((id) => exercises.find((ex) => ex.id.toString() === id))
     .filter((ex): ex is Exercise => !!ex);
@@ -58,7 +59,7 @@ export default function SessionTimeline({
             key={ex.id}
             style={{ width: `${(ex.duration / totalPlanned) * 100}%` }}
             className={`${CATEGORY_SOLID_COLORS[ex.category as keyof typeof CATEGORY_SOLID_COLORS] ?? "bg-basketball-orange"} first:rounded-l-full last:rounded-r-full`}
-            title={t("sessionTimeline.blockTitle", { name: ex.name, duration: ex.duration })}
+            title={t("sessionTimeline.blockTitle", { name: localizedExerciseText(ex, i18n.language).name, duration: ex.duration })}
           />
         ))}
       </div>
@@ -75,6 +76,7 @@ export default function SessionTimeline({
           cumulative += ex.duration;
           const clockStart = startTime ? addMinutesToClock(startTime, start) : null;
           const clockEnd = startTime ? addMinutesToClock(startTime, cumulative) : null;
+          const name = localizedExerciseText(ex, i18n.language).name;
 
           return (
             <li key={ex.id} className="flex items-center gap-2 border border-border rounded-lg p-2.5">
@@ -86,7 +88,7 @@ export default function SessionTimeline({
                   className="w-6 h-6"
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
-                  aria-label={t("sessionTimeline.moveEarlier", { name: ex.name })}
+                  aria-label={t("sessionTimeline.moveEarlier", { name })}
                 >
                   <ArrowUp className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
                 </Button>
@@ -97,7 +99,7 @@ export default function SessionTimeline({
                   className="w-6 h-6"
                   onClick={() => move(index, 1)}
                   disabled={index === blocks.length - 1}
-                  aria-label={t("sessionTimeline.moveLater", { name: ex.name })}
+                  aria-label={t("sessionTimeline.moveLater", { name })}
                 >
                   <ArrowDown className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
                 </Button>
@@ -108,7 +110,7 @@ export default function SessionTimeline({
                   <Badge variant="secondary" className={CATEGORY_COLORS[ex.category as keyof typeof CATEGORY_COLORS]}>
                     {t(`categories.exercise.${ex.category}`, ex.category)}
                   </Badge>
-                  <span className="font-medium text-foreground truncate">{ex.name}</span>
+                  <span className="font-medium text-foreground truncate">{name}</span>
                 </div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <Clock className="w-3 h-3" strokeWidth={1.75} aria-hidden="true" />
@@ -123,7 +125,7 @@ export default function SessionTimeline({
                 size="icon"
                 className="text-muted-foreground hover:text-foreground flex-shrink-0"
                 onClick={() => onRemove(ex.id)}
-                aria-label={t("sessionTimeline.remove", { name: ex.name })}
+                aria-label={t("sessionTimeline.remove", { name })}
               >
                 <X className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
               </Button>

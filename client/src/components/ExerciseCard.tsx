@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -19,8 +20,9 @@ interface ExerciseCardProps {
 }
 
 export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onToggleFavorite, onDuplicate, onShare, onToggleCommunityShare, onOpenDiagram }: ExerciseCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
+  const localized = localizedExerciseText(exercise, i18n.language);
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
   const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
   const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
@@ -54,7 +56,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
               className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 data-[favorite=true]:opacity-100 transition-opacity duration-200"
               data-favorite={isFavorite}
               aria-pressed={isFavorite}
-              aria-label={isFavorite ? t("exerciseCard.unfavoriteName", { name: exercise.name }) : t("exerciseCard.favoriteName", { name: exercise.name })}
+              aria-label={isFavorite ? t("exerciseCard.unfavoriteName", { name: localized.name }) : t("exerciseCard.favoriteName", { name: localized.name })}
             >
               <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
             </button>
@@ -69,7 +71,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onOpenDiagram(); }}
                   className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.diagramName", { name: exercise.name })}
+                  aria-label={t("exerciseCard.diagramName", { name: localized.name })}
                 >
                   <Waypoints className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 </button>
@@ -80,7 +82,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
                   onClick={(e) => { e.stopPropagation(); onToggleCommunityShare(); }}
                   className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
                   aria-pressed={isSharedToCommunity}
-                  aria-label={isSharedToCommunity ? t("exerciseCard.unshareCommunityName", { name: exercise.name }) : t("exerciseCard.shareCommunityName", { name: exercise.name })}
+                  aria-label={isSharedToCommunity ? t("exerciseCard.unshareCommunityName", { name: localized.name }) : t("exerciseCard.shareCommunityName", { name: localized.name })}
                 >
                   <Globe className={cn("w-3.5 h-3.5", isSharedToCommunity ? "text-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
                 </button>
@@ -90,7 +92,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onShare(); }}
                   className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.shareName", { name: exercise.name })}
+                  aria-label={t("exerciseCard.shareName", { name: localized.name })}
                 >
                   <Share2 className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 </button>
@@ -100,7 +102,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
                   className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.duplicateName", { name: exercise.name })}
+                  aria-label={t("exerciseCard.duplicateName", { name: localized.name })}
                 >
                   <Copy className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 </button>
@@ -110,7 +112,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onEdit(); }}
                   className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.editName", { name: exercise.name })}
+                  aria-label={t("exerciseCard.editName", { name: localized.name })}
                 >
                   <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
                 </button>
@@ -120,7 +122,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onDelete(); }}
                   className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.deleteName", { name: exercise.name })}
+                  aria-label={t("exerciseCard.deleteName", { name: localized.name })}
                 >
                   <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
                 </button>
@@ -137,7 +139,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
       {exercise.imageUrl && !imageFailed ? (
         <img
           src={exercise.imageUrl}
-          alt={exercise.name}
+          alt={localized.name}
           loading="lazy"
           decoding="async"
           onError={() => setImageFailed(true)}
@@ -150,9 +152,9 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
       )}
 
       <h3 className="font-display font-semibold uppercase tracking-tight text-foreground mb-2 group-hover:text-basketball-orange transition-colors duration-200">
-        {exercise.name}
+        {localized.name}
       </h3>
-      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{exercise.description}</p>
+      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{localized.description}</p>
 
       <div className="flex items-center gap-3 text-muted-foreground">
         <div className="flex items-center gap-1.5">
