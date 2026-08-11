@@ -900,6 +900,7 @@
     "today": "Hoy",
     "noSessions": "Sin sesiones",
     "sessionAriaLabel": "{{name}}, {{time}}, {{duration}} minutos. Abrir asistencia.",
+    "editSessionAriaLabel": "Editar {{name}}",
     "durationMinNoSpace": "{{count}}min",
     "status": {
       "scheduled": "programada",

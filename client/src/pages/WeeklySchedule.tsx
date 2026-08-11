@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat, CalendarRange } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat, CalendarRange, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import AttendanceModal from "@/components/AttendanceModal";
 import RecurringScheduleDialog from "@/components/RecurringScheduleDialog";
+import SessionModal from "@/components/SessionModal";
 import StatCard from "@/components/StatCard";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ export default function WeeklySchedule() {
   });
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
@@ -350,45 +352,62 @@ export default function WeeklySchedule() {
                     </div>
                   ) : (
                     daySessions.map((session) => (
+                      // A real <button> covering the whole card handles the
+                      // primary "open attendance" action, with the visible
+                      // content (and the edit pencil) layered on top as a
+                      // sibling — not nested inside it. An interactive
+                      // element nested inside another (the card used to be
+                      // role="button" itself, with a real <button> for edit
+                      // inside it) is an axe/WCAG violation regardless of
+                      // click behavior working fine visually.
                       <div
                         key={session.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={t("schedule.sessionAriaLabel", { name: session.name, time: session.time, duration: session.duration })}
-                        className={`rounded-md p-3 cursor-pointer transition-colors bg-muted/50 hover:bg-muted border-l-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        className={`relative rounded-md p-3 transition-colors bg-muted/50 hover:bg-muted border-l-4 ${
                           STATUS_COLORS[session.status as keyof typeof STATUS_COLORS] || STATUS_COLORS.scheduled
                         }`}
-                        onClick={() => openAttendanceModal(session)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            openAttendanceModal(session);
-                          }
-                        }}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {session.time}
-                          </Badge>
-                          <div className="text-xs font-medium tabular-nums text-muted-foreground">
-                            {t("schedule.durationMinNoSpace", { count: session.duration })}
-                          </div>
-                        </div>
-                        <div className="font-semibold text-sm truncate mb-1.5 text-foreground">
-                          {session.name}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Badge
-                            variant="secondary"
-                            className="text-xs capitalize"
-                          >
-                            {t(`schedule.status.${session.status || 'scheduled'}`, session.status || 'scheduled')}
-                          </Badge>
-                          {session.attendanceCount !== undefined && (
-                            <div className="text-xs tabular-nums text-muted-foreground">
-                              {session.attendanceCount}/{session.totalPlayers}
+                        <button
+                          type="button"
+                          onClick={() => openAttendanceModal(session)}
+                          aria-label={t("schedule.sessionAriaLabel", { name: session.name, time: session.time, duration: session.duration })}
+                          className="absolute inset-0 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        />
+                        <div className="relative pointer-events-none">
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="outline" className="text-xs">
+                              {session.time}
+                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs font-medium tabular-nums text-muted-foreground">
+                                {t("schedule.durationMinNoSpace", { count: session.duration })}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setEditingSession(session)}
+                                aria-label={t("schedule.editSessionAriaLabel", { name: session.name })}
+                                title={t("schedule.editSessionAriaLabel", { name: session.name })}
+                                className="pointer-events-auto relative text-muted-foreground hover:text-foreground -m-1 p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              >
+                                <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                              </button>
                             </div>
-                          )}
+                          </div>
+                          <div className="font-semibold text-sm truncate mb-1.5 text-foreground">
+                            {session.name}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <Badge
+                              variant="secondary"
+                              className="text-xs capitalize"
+                            >
+                              {t(`schedule.status.${session.status || 'scheduled'}`, session.status || 'scheduled')}
+                            </Badge>
+                            {session.attendanceCount !== undefined && (
+                              <div className="text-xs tabular-nums text-muted-foreground">
+                                {session.attendanceCount}/{session.totalPlayers}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
@@ -416,6 +435,14 @@ export default function WeeklySchedule() {
         />
 
         <RecurringScheduleDialog open={isRecurringDialogOpen} onOpenChange={setIsRecurringDialogOpen} />
+
+        {editingSession && (
+          <SessionModal
+            isOpen={!!editingSession}
+            onClose={() => setEditingSession(null)}
+            session={editingSession}
+          />
+        )}
       </main>
     </div>
   );
