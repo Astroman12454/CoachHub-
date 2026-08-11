@@ -565,6 +565,86 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/exercises/${exercise.id}`);
   });
 
+  test("exercise diagram editor — undo and redo affect what actually gets saved", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Diagram Undo Drill", description: "For undo/redo testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+
+    await page.goto(`/exercise-library/${exercise.id}/diagram`);
+    await page.waitForSelector("text=Save Diagram");
+
+    const undoBtn = page.locator('button[aria-label="Undo"]');
+    const redoBtn = page.locator('button[aria-label="Redo"]');
+    await expect(undoBtn).toBeDisabled();
+    await expect(redoBtn).toBeDisabled();
+
+    await page.click('button[aria-label="Offense"]');
+    const canvas = page.locator('svg[aria-label="Half court diagram editor"]');
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas not found");
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(undoBtn).toBeEnabled();
+
+    await undoBtn.click();
+    await expect(undoBtn).toBeDisabled();
+    await expect(redoBtn).toBeEnabled();
+
+    await redoBtn.click();
+    await expect(redoBtn).toBeDisabled();
+    await expect(undoBtn).toBeEnabled();
+
+    await page.click('button:has-text("Save Diagram")');
+    await page.waitForURL(/\/exercise-library$/);
+
+    const fetched = await page.request.get(`/api/exercises/${exercise.id}`);
+    const data = await fetched.json();
+    expect(data.steps[0].tokens).toHaveLength(1);
+    expect(data.steps[0].tokens[0].type).toBe("offense");
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
+  test("exercise diagram editor — places a cone and draws a curved arrow", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Diagram Cone Drill", description: "For cone/curve testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+
+    await page.goto(`/exercise-library/${exercise.id}/diagram`);
+    await page.waitForSelector("text=Save Diagram");
+
+    await page.click('button[aria-label="Cone"]');
+    const canvas = page.locator('svg[aria-label="Half court diagram editor"]');
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas not found");
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3);
+
+    await page.click('button[aria-label="Move Arrow"]');
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.75, { steps: 8 });
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.2, { steps: 8 });
+    await page.mouse.up();
+
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.click('button:has-text("Save Diagram")');
+    await page.waitForURL(/\/exercise-library$/);
+
+    const fetched = await page.request.get(`/api/exercises/${exercise.id}`);
+    const data = await fetched.json();
+    expect(data.steps[0].tokens).toHaveLength(1);
+    expect(data.steps[0].tokens[0].type).toBe("cone");
+    expect(data.steps[0].drawings).toHaveLength(1);
+    expect(data.steps[0].drawings[0].points.length).toBeGreaterThan(2);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("exercise diagram editor — remove diagram confirm dialog", async ({ page }) => {
     await login(page);
     const create = await page.request.post("/api/exercises", {
@@ -1057,6 +1137,51 @@ test.describe("accessibility (axe)", () => {
     await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("playbook — new play editor: cone, curved arrow, and undo/redo persist correctly", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook/new");
+    await page.waitForSelector('input[aria-label="Play name"]');
+    await page.fill('input[aria-label="Play name"]', "E2E Cone Curve Play");
+
+    const undoBtn = page.locator('button[aria-label="Undo"]');
+    await expect(undoBtn).toBeDisabled();
+
+    await page.click('button[aria-label="Cone"]');
+    const canvas = page.locator('svg[aria-label="Half court play diagram editor"]');
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas not found");
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3);
+    await expect(undoBtn).toBeEnabled();
+
+    await page.click('button[aria-label="Move Arrow"]');
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.75, { steps: 8 });
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.2, { steps: 8 });
+    await page.mouse.up();
+
+    // Undo the arrow, leaving just the cone.
+    await undoBtn.click();
+
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.click('button:has-text("Save Play")');
+    await page.waitForURL(/\/playbook$/);
+
+    const list = await page.request.get("/api/plays");
+    const plays = await list.json();
+    const created = plays.find((p: { name: string }) => p.name === "E2E Cone Curve Play");
+    expect(created).toBeTruthy();
+    const fetched = await page.request.get(`/api/plays/${created.id}`);
+    const data = await fetched.json();
+    expect(data.steps[0].tokens).toHaveLength(1);
+    expect(data.steps[0].tokens[0].type).toBe("cone");
+    expect(data.steps[0].drawings).toHaveLength(0);
+
+    await page.request.delete(`/api/plays/${created.id}`);
   });
 
   test("playbook — search filters by name", async ({ page }) => {

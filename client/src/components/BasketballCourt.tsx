@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 interface BasketballCourtProps {
   courtType: "full" | "half";
 }
@@ -10,7 +12,7 @@ const LINE_COLOR = "#000000";
 function CourtEnd({ mirror }: { mirror?: boolean }) {
   const t = mirror ? "scale(1,-1)" : undefined;
   return (
-    <g transform={t} stroke={LINE_COLOR}>
+    <g transform={t} stroke={LINE_COLOR} strokeLinecap="round" strokeLinejoin="round">
       {/* Baseline */}
       <line x1="0" y1="0" x2="100" y2="0" strokeWidth="0.5" />
       {/* Lane / key */}
@@ -42,6 +44,10 @@ function CourtEnd({ mirror }: { mirror?: boolean }) {
 // with the app's theme colors.
 export default function BasketballCourt({ courtType }: BasketballCourtProps) {
   const height = courtType === "full" ? 188 : 94;
+  // Unique per instance so two courts rendered on the same page (or the
+  // same off-screen PDF-export batch) never share — and silently fight
+  // over — one <radialGradient> id.
+  const gradientId = `court-surface-${useId()}`;
 
   return (
     <svg
@@ -50,14 +56,22 @@ export default function BasketballCourt({ courtType }: BasketballCourtProps) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      <rect x="0" y="0" width="100" height={height} fill={COURT_ORANGE} stroke={LINE_COLOR} strokeWidth="0.5" />
+      <defs>
+        {/* A subtle radial highlight rather than a flat fill — reads as a
+            lit wood/court surface instead of a solid color swatch. */}
+        <radialGradient id={gradientId} cx="50%" cy="35%" r="85%">
+          <stop offset="0%" stopColor="#DD4A10" />
+          <stop offset="100%" stopColor={COURT_ORANGE} />
+        </radialGradient>
+      </defs>
+      <rect x="0" y="0" width="100" height={height} fill={`url(#${gradientId})`} stroke={LINE_COLOR} strokeWidth="0.5" />
       {courtType === "full" ? (
         <>
           <g transform={`translate(0, ${height})`}>
             <CourtEnd mirror />
           </g>
           <CourtEnd />
-          <line x1="0" y1={height / 2} x2="100" y2={height / 2} stroke={LINE_COLOR} strokeWidth="0.5" />
+          <line x1="0" y1={height / 2} x2="100" y2={height / 2} stroke={LINE_COLOR} strokeWidth="0.5" strokeLinecap="round" />
           <circle cx="50" cy={height / 2} r="12" fill="none" stroke={LINE_COLOR} strokeWidth="0.5" />
         </>
       ) : (
