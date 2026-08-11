@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import LanguageToggle from "@/components/LanguageToggle";
+import DiagramPlayback from "@/components/DiagramPlayback";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
+import type { Token, Drawing } from "@shared/schema";
 
 interface SharedExercise {
   id: number;
@@ -18,6 +20,8 @@ interface SharedExercise {
   difficulty: string;
   instructions: string | null;
   imageUrl: string | null;
+  courtType: "half" | "full";
+  steps: { tokens: Token[]; drawings: Drawing[] }[];
 }
 
 // A completely standalone page — not wrapped in the authenticated Layout —
@@ -103,6 +107,13 @@ export default function ExerciseShare() {
             </div>
 
             <p className="text-sm text-foreground">{data.description}</p>
+
+            {data.steps.length > 0 && (
+              <div className="border-t border-border pt-4">
+                <h2 className="text-sm font-semibold text-foreground mb-2">{t("exerciseShare.diagram")}</h2>
+                <DiagramPlayback courtType={data.courtType} steps={data.steps} />
+              </div>
+            )}
 
             {data.instructions && (
               <div className="border-t border-border pt-4">

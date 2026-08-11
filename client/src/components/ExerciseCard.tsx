@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, Clock, ArrowRight, Star, Copy, Share2, Globe, Users } from "lucide-react";
+import { Pencil, Trash2, Clock, ArrowRight, Star, Copy, Share2, Globe, Users, Waypoints } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
@@ -15,9 +15,10 @@ interface ExerciseCardProps {
   onDuplicate?: () => void;
   onShare?: () => void;
   onToggleCommunityShare?: () => void;
+  onOpenDiagram?: () => void;
 }
 
-export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onToggleFavorite, onDuplicate, onShare, onToggleCommunityShare }: ExerciseCardProps) {
+export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onToggleFavorite, onDuplicate, onShare, onToggleCommunityShare, onOpenDiagram }: ExerciseCardProps) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
@@ -58,11 +59,21 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
               <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
             </button>
           )}
-          {(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare) ? (
+          {(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare || onOpenDiagram) ? (
             // Always visible on mobile/tablet (no hover to reveal them on
             // touch); fades in on hover only once there's room to spare on
             // desktop.
             <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
+              {onOpenDiagram && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onOpenDiagram(); }}
+                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
+                  aria-label={t("exerciseCard.diagramName", { name: exercise.name })}
+                >
+                  <Waypoints className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+                </button>
+              )}
               {onToggleCommunityShare && (
                 <button
                   type="button"

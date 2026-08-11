@@ -120,6 +120,23 @@ export const exercises = pgTable("exercises", {
   // import — same integer-flag convention as isFavorite, toggled through its
   // own ungated endpoint since opting in isn't "creating custom content".
   sharedToCommunity: integer("shared_to_community").default(0),
+  // Only meaningful once the exercise has diagram steps (see exerciseSteps
+  // below) — same convention as plays.courtType, defaulted so an exercise
+  // with no diagram yet still has a valid value ready for when one is added.
+  courtType: text("court_type").notNull().default("half"),
+});
+
+// A drill's optional animated court diagram — same shape and step-by-step
+// tween-between-snapshots model as playSteps, kept in its own table (rather
+// than a column on exercises) since most exercises have none at all. Editing
+// happens on its own page/endpoint, separate from the exercise's normal
+// name/description/etc. form.
+export const exerciseSteps = pgTable("exercise_steps", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  stepIndex: integer("step_index").notNull(),
+  tokens: json("tokens").notNull().$type<Token[]>(),
+  drawings: json("drawings").notNull().$type<Drawing[]>(),
 });
 
 export const trainingSessions = pgTable("training_sessions", {
@@ -653,6 +670,15 @@ export const createPlaySchema = z.object({
 });
 export type CreatePlay = z.infer<typeof createPlaySchema>;
 
+// Same one-shot shape as createPlaySchema's courtType+steps, but standalone
+// (no name/category/etc.) since an exercise's diagram is edited separately
+// from its normal create/edit form.
+export const saveExerciseDiagramSchema = z.object({
+  courtType: z.enum(COURT_TYPES),
+  steps: z.array(playStepDataSchema).min(1, "A diagram needs at least one step"),
+});
+export type SaveExerciseDiagram = z.infer<typeof saveExerciseDiagramSchema>;
+
 export type Account = typeof accounts.$inferSelect;
 export type InsertAccount = z.infer<typeof insertAccountSchema>;
 
@@ -673,6 +699,7 @@ export interface CoachMember {
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type Exercise = typeof exercises.$inferSelect;
+export type ExerciseStep = typeof exerciseSteps.$inferSelect;
 
 export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;
 export type PhysicalTest = typeof physicalTests.$inferSelect;

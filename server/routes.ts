@@ -15,6 +15,7 @@ import { runNotificationSweep } from "./notifications-cron";
 import { z } from "zod";
 import {
   insertExerciseSchema,
+  saveExerciseDiagramSchema,
   insertTrainingSessionSchema,
   insertPlayerSchema,
   insertAttendanceSchema,
@@ -311,7 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Exercise not found" });
       }
 
-      res.json(exercise);
+      const steps = await storage.getExerciseSteps(id);
+      res.json({ ...exercise, steps });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exercise" });
     }
@@ -444,10 +446,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Only what a viewer of the drill itself needs — never the owning
       // account's id.
-      const { id, name, description, category, duration, difficulty, instructions, imageUrl } = exercise;
-      res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl });
+      const { id, name, description, category, duration, difficulty, instructions, imageUrl, courtType } = exercise;
+      const steps = await storage.getExerciseSteps(id);
+      res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl, courtType, steps });
     } catch (error) {
       res.status(500).json({ message: "Failed to load shared exercise" });
+    }
+  });
+
+  // Editing a diagram is "editing the exercise's content" the same as its
+  // name/description, so it's gated the same way — unlike favoriting,
+  // sharing, or community-toggling, which are personal actions.
+  app.put("/api/exercises/:id/diagram", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!canUseCustomExercises(account?.plan ?? "free")) {
+        return res.status(403).json({ message: "Upgrade to a paid plan to add a diagram to an exercise." });
+      }
+
+      const data = saveExerciseDiagramSchema.parse(req.body);
+      const exercise = await storage.saveExerciseDiagram(id, accountId, data);
+      if (!exercise) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+      const steps = await storage.getExerciseSteps(id);
+      res.json({ ...exercise, steps });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid diagram data" });
+    }
+  });
+
+  app.delete("/api/exercises/:id/diagram", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!canUseCustomExercises(account?.plan ?? "free")) {
+        return res.status(403).json({ message: "Upgrade to a paid plan to edit an exercise's diagram." });
+      }
+
+      const deleted = await storage.deleteExerciseDiagram(id, accountId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete diagram" });
     }
   });
 

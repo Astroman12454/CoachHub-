@@ -2,6 +2,7 @@ import {
   accounts,
   teams,
   exercises,
+  exerciseSteps,
   trainingSessions,
   players,
   attendance,
@@ -25,6 +26,8 @@ import {
   type InsertTeam,
   type Exercise,
   type InsertExercise,
+  type ExerciseStep,
+  type SaveExerciseDiagram,
   type TrainingSession,
   type InsertTrainingSession,
   type Player,
@@ -124,6 +127,12 @@ export interface IStorage {
   // private row (fresh id, isFavorite/shareToken/sharedToCommunity all
   // reset) — importing never mutates or links back to the original.
   importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined>;
+  // An exercise's optional animated court diagram — same step-snapshot
+  // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
+  // its own page/endpoint since most exercises never get one.
+  getExerciseSteps(exerciseId: number): Promise<ExerciseStep[]>;
+  saveExerciseDiagram(id: number, accountId: number, data: SaveExerciseDiagram): Promise<Exercise | undefined>;
+  deleteExerciseDiagram(id: number, accountId: number): Promise<boolean>;
 
   // Physical test methods — the templates are scoped by account (shared
   // across that account's teams, same as exercises); results are recorded
@@ -517,27 +526,88 @@ export class DatabaseStorage implements IStorage {
   }
 
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {
-    const [source] = await db
-      .select()
-      .from(exercises)
-      .where(and(eq(exercises.id, id), eq(exercises.sharedToCommunity, 1)));
-    if (!source) return undefined;
+    return await db.transaction(async (tx) => {
+      const [source] = await tx
+        .select()
+        .from(exercises)
+        .where(and(eq(exercises.id, id), eq(exercises.sharedToCommunity, 1)));
+      if (!source) return undefined;
 
-    const [imported] = await db
-      .insert(exercises)
-      .values({
-        accountId,
-        name: source.name,
-        description: source.description,
-        category: source.category,
-        duration: source.duration,
-        difficulty: source.difficulty,
-        instructions: source.instructions,
-        imageUrl: source.imageUrl,
-        minPlayers: source.minPlayers,
-      })
-      .returning();
-    return imported;
+      const [imported] = await tx
+        .insert(exercises)
+        .values({
+          accountId,
+          name: source.name,
+          description: source.description,
+          category: source.category,
+          duration: source.duration,
+          difficulty: source.difficulty,
+          instructions: source.instructions,
+          imageUrl: source.imageUrl,
+          minPlayers: source.minPlayers,
+          courtType: source.courtType,
+        })
+        .returning();
+
+      const sourceSteps = await tx
+        .select()
+        .from(exerciseSteps)
+        .where(eq(exerciseSteps.exerciseId, source.id))
+        .orderBy(asc(exerciseSteps.stepIndex));
+      if (sourceSteps.length > 0) {
+        await tx.insert(exerciseSteps).values(
+          sourceSteps.map((step) => ({
+            exerciseId: imported.id,
+            stepIndex: step.stepIndex,
+            tokens: step.tokens,
+            drawings: step.drawings,
+          })),
+        );
+      }
+
+      return imported;
+    });
+  }
+
+  async getExerciseSteps(exerciseId: number): Promise<ExerciseStep[]> {
+    return await db
+      .select()
+      .from(exerciseSteps)
+      .where(eq(exerciseSteps.exerciseId, exerciseId))
+      .orderBy(asc(exerciseSteps.stepIndex));
+  }
+
+  // Replaces the whole step sequence rather than diffing individual steps —
+  // same rationale as updatePlayWithSteps: much simpler, and the client
+  // always sends the full sequence anyway.
+  async saveExerciseDiagram(id: number, accountId: number, data: SaveExerciseDiagram): Promise<Exercise | undefined> {
+    return await db.transaction(async (tx) => {
+      const [exercise] = await tx
+        .update(exercises)
+        .set({ courtType: data.courtType })
+        .where(and(eq(exercises.id, id), eq(exercises.accountId, accountId)))
+        .returning();
+      if (!exercise) return undefined;
+
+      await tx.delete(exerciseSteps).where(eq(exerciseSteps.exerciseId, id));
+      await tx.insert(exerciseSteps).values(
+        data.steps.map((step, stepIndex) => ({
+          exerciseId: id,
+          stepIndex,
+          tokens: step.tokens,
+          drawings: step.drawings,
+        })),
+      );
+
+      return exercise;
+    });
+  }
+
+  async deleteExerciseDiagram(id: number, accountId: number): Promise<boolean> {
+    const exercise = await this.getExerciseById(id, accountId);
+    if (!exercise) return false;
+    await db.delete(exerciseSteps).where(eq(exerciseSteps.exerciseId, id));
+    return true;
   }
 
   // Physical test methods
