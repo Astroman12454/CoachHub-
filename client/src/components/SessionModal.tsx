@@ -82,6 +82,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
 
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [aiInstructions, setAiInstructions] = useState("");
+  const [aiPlayerCount, setAiPlayerCount] = useState("");
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Fetch exercises for selection
@@ -242,12 +243,17 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     setIsAIPanelOpen(true);
   };
 
+  // Required before generating — the whole point is that the AI only
+  // considers exercises whose minPlayers actually fits this many.
+  const isValidPlayerCount = /^\d+$/.test(aiPlayerCount.trim()) && Number(aiPlayerCount) >= 1;
+
   const generatePlan = async () => {
-    if (isGeneratingPlan) return;
+    if (isGeneratingPlan || !isValidPlayerCount) return;
     setIsGeneratingPlan(true);
     try {
       const res = await apiRequest("POST", "/api/training-sessions/generate-plan", {
         instructions: aiInstructions.trim() || undefined,
+        playerCount: Number(aiPlayerCount),
       });
       const plan: GeneratedSessionPlan = await res.json();
 
@@ -257,6 +263,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
       setSelectedExerciseIds(plan.exerciseIds);
       setIsAIPanelOpen(false);
       setAiInstructions("");
+      setAiPlayerCount("");
       toast({ title: t("sessionModal.planGenerated"), description: t("sessionModal.planGeneratedDescription") });
     } catch (error) {
       toast({
@@ -319,6 +326,20 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
             <p className="text-sm text-muted-foreground">
               {t("sessionModal.aiPanelDescription")}
             </p>
+            <div>
+              <label htmlFor="ai-player-count" className="text-sm font-medium text-foreground mb-1.5 block">
+                {t("sessionModal.aiPlayerCountLabel")}
+              </label>
+              <Input
+                id="ai-player-count"
+                type="number"
+                min="1"
+                value={aiPlayerCount}
+                onChange={(e) => setAiPlayerCount(e.target.value)}
+                placeholder={t("sessionModal.aiPlayerCountPlaceholder")}
+                className="max-w-[140px]"
+              />
+            </div>
             <Textarea
               value={aiInstructions}
               onChange={(e) => setAiInstructions(e.target.value)}
@@ -335,7 +356,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                 size="sm"
                 className="basketball-orange basketball-orange-hover text-white"
                 onClick={generatePlan}
-                disabled={isGeneratingPlan}
+                disabled={isGeneratingPlan || !isValidPlayerCount}
               >
                 {isGeneratingPlan && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" aria-hidden="true" />}
                 {isGeneratingPlan ? t("sessionModal.generating") : t("sessionModal.generatePlan")}

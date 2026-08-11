@@ -10,6 +10,16 @@ export interface GeneratedSessionPlan {
   exerciseIds: string[];
 }
 
+// A hard, deterministic floor the AI can't override: an exercise with no
+// minPlayers set is assumed to fit any group size, so only ones with an
+// explicit minimum that exceeds the attending count are dropped. When
+// playerCount is undefined (the coach skipped the field), every exercise
+// stays eligible — same as before this feature existed.
+export function filterExercisesForPlayerCount(exercises: Exercise[], playerCount: number | undefined): Exercise[] {
+  if (playerCount === undefined) return exercises;
+  return exercises.filter((e) => !e.minPlayers || e.minPlayers <= playerCount);
+}
+
 // Everything the generator knows about the team beyond the exercise library
 // and recent sessions — the difference between "picks drills" and "knows
 // this team". All three come from data the app already collects elsewhere
@@ -23,7 +33,7 @@ export interface SessionPlanContext {
 
 const SYSTEM_PROMPT = `You help a basketball coach plan one training session by choosing drills from their own exercise library.
 
-You will be given a numbered list of the team's exercises (id, name, category, difficulty, duration in minutes, description), a summary of their recent sessions, optionally some team context (currently injured players, drills the team has been weak at, plays that haven't been practiced recently), and optionally the coach's own instructions for this session.
+You will be given a numbered list of the team's exercises (id, name, category, difficulty, duration in minutes, description, and minimum players required when the coach set one), a summary of their recent sessions, optionally some team context (currently injured players, drills the team has been weak at, plays that haven't been practiced recently), optionally how many players will attend this session, and optionally the coach's own instructions for this session.
 
 Rules:
 - Only use exercise ids from the list you were given. Never invent a drill, and never use an id that isn't in the list.
@@ -32,7 +42,8 @@ Rules:
 - If recent sessions leaned heavily on a category, favor other categories unless the coach asked for that one specifically.
 - If any players are listed as currently injured, avoid exercises whose name or description suggests they'd aggravate that injury (e.g. skip jump-heavy or high-impact conditioning drills for a listed ankle/knee/foot injury) — you don't need to name the player, just steer around it.
 - If weak drills are listed, prefer exercises in the same category so the session addresses them.
-- Mention in "notes" any injury, weak-area, or neglected-play consideration that actually shaped your choices, in plain language a coach would say out loud — one short clause is enough, don't write a report. Skip it entirely if none of that context changed your picks.
+- If the number of attending players is given, every exercise you pick is already guaranteed to fit that group size (the list has been pre-filtered), but still use judgment from each drill's name/description — e.g. don't pick something that reads as a full 5-on-5 scrimmage for a group of 4, even if it has no stated minimum.
+- Mention in "notes" any injury, weak-area, neglected-play, or player-count consideration that actually shaped your choices, in plain language a coach would say out loud — one short clause is enough, don't write a report. Skip it entirely if none of that context changed your picks.
 
 Respond with ONLY a JSON object, no markdown fences, no commentary, matching exactly this shape:
 {
@@ -50,11 +61,12 @@ export async function generateSessionPlan(
   recentSessions: TrainingSession[],
   instructions: string | undefined,
   context?: SessionPlanContext,
+  playerCount?: number,
 ): Promise<GeneratedSessionPlan> {
   const anthropic = getAIClient();
 
   const library = exercises
-    .map((e) => `${e.id}. ${e.name} [${e.category}, ${e.difficulty}, ${e.duration} min] — ${e.description}`)
+    .map((e) => `${e.id}. ${e.name} [${e.category}, ${e.difficulty}, ${e.duration} min${e.minPlayers ? `, min ${e.minPlayers} players` : ""}] — ${e.description}`)
     .join("\n");
 
   const recentSummary = recentSessions.length > 0
@@ -77,6 +89,9 @@ export async function generateSessionPlan(
     contextLines.push(
       `Playbook plays that haven't been practiced in a while: ${context.neglectedPlays.map((p) => `${p.name} (${p.category})`).join(", ")}. There's no drill for "running a play" in the library, so just note it if relevant — don't invent an exercise for it.`,
     );
+  }
+  if (playerCount) {
+    contextLines.push(`Players attending this session: ${playerCount}. The exercise list above has already been filtered to drills whose stated minimum fits this group, but still favor ones that make sense for a group this size.`);
   }
 
   const userText = [

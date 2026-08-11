@@ -74,4 +74,16 @@ describe("AI practice plan generation", () => {
     const res = await agent.post("/api/training-sessions/generate-plan").send({ instructions: "a".repeat(501) });
     expect(res.status).toBe(400);
   });
+
+  it("rejects a player count of 0 or below", async () => {
+    const agent = await signedInPaidAgent(app);
+    const res = await agent.post("/api/training-sessions/generate-plan").send({ playerCount: 0 });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a non-integer player count", async () => {
+    const agent = await signedInPaidAgent(app);
+    const res = await agent.post("/api/training-sessions/generate-plan").send({ playerCount: 5.5 });
+    expect(res.status).toBe(400);
+  });
 });

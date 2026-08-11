@@ -7,7 +7,7 @@ import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { registerCoachRoutes } from "./coaches";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
-import { generateSessionPlan, type SessionPlanContext } from "./ai-session-plan";
+import { generateSessionPlan, filterExercisesForPlayerCount, type SessionPlanContext } from "./ai-session-plan";
 import { parseCommand } from "./ai-command";
 import { isPushConfigured, getVapidPublicKey } from "./push";
 import { notifyTeam, notifyPlayer, formatNotifyDate } from "./notify";
@@ -701,6 +701,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const generatePlanSchema = z.object({
     instructions: z.string().max(500).optional(),
+    // How many players will attend — lets the generator only pick exercises
+    // whose minPlayers actually fits the group. Optional so calling the API
+    // directly without it still works (falls back to the old unfiltered
+    // behavior); the client UI always asks for it.
+    playerCount: z.number().int().min(1).max(200).optional(),
   });
 
   // AI practice-plan draft — picks exercises from the coach's own library
@@ -718,23 +723,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!parseResult.success) {
       return res.status(400).json({ message: "Invalid request." });
     }
-    const { instructions } = parseResult.data;
+    const { instructions, playerCount } = parseResult.data;
 
     if (!isAIConfigured()) {
       return res.status(503).json({ message: "AI practice plans aren't configured yet." });
     }
 
     const teamId = req.session.currentTeamId!;
-    const exercises = await storage.getAllExercises(accountId);
-    if (exercises.length === 0) {
+    const allExercises = await storage.getAllExercises(accountId);
+    if (allExercises.length === 0) {
       return res.status(400).json({ message: "Add some exercises to your library first." });
+    }
+    const exercises = filterExercisesForPlayerCount(allExercises, playerCount);
+    if (exercises.length === 0) {
+      return res.status(400).json({ message: `None of your exercises fit a group of ${playerCount} players. Lower the player count, or add exercises with a smaller minimum.` });
     }
     const recentSessions = (await storage.getAllTrainingSessions(teamId))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const context = await buildSessionPlanContext(teamId);
 
     try {
-      const plan = await generateSessionPlan(exercises, recentSessions, instructions, context);
+      const plan = await generateSessionPlan(exercises, recentSessions, instructions, context, playerCount);
       plan.exerciseIds = (await sanitizeExerciseIds(accountId, plan.exerciseIds)) ?? [];
       res.json(plan);
     } catch (error) {

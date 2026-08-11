@@ -220,6 +220,23 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("training sessions — generate with AI requires a player count before it's enabled", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    await page.click('button:has-text("Generate with AI")');
+    await page.waitForSelector("text=Picks exercises from your own library");
+
+    const generateButton = page.locator('button:has-text("Generate Plan")');
+    await expect(generateButton).toBeDisabled();
+
+    await page.fill("#ai-player-count", "10");
+    await expect(generateButton).toBeEnabled();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("training sessions — save as template dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
