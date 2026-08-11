@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 import type { Exercise } from "@shared/schema";
 
 interface ExerciseShareDialogProps {
@@ -19,8 +20,9 @@ interface ExerciseShareDialogProps {
 // PlayerPortalDialog. Generates (or reuses) the link the moment the dialog
 // opens, since there's nothing else to configure first.
 export default function ExerciseShareDialog({ exercise, onOpenChange }: ExerciseShareDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const open = !!exercise;
+  const localizedName = exercise ? localizedExerciseText(exercise, i18n.language).name : undefined;
   const restoreFocus = useDialogFocusReturn(open);
   const { toast } = useToast();
   const [url, setUrl] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export default function ExerciseShareDialog({ exercise, onOpenChange }: Exercise
             {t("exerciseShareDialog.shareLink")}
           </DialogTitle>
           <DialogDescription>
-            {t("exerciseShareDialog.dialogDescription", { name: exercise?.name })}
+            {t("exerciseShareDialog.dialogDescription", { name: localizedName })}
           </DialogDescription>
         </DialogHeader>
 

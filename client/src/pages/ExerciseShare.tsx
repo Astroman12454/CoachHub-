@@ -9,6 +9,7 @@ import ErrorState from "@/components/ErrorState";
 import LanguageToggle from "@/components/LanguageToggle";
 import DiagramPlayback from "@/components/DiagramPlayback";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 import type { Token, Drawing } from "@shared/schema";
 
 interface SharedExercise {
@@ -21,6 +22,9 @@ interface SharedExercise {
   instructions: string | null;
   imageUrl: string | null;
   courtType: "half" | "full";
+  nameEs: string | null;
+  descriptionEs: string | null;
+  instructionsEs: string | null;
   steps: { tokens: Token[]; drawings: Drawing[] }[];
 }
 
@@ -28,7 +32,7 @@ interface SharedExercise {
 // reachable by anyone with the link (see server/auth.ts's requireAuth
 // exemption for /exercise-share/:token). Read-only, same shape as Portal.tsx.
 export default function ExerciseShare() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const { data, isLoading, isError, refetch } = useQuery<SharedExercise>({
     queryKey: [`/api/exercise-share/${token}`],
@@ -67,6 +71,7 @@ export default function ExerciseShare() {
   const categorySolidClass = CATEGORY_SOLID_COLORS[data.category as keyof typeof CATEGORY_SOLID_COLORS];
   const CategoryIcon = CATEGORY_ICONS[data.category as keyof typeof CATEGORY_ICONS];
   const difficultyColorClass = DIFFICULTY_COLORS[data.difficulty as keyof typeof DIFFICULTY_COLORS];
+  const localized = localizedExerciseText(data, i18n.language);
 
   return (
     <main className="min-h-screen bg-background p-4 lg:p-8">
@@ -90,11 +95,11 @@ export default function ExerciseShare() {
                 {t(`categories.difficulty.${data.difficulty}`, data.difficulty).toLowerCase()}
               </Badge>
             </div>
-            <h1 className="font-display uppercase tracking-tight text-2xl font-semibold leading-none">{data.name}</h1>
+            <h1 className="font-display uppercase tracking-tight text-2xl font-semibold leading-none">{localized.name}</h1>
           </CardHeader>
           <CardContent className="space-y-4">
             {data.imageUrl ? (
-              <img src={data.imageUrl} alt={data.name} loading="lazy" className="w-full h-48 object-cover rounded-md" />
+              <img src={data.imageUrl} alt={localized.name} loading="lazy" className="w-full h-48 object-cover rounded-md" />
             ) : (
               <div className={`w-full h-32 ${categoryColorClass} rounded-md flex items-center justify-center`}>
                 {CategoryIcon && <CategoryIcon className="w-9 h-9 opacity-40" strokeWidth={1.5} />}
@@ -106,7 +111,7 @@ export default function ExerciseShare() {
               <span className="text-sm font-medium">{t("sessionModal.minAbbrev", { count: data.duration })}</span>
             </div>
 
-            <p className="text-sm text-foreground">{data.description}</p>
+            <p className="text-sm text-foreground">{localized.description}</p>
 
             {data.steps.length > 0 && (
               <div className="border-t border-border pt-4">
@@ -115,10 +120,10 @@ export default function ExerciseShare() {
               </div>
             )}
 
-            {data.instructions && (
+            {localized.instructions && (
               <div className="border-t border-border pt-4">
                 <h2 className="text-sm font-semibold text-foreground mb-1">{t("exerciseShare.instructions")}</h2>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.instructions}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{localized.instructions}</p>
               </div>
             )}
           </CardContent>

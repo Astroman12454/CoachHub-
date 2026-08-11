@@ -22,11 +22,12 @@ import { startCheckout } from "@/lib/billing";
 import type { Exercise } from "@shared/schema";
 import { canUseCustomExercises } from "@shared/entitlements";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 
 type ExerciseUsageStats = Record<string, { count: number; lastUsedDate: string | null }>;
 
 export default function ExerciseLibrary() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const search = useSearch();
   const [, setLocation] = useLocation();
   const initialCategory = new URLSearchParams(search).get("category") ?? "all";
@@ -158,8 +159,9 @@ export default function ExerciseLibrary() {
     const query = searchQuery.toLowerCase();
     const filtered = exercises.filter(exercise => {
       if (isPendingDelete(exercise.id)) return false;
-      const matchesSearch = exercise.name.toLowerCase().includes(query) ||
-                           exercise.description.toLowerCase().includes(query);
+      const localized = localizedExerciseText(exercise, i18n.language);
+      const matchesSearch = localized.name.toLowerCase().includes(query) ||
+                           localized.description.toLowerCase().includes(query);
       const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
       const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
       const matchesFavorite = !favoritesOnly || exercise.isFavorite === 1;
@@ -178,7 +180,7 @@ export default function ExerciseLibrary() {
       });
     }
     return filtered;
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter, favoritesOnly, sortBy, usageStats, isPendingDelete]);
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, favoritesOnly, sortBy, usageStats, isPendingDelete, i18n.language]);
 
   if (isLoading) {
     return (

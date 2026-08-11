@@ -124,6 +124,14 @@ export const exercises = pgTable("exercises", {
   // below) — same convention as plays.courtType, defaulted so an exercise
   // with no diagram yet still has a valid value ready for when one is added.
   courtType: text("court_type").notNull().default("half"),
+  // Spanish translations of name/description/instructions, only populated
+  // for the seed library (see server/seed.ts) — a coach's own custom
+  // exercises have no translation and simply fall back to the English
+  // fields (see client/src/lib/exerciseI18n.ts). Nullable rather than a
+  // separate translations table since there's exactly one target locale.
+  nameEs: text("name_es"),
+  descriptionEs: text("description_es"),
+  instructionsEs: text("instructions_es"),
 });
 
 // A drill's optional animated court diagram — same shape and step-by-step

@@ -1,6 +1,7 @@
 import { chromium, type FullConfig } from "@playwright/test";
 import { Pool } from "pg";
 import { TEST_EMAIL, TEST_PASSWORD, AUTH_STATE_PATH } from "./helpers";
+import { DEFAULT_EXERCISES } from "../server/seed";
 
 // Runs once before the whole suite (not per test, not per worker) — signup
 // or login trips the same rate limiter as a real attacker would hit, so
@@ -31,6 +32,24 @@ export default async function globalSetup(config: FullConfig) {
   // unchanged.
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   await pool.query("UPDATE accounts SET plan = 'club' WHERE email = $1", [TEST_EMAIL]);
+
+  // Same reasoning as the plan upgrade above: this fixture account may have
+  // been provisioned before the exercises table grew its *Es columns, in
+  // which case its seed-copied exercises never got the Spanish translations
+  // added to server/seed.ts afterward. Backfill by matching on the English
+  // name (only run where name_es is still null, so this is a no-op after
+  // the first time) — a targeted fix for this one shared test fixture, not
+  // the kind of account-wide heuristic backfill Fase 5 deliberately skipped
+  // for real coaches' libraries.
+  for (const seedExercise of DEFAULT_EXERCISES) {
+    if (!seedExercise.nameEs) continue;
+    await pool.query(
+      `UPDATE exercises SET name_es = $1, description_es = $2, instructions_es = $3
+       FROM accounts WHERE exercises.account_id = accounts.id AND accounts.email = $4
+       AND exercises.name = $5 AND exercises.name_es IS NULL`,
+      [seedExercise.nameEs, seedExercise.descriptionEs, seedExercise.instructionsEs, TEST_EMAIL, seedExercise.name]
+    );
+  }
   await pool.end();
 
   // Idempotent: only creates data the first time, so repeat runs against a

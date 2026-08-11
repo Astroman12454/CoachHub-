@@ -17,6 +17,7 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import { canUseCustomExercises } from "@shared/entitlements";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS, EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 
 interface CommunityExercise {
   id: number;
@@ -28,6 +29,9 @@ interface CommunityExercise {
   instructions: string | null;
   imageUrl: string | null;
   minPlayers: number | null;
+  nameEs: string | null;
+  descriptionEs: string | null;
+  instructionsEs: string | null;
 }
 
 // Browsing surface for exercises other coaches have opted into the
@@ -37,7 +41,7 @@ interface CommunityExercise {
 // else (favoriting, editing, sharing) happens back on the normal library
 // page once it's imported.
 export default function CommunityExercises() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const { account } = useAuth();
   const { toast } = useToast();
@@ -57,7 +61,8 @@ export default function CommunityExercises() {
     onSuccess: (_res, id) => {
       queryClient.invalidateQueries({ queryKey: ['/api/exercises'] });
       const imported = exercises.find((ex) => ex.id === id);
-      toast({ title: t("communityExercises.imported"), description: t("communityExercises.importedDescription", { name: imported?.name ?? "" }) });
+      const importedName = imported ? localizedExerciseText(imported, i18n.language).name : "";
+      toast({ title: t("communityExercises.imported"), description: t("communityExercises.importedDescription", { name: importedName }) });
     },
     onError: (error) => {
       toast({
@@ -87,13 +92,14 @@ export default function CommunityExercises() {
   const filteredExercises = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return exercises.filter((exercise) => {
-      const matchesSearch = exercise.name.toLowerCase().includes(query) ||
-        exercise.description.toLowerCase().includes(query);
+      const localized = localizedExerciseText(exercise, i18n.language);
+      const matchesSearch = localized.name.toLowerCase().includes(query) ||
+        localized.description.toLowerCase().includes(query);
       const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
       const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter]);
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, i18n.language]);
 
   const header = (
     <TopBar
@@ -187,6 +193,7 @@ export default function CommunityExercises() {
               const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
               const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
               const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
+              const localized = localizedExerciseText(exercise, i18n.language);
 
               return (
                 <div key={exercise.id} className="fade-in bg-card border border-border rounded-lg p-5" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
@@ -203,15 +210,15 @@ export default function CommunityExercises() {
                   </div>
 
                   {exercise.imageUrl ? (
-                    <img src={exercise.imageUrl} alt={exercise.name} loading="lazy" decoding="async" className="w-full h-32 object-cover rounded-md mb-4" />
+                    <img src={exercise.imageUrl} alt={localized.name} loading="lazy" decoding="async" className="w-full h-32 object-cover rounded-md mb-4" />
                   ) : (
                     <div className={`w-full h-32 ${categoryColorClass} rounded-md mb-4 flex items-center justify-center`}>
                       <CategoryIcon className="w-9 h-9 opacity-40" strokeWidth={1.5} />
                     </div>
                   )}
 
-                  <h3 className="font-display font-semibold uppercase tracking-tight text-foreground mb-2">{exercise.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{exercise.description}</p>
+                  <h3 className="font-display font-semibold uppercase tracking-tight text-foreground mb-2">{localized.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{localized.description}</p>
 
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 text-muted-foreground">
@@ -232,7 +239,7 @@ export default function CommunityExercises() {
                       variant="outline"
                       onClick={() => handleImportClick(exercise)}
                       disabled={importMutation.isPending}
-                      aria-label={t("communityExercises.importName", { name: exercise.name })}
+                      aria-label={t("communityExercises.importName", { name: localized.name })}
                     >
                       <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
                       {t("communityExercises.import")}

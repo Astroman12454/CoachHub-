@@ -492,6 +492,55 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("exercise library — Spanish translations appear in the library and in training mode", async ({ page }) => {
+    await login(page);
+
+    // Which seed exercises this fixture account actually has (and their
+    // Spanish translations) depends on when the account was first
+    // provisioned — read it back instead of hardcoding one, so this test
+    // doesn't depend on the fixture always carrying a specific drill.
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    const translated = exercises.find((e: { nameEs: string | null }) => e.nameEs);
+    expect(translated, "fixture account has no exercise with a Spanish translation to test against").toBeTruthy();
+
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+
+    // English by default (the shared fixture's storageState was captured
+    // before any language switch) — the seed exercise reads in English...
+    await page.waitForSelector(`text=${translated.name}`);
+
+    await page.click('button[aria-label="Switch to Spanish"]');
+    // ...and in Spanish, the same card shows the translated name — not the
+    // untranslated English one still sitting behind it.
+    await page.waitForSelector(`text=${translated.nameEs}`);
+    await expect(page.getByText(translated.name, { exact: true })).toHaveCount(0);
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // The same translation applies live in Training Mode, not just the
+    // library card — instructions included, not just the name.
+    const sessionRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E Spanish Translation Session",
+        date: new Date().toISOString().split("T")[0],
+        time: "17:00",
+        duration: 60,
+        exerciseIds: [translated.id.toString()],
+        notes: null,
+      },
+    });
+    const session = await sessionRes.json();
+    await page.goto(`/training-sessions/${session.id}/live`);
+    await page.waitForSelector(`text=${translated.nameEs}`);
+    if (translated.instructionsEs) {
+      await page.waitForSelector(`text=${translated.instructionsEs}`);
+    }
+
+    await page.request.delete(`/api/training-sessions/${session.id}`);
+  });
+
   test("exercise library — create exercise form open", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");

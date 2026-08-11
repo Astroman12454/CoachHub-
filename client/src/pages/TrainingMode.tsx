@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { haptic } from "@/lib/haptics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isSoundEnabled, setSoundEnabled, playTimerDone, playSessionFinish } from "@/lib/sound";
+import { localizedExerciseText } from "@/lib/exerciseI18n";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/types";
 import type { TrainingSession, Exercise, Play as PlaybookPlay, Player, PlayerInjury, PhysicalTest } from "@shared/schema";
@@ -35,7 +36,7 @@ function formatCountdown(totalSeconds: number): string {
 // duration, and every other action (attendance, a quick note, ending
 // practice) reachable without leaving this screen.
 export default function TrainingMode() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
   const sessionId = parseInt(params.id, 10);
   const [, setLocation] = useLocation();
@@ -103,6 +104,8 @@ export default function TrainingMode() {
 
   const currentExercise = sequence[stepIndex] ?? null;
   const nextExercise = sequence[stepIndex + 1] ?? null;
+  const currentExerciseLocalized = currentExercise ? localizedExerciseText(currentExercise, i18n.language) : null;
+  const nextExerciseLocalized = nextExercise ? localizedExerciseText(nextExercise, i18n.language) : null;
   const totalSeconds = (currentExercise?.duration ?? 0) * 60;
   const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
   const isUrgent = isRunning && secondsLeft > 0 && secondsLeft <= 10;
@@ -320,19 +323,19 @@ export default function TrainingMode() {
                 <Badge className={CATEGORY_COLORS[currentExercise.category as keyof typeof CATEGORY_COLORS]}>
                   {t(`categories.exercise.${currentExercise.category}`, currentExercise.category)}
                 </Badge>
-                {nextExercise && (
+                {nextExerciseLocalized && (
                   <span className="text-xs text-muted-foreground truncate">
-                    {t("trainingMode.next", { name: nextExercise.name })}
+                    {t("trainingMode.next", { name: nextExerciseLocalized.name })}
                   </span>
                 )}
               </div>
-              <h1 className="font-display font-bold uppercase tracking-tight text-2xl mb-2">{currentExercise.name}</h1>
-              {currentExercise.description && (
-                <p className="text-sm text-muted-foreground mb-2">{currentExercise.description}</p>
+              <h1 className="font-display font-bold uppercase tracking-tight text-2xl mb-2">{currentExerciseLocalized!.name}</h1>
+              {currentExerciseLocalized!.description && (
+                <p className="text-sm text-muted-foreground mb-2">{currentExerciseLocalized!.description}</p>
               )}
-              {currentExercise.instructions && (
+              {currentExerciseLocalized!.instructions && (
                 <p className="text-sm text-muted-foreground border-t border-border pt-2 mt-2 whitespace-pre-wrap">
-                  {currentExercise.instructions}
+                  {currentExerciseLocalized!.instructions}
                 </p>
               )}
             </div>
