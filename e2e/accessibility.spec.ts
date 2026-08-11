@@ -1019,12 +1019,41 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/weekly-schedule");
     await page.waitForLoadState("networkidle");
-    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    const sessionCard = page.locator('button[aria-label*="Open attendance"]').first();
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule — edit pencil opens the session editor, not attendance", async ({ page }) => {
+    await login(page);
+    const today = new Date().toISOString().split("T")[0];
+    const created = await page.request.post("/api/training-sessions", {
+      data: { name: "E2E Weekly Edit Session", date: today, time: "16:00", duration: 60, exerciseIds: [], notes: null },
+    });
+    const session = await created.json();
+
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+
+    await page.locator('button[aria-label="Edit E2E Weekly Edit Session"]').first().click();
+    await page.waitForSelector("text=Edit Training Session");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // The pencil must not also trigger the card's own attendance-opening click.
+    await expect(page.locator("text=/Attendance - /")).not.toBeVisible();
+
+    await page.click('button:has-text("Cancel")');
+    await page.waitForTimeout(300);
+
+    // The card itself, clicked normally, still opens attendance as before.
+    await page.getByRole("button", { name: /^E2E Weekly Edit Session/ }).first().click();
+    await page.waitForSelector("text=/Attendance - /");
+
+    await page.request.delete(`/api/training-sessions/${session.id}`);
   });
 
   test("weekly schedule — month view", async ({ page }) => {
@@ -1041,7 +1070,7 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/weekly-schedule");
     await page.waitForLoadState("networkidle");
-    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    const sessionCard = page.locator('button[aria-label*="Open attendance"]').first();
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");
@@ -1058,7 +1087,7 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/weekly-schedule");
     await page.waitForLoadState("networkidle");
-    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    const sessionCard = page.locator('button[aria-label*="Open attendance"]').first();
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");
@@ -1074,7 +1103,7 @@ test.describe("accessibility (axe)", () => {
     await login(page);
     await page.goto("/weekly-schedule");
     await page.waitForLoadState("networkidle");
-    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    const sessionCard = page.locator('button[aria-label*="Open attendance"]').first();
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");
@@ -1084,13 +1113,20 @@ test.describe("accessibility (axe)", () => {
     await page.waitForSelector("text=/1\\/1 \\(100%\\)/");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+
+    // Undo the attempt this test just logged — the tally is shared, global
+    // per-player state (not scoped to this one session), so leaving it
+    // behind would make every future run see 2/2, 3/3, and so on instead
+    // of the 1/1 this test actually asserts on.
+    await page.locator('button[aria-label^="Undo last attempt for"]').first().click();
+    await page.waitForSelector("text=No attempts logged yet");
   });
 
   test("weekly schedule — drill tracker shot chart with a shot logged", async ({ page }) => {
     await login(page);
     await page.goto("/weekly-schedule");
     await page.waitForLoadState("networkidle");
-    const sessionCard = page.locator('[role="button"][aria-label*="Open attendance"]').first();
+    const sessionCard = page.locator('button[aria-label*="Open attendance"]').first();
     if (await sessionCard.count() === 0) test.skip(true, "no sessions this week to open");
     await sessionCard.click();
     await page.waitForSelector("text=/Attendance - /");

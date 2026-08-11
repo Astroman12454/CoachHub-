@@ -900,6 +900,7 @@
     "today": "Today",
     "noSessions": "No sessions",
     "sessionAriaLabel": "{{name}}, {{time}}, {{duration}} minutes. Open attendance.",
+    "editSessionAriaLabel": "Edit {{name}}",
     "durationMinNoSpace": "{{count}}min",
     "status": {
       "scheduled": "scheduled",
