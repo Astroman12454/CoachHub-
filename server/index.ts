@@ -13,6 +13,12 @@ import { setupAuth, requireAuth } from "./auth";
 import { setupStripeWebhook } from "./billing";
 import { startNotificationScheduler } from "./notifications-cron";
 import { setupVite, serveStatic, log } from "./vite";
+import { initErrorMonitoring, captureException } from "./monitoring";
+
+// A no-op unless SENTRY_DSN is set (see monitoring.ts) — called before
+// anything else gets a chance to throw, so both handlers below can report
+// to it from the moment the process starts.
+initErrorMonitoring();
 
 const app = express();
 
@@ -23,6 +29,7 @@ const app = express();
 // before Node's default behavior (terminating the process) kicks in.
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled promise rejection:", reason);
+  captureException(reason);
 });
 
 // A real Content-Security-Policy only makes sense in production: Vite's dev
@@ -120,6 +127,7 @@ app.use((req, res, next) => {
     // generic "Couldn't create account" / "Couldn't log in" message that
     // hides the real reason from both the user and our own logs.
     console.error(err);
+    captureException(err);
     res.status(status).json({ message });
   });
 

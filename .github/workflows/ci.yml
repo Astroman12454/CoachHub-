@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  # No branch filter on push: this repo's actual workflow is mostly direct
+  # fast-forward merges to main from a feature branch (not squash-merge
+  # PRs), so gating only on `main` or on `pull_request` would mean a lot of
+  # work never gets checked until after it's already merged.
+  push:
+  pull_request:
+
+# Cancel an in-progress run for the same branch/PR when a new commit lands,
+# so pushes during review don't queue up a growing backlog of stale runs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # A throwaway, CI-local credential — not a real secret, never touches
+  # anything but this job's own Postgres service container.
+  DATABASE_URL: postgresql://coachhub:coachhub_ci_password@localhost:5432/coachhub
+  SESSION_SECRET: ci-only-session-secret-not-used-anywhere-real
+
+jobs:
+  unit:
+    name: Typecheck + unit/integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: coachhub
+          POSTGRES_PASSWORD: coachhub_ci_password
+          POSTGRES_DB: coachhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Same schema every deploy applies (see migrations/README.md) —
+      # running it here means a migration that doesn't actually apply
+      # cleanly fails the PR instead of the next deploy.
+      - run: npm run db:migrate
+      - run: npm run check
+      - run: npm test
+
+  e2e:
+    name: Playwright (accessibility + feature e2e)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: coachhub
+          POSTGRES_PASSWORD: coachhub_ci_password
+          POSTGRES_DB: coachhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
