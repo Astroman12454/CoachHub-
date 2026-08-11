@@ -113,6 +113,14 @@ describe("recurring practice slots", () => {
       "2024-01-08|17:00",
       "2024-01-10|18:30",
     ]);
+
+    const names = list.body.map((s: { name: string }) => s.name).sort();
+    expect(names).toEqual([
+      "Skills Work — 03/01",
+      "Skills Work — 10/01",
+      "Team Practice — 01/01",
+      "Team Practice — 08/01",
+    ]);
   });
 
   it("does not duplicate sessions when generating over an already-generated range", async () => {

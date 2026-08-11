@@ -874,8 +874,9 @@ export class DatabaseStorage implements IStorage {
         const key = `${dateStr}|${slot.time}`;
         if (existingKeys.has(key)) continue;
 
+        const [, month, day] = dateStr.split("-");
         await this.createTrainingSession(teamId, {
-          name: slot.name,
+          name: `${slot.name} — ${day}/${month}`,
           date: dateStr,
           time: slot.time,
           duration: slot.duration,

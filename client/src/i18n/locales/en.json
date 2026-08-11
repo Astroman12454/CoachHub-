@@ -144,6 +144,7 @@
     "avgAttendance": "Avg Attendance",
     "quickActions": "Quick Actions",
     "createTrainingSession": "Create Training Session",
+    "repeatLastSession": "Repeat Last Session",
     "addNewExercise": "Add New Exercise",
     "addPlayer": "Add Player",
     "recentExercises": "Recent Exercises",
