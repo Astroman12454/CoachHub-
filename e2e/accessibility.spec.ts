@@ -456,13 +456,27 @@ test.describe("accessibility (axe)", () => {
     expect((await midCheck.json()).status).not.toBe("completed");
     await expect(page).toHaveURL(new RegExp(`/training-sessions/${session.id}/live`));
 
-    // Confirming does complete it, and returns to the sessions list.
+    // Confirming does complete it and shows a summary before leaving —
+    // attendance, how many exercises ran, and a "Done" button, not an
+    // immediate drop back to the sessions list with no closure. The active
+    // player count isn't fixed (other tests in this shared fixture team add
+    // players over time), so it's read from the API rather than hardcoded.
+    const playersRes = await page.request.get("/api/players");
+    const activePlayerCount = (await playersRes.json()).filter((p: { isActive: number }) => p.isActive === 1).length;
+
     await page.click('button:has-text("Finish")');
     await page.waitForSelector("text=Finish this training session?");
     await page.click('[role="alertdialog"] button:has-text("Finish")');
-    await page.waitForURL("/training-sessions");
+    await page.waitForSelector("text=Session completed");
+    await page.waitForSelector(`text=0 of ${activePlayerCount} players present`);
+    await page.waitForSelector("text=1 exercises run");
+    const summaryResults = await scan(page);
+    expect(summarize(summaryResults.violations)).toEqual([]);
     const finalCheck = await page.request.get(`/api/training-sessions/${session.id}`);
     expect((await finalCheck.json()).status).toBe("completed");
+
+    await page.click('button:has-text("Done")');
+    await page.waitForURL("/training-sessions");
 
     await page.request.delete(`/api/training-sessions/${session.id}`);
   });

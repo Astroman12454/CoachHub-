@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import AttendanceModal from "@/components/AttendanceModal";
 import RecordTestResultsDialog from "@/components/RecordTestResultsDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import TrainingSummaryDialog from "@/components/TrainingSummaryDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,6 +85,7 @@ export default function TrainingMode() {
   const [noteDraft, setNoteDraft] = useState("");
   const [recordingTest, setRecordingTest] = useState<PhysicalTest | null>(null);
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   // A smaller timer on a phone-sized viewport claims noticeably less
   // vertical space, which matters here specifically: on a real phone (as
   // opposed to this container's max-width), the pause/skip controls below
@@ -189,9 +191,17 @@ export default function TrainingMode() {
     haptic("success");
     playSessionFinish();
     updateSessionMutation.mutate({ status: "completed" }, {
-      onSuccess: () => setLocation("/training-sessions"),
+      onSuccess: () => setIsSummaryOpen(true),
     });
   };
+
+  // The roster this session's attendance was actually taken against — same
+  // "active players" population AttendanceModal marks all-present over.
+  const activePlayers = useMemo(() => players.filter((p) => p.isActive === 1), [players]);
+  const presentCount = useMemo(
+    () => attendance.filter((a) => a.status === "present" || a.status === "late").length,
+    [attendance]
+  );
 
   const handleSaveNote = () => {
     const existing = session?.notes?.trim();
@@ -473,6 +483,16 @@ export default function TrainingMode() {
         confirmLabel={t("trainingMode.finish")}
         isPending={updateSessionMutation.isPending}
         onConfirm={handleFinish}
+      />
+
+      <TrainingSummaryDialog
+        open={isSummaryOpen}
+        onDone={() => setLocation("/training-sessions")}
+        sessionName={session.name}
+        presentCount={presentCount}
+        totalPlayers={activePlayers.length}
+        exercisesCompleted={sequence.length}
+        notes={session.notes ?? null}
       />
     </div>
   );
