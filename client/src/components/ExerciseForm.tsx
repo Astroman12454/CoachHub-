@@ -10,9 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
-import { insertExerciseSchema } from "@shared/schema";
+import { insertExerciseSchema, EXERCISE_PHASES } from "@shared/schema";
 import type { Exercise } from "@shared/schema";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS, type ExerciseCategory, type DifficultyLevel } from "@/lib/types";
+
+type ExercisePhase = typeof EXERCISE_PHASES[number];
+// A dedicated sentinel instead of "" — Radix's Select doesn't allow an
+// empty-string item value (it's reserved to mean "clear the selection"
+// internally), so "none" round-trips through the trigger/content while the
+// form field itself still holds null.
+const NO_PHASE = "none";
 
 type ExerciseFormData = z.infer<typeof insertExerciseSchema>;
 
@@ -47,6 +54,7 @@ export default function ExerciseForm({ isOpen, onClose, exercise, duplicateFrom 
       instructions: source?.instructions ?? "",
       imageUrl: source?.imageUrl ?? "",
       minPlayers: source?.minPlayers ?? null,
+      phase: (source?.phase as ExercisePhase | null) ?? null,
     },
   });
 
@@ -176,6 +184,35 @@ export default function ExerciseForm({ isOpen, onClose, exercise, duplicateFrom 
                         onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phase"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("exerciseForm.phaseOptional")}</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(v === NO_PHASE ? null : v)}
+                      value={field.value ?? NO_PHASE}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("exerciseForm.selectPhase")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={NO_PHASE}>{t("exerciseForm.noPhase")}</SelectItem>
+                        {EXERCISE_PHASES.map(phase => (
+                          <SelectItem key={phase} value={phase}>
+                            {t(`categories.phase.${phase}`, phase)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

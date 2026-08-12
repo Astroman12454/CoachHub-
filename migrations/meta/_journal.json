@@ -15,6 +15,13 @@
       "when": 1786478874730,
       "tag": "0001_cloudy_doorman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786539563013,
+      "tag": "0002_large_prowler",
+      "breakpoints": true
     }
   ]
 }

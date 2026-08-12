@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
+import { EXERCISE_PHASES } from "@shared/schema";
 import type { Exercise } from "@shared/schema";
 import { canUseCustomExercises } from "@shared/entitlements";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
@@ -40,6 +41,7 @@ export default function ExerciseLibrary() {
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [durationFilter, setDurationFilter] = useState<"all" | "short" | "medium" | "long">("all");
+  const [phaseFilter, setPhaseFilter] = useState<string>("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"default" | "recentlyUsed">("default");
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
@@ -169,9 +171,10 @@ export default function ExerciseLibrary() {
         (durationFilter === "short" && exercise.duration < 15) ||
         (durationFilter === "medium" && exercise.duration >= 15 && exercise.duration <= 30) ||
         (durationFilter === "long" && exercise.duration > 30);
+      const matchesPhase = phaseFilter === "all" || exercise.phase === phaseFilter;
       const matchesFavorite = !favoritesOnly || exercise.isFavorite === 1;
 
-      return matchesSearch && matchesCategory && matchesDifficulty && matchesDuration && matchesFavorite;
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesDuration && matchesPhase && matchesFavorite;
     });
 
     if (sortBy === "recentlyUsed") {
@@ -185,7 +188,7 @@ export default function ExerciseLibrary() {
       });
     }
     return filtered;
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter, durationFilter, favoritesOnly, sortBy, usageStats, isPendingDelete, i18n.language]);
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, durationFilter, phaseFilter, favoritesOnly, sortBy, usageStats, isPendingDelete, i18n.language]);
 
   if (isLoading) {
     return (
@@ -276,6 +279,20 @@ export default function ExerciseLibrary() {
               </SelectContent>
             </Select>
 
+            <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("exerciseLibrary.filterByPhase")}>
+                <SelectValue placeholder={t("exerciseLibrary.filterByPhase")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("exerciseLibrary.allPhases")}</SelectItem>
+                {EXERCISE_PHASES.map(phase => (
+                  <SelectItem key={phase} value={phase}>
+                    {t(`categories.phase.${phase}`, phase)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as "default" | "recentlyUsed")}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("exerciseLibrary.sortBy")}>
                 <SelectValue placeholder={t("exerciseLibrary.sortBy")} />
@@ -324,11 +341,11 @@ export default function ExerciseLibrary() {
             icon={Dumbbell}
             title={t("exerciseLibrary.emptyTitle")}
             description={
-              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all" || durationFilter !== "all" || favoritesOnly
+              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all" || durationFilter !== "all" || phaseFilter !== "all" || favoritesOnly
                 ? t("exerciseLibrary.emptyFilterDescription")
                 : t("exerciseLibrary.emptyDescription")
             }
-            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && durationFilter === "all" && !favoritesOnly ? {
+            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && durationFilter === "all" && phaseFilter === "all" && !favoritesOnly ? {
               label: t("exerciseLibrary.addFirstExercise"),
               icon: Plus,
               onClick: handleAddExerciseClick,

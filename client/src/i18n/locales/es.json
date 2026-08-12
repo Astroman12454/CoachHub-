@@ -118,6 +118,11 @@
       "medium": "Media",
       "hard": "Difícil"
     },
+    "phase": {
+      "warmup": "Entrada en Calor",
+      "main": "Principal",
+      "cooldown": "Vuelta a la Calma"
+    },
     "play": {
       "offense": "Ataque",
       "defense": "Defensa",
@@ -694,6 +699,8 @@
     "durationShort": "Menos de 15 min",
     "durationMedium": "15–30 min",
     "durationLong": "Más de 30 min",
+    "filterByPhase": "Filtrar por fase",
+    "allPhases": "Todas las Fases",
     "addExercise": "Añadir Ejercicio",
     "emptyTitle": "No Se Encontraron Ejercicios",
     "emptyFilterDescription": "Ningún ejercicio coincide con tus filtros actuales.",
@@ -729,6 +736,9 @@
     "imageUrlOptional": "URL de Imagen (Opcional)",
     "minPlayersOptional": "Mínimo de Jugadores (Opcional)",
     "minPlayersPlaceholder": "ej., 6",
+    "phaseOptional": "Fase del Entrenamiento (Opcional)",
+    "selectPhase": "Selecciona la fase",
+    "noPhase": "Sin etiquetar",
     "createExercise": "Crear Ejercicio",
     "duplicateExercise": "Duplicar Ejercicio",
     "duplicateName": "{{name}} (copia)"
@@ -883,6 +893,8 @@
     "subtitleLoading": "Planifica tu semana y gestiona la asistencia",
     "subtitle": "Planifica tu semana de entrenamiento y controla la asistencia",
     "trainingScheduleOverview": "Resumen del Horario de Entrenamiento",
+    "exportPdf": "Exportar PDF",
+    "couldntExportPdf": "No se pudo exportar el PDF",
     "previous": "Anterior",
     "previousWeek": "Semana Anterior",
     "next": "Siguiente",
