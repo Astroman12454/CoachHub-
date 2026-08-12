@@ -1,4 +1,4 @@
-import { Play, Clock, Plus } from "lucide-react";
+import { Play, Clock, Plus, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,20 @@ interface TodayHeroProps {
   onStart: (sessionId: number) => void;
   onOpenSession: (sessionId: number) => void;
   onCreateSession: () => void;
+  onAddExercises: (session: TrainingSession) => void;
 }
 
 // The first thing a coach sees: not stats, not a menu — "here's today's
 // practice, tap to start it." Everything else on the dashboard is secondary
 // to this one decision.
-export default function TodayHero({ teamName, todaySession, nextSession, onStart, onOpenSession, onCreateSession }: TodayHeroProps) {
+export default function TodayHero({ teamName, todaySession, nextSession, onStart, onOpenSession, onCreateSession, onAddExercises }: TodayHeroProps) {
   const { t } = useTranslation();
   const isLive = todaySession?.status === "in_progress";
   const isDone = todaySession?.status === "completed";
+  // A session with nothing planned is easy to walk into by accident (create
+  // it, mean to fill it in later, forget) — flagged here since this is the
+  // one place a coach is guaranteed to look before starting practice.
+  const hasNoExercises = !!todaySession && !isDone && (todaySession.exerciseIds?.length ?? 0) === 0;
 
   return (
     <Card className="mb-5 border-basketball-orange/30 overflow-hidden">
@@ -52,6 +57,16 @@ export default function TodayHero({ teamName, todaySession, nextSession, onStart
                 )}
                 {isDone && <Badge variant="secondary">{t("dashboard.today.completed")}</Badge>}
               </div>
+              {hasNoExercises && (
+                <button
+                  type="button"
+                  onClick={() => onAddExercises(todaySession)}
+                  className="mt-2 flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400 hover:underline"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                  {t("dashboard.today.noExercisesWarning")}
+                </button>
+              )}
             </>
           ) : (
             <>

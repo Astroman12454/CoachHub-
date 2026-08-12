@@ -1,10 +1,12 @@
-import { ArrowUp, ArrowDown, X, Clock } from "lucide-react";
+import { useState } from "react";
+import { ArrowUp, ArrowDown, X, Clock, GripVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS } from "@/lib/types";
 import { addMinutesToClock } from "@/lib/time";
 import { localizedExerciseText } from "@/lib/exerciseI18n";
+import { cn } from "@/lib/utils";
 import type { Exercise } from "@shared/schema";
 
 interface SessionTimelineProps {
@@ -18,9 +20,11 @@ interface SessionTimelineProps {
 
 // Renders the coach's picks as an ordered run-of-show — a proportional bar
 // plus a reorderable list — instead of the flat, unordered badge chips this
-// replaced. Reordering is up/down buttons rather than drag-and-drop: the
-// list is short (a handful of blocks), and buttons are trivially keyboard-
-// and touch-operable without a drag library or its edge cases.
+// replaced. Reordering is up/down buttons, kept as the primary interaction
+// since they're trivially keyboard- and touch-operable — a grip handle adds
+// native HTML5 drag-and-drop as a faster desktop-mouse alternative, without
+// pulling in a drag library (native DnD doesn't reach touchscreens, which is
+// exactly why the buttons stay rather than being replaced).
 export default function SessionTimeline({
   selectedIds,
   exercises,
@@ -30,6 +34,8 @@ export default function SessionTimeline({
   sessionDuration,
 }: SessionTimelineProps) {
   const { t, i18n } = useTranslation();
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
   const blocks = selectedIds
     .map((id) => exercises.find((ex) => ex.id.toString() === id))
     .filter((ex): ex is Exercise => !!ex);
@@ -43,6 +49,19 @@ export default function SessionTimeline({
     const next = [...selectedIds];
     [next[index], next[target]] = [next[target], next[index]];
     onReorder(next);
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (dragIndex === null || dragIndex === targetIndex) return;
+    const next = [...selectedIds];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    onReorder(next);
+  };
+
+  const resetDrag = () => {
+    setDragIndex(null);
+    setOverIndex(null);
   };
 
   if (blocks.length === 0) {
@@ -79,7 +98,28 @@ export default function SessionTimeline({
           const name = localizedExerciseText(ex, i18n.language).name;
 
           return (
-            <li key={ex.id} className="flex items-center gap-2 border border-border rounded-lg p-2.5">
+            <li
+              key={ex.id}
+              onDragOver={(e) => { if (dragIndex !== null) { e.preventDefault(); setOverIndex(index); } }}
+              onDragLeave={() => setOverIndex((prev) => (prev === index ? null : prev))}
+              onDrop={(e) => { e.preventDefault(); handleDrop(index); resetDrag(); }}
+              className={cn(
+                "flex items-center gap-2 border rounded-lg p-2.5 transition-colors",
+                overIndex === index && dragIndex !== null && dragIndex !== index
+                  ? "border-basketball-orange border-dashed bg-basketball-orange/5"
+                  : "border-border",
+                dragIndex === index && "opacity-50"
+              )}
+            >
+              <div
+                draggable
+                onDragStart={() => setDragIndex(index)}
+                onDragEnd={resetDrag}
+                className="hidden sm:flex items-center self-stretch text-muted-foreground/50 hover:text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0"
+                aria-hidden="true"
+              >
+                <GripVertical className="w-4 h-4" strokeWidth={1.75} />
+              </div>
               <div className="flex flex-col flex-shrink-0">
                 <Button
                   type="button"

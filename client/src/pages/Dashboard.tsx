@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [sessionPrefill, setSessionPrefill] = useState<{ name?: string | null; date?: string; time?: string | null; duration?: number | null } | null>(null);
   const [duplicateFromSession, setDuplicateFromSession] = useState<TrainingSession | null>(null);
+  const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ['/api/stats'],
@@ -143,6 +144,8 @@ export default function Dashboard() {
     setDuplicateFromSession(null);
   };
 
+  const closeEditingSession = () => setEditingSession(null);
+
   if (statsLoading || sessionsLoading || exercisesLoading) {
     return (
       <div className="flex flex-col h-full">
@@ -193,6 +196,7 @@ export default function Dashboard() {
           onStart={(sessionId) => navigateToPage(`/training-sessions/${sessionId}/live`)}
           onOpenSession={() => navigateToPage('/training-sessions')}
           onCreateSession={() => setIsSessionModalOpen(true)}
+          onAddExercises={setEditingSession}
         />
 
         <div className="mb-5">
@@ -240,6 +244,14 @@ export default function Dashboard() {
             onClose={closeSessionModal}
             duplicateFrom={duplicateFromSession}
             prefill={sessionPrefill ?? undefined}
+          />
+        )}
+
+        {editingSession && (
+          <SessionModal
+            isOpen={true}
+            onClose={closeEditingSession}
+            session={editingSession}
           />
         )}
 
