@@ -118,6 +118,11 @@
       "medium": "Medium",
       "hard": "Hard"
     },
+    "phase": {
+      "warmup": "Warm-up",
+      "main": "Main",
+      "cooldown": "Cool-down"
+    },
     "play": {
       "offense": "Offense",
       "defense": "Defense",
@@ -694,6 +699,8 @@
     "durationShort": "Under 15 min",
     "durationMedium": "15–30 min",
     "durationLong": "Over 30 min",
+    "filterByPhase": "Filter by phase",
+    "allPhases": "All Phases",
     "addExercise": "Add Exercise",
     "emptyTitle": "No Exercises Found",
     "emptyFilterDescription": "No exercises match your current filters.",
@@ -729,6 +736,9 @@
     "imageUrlOptional": "Image URL (Optional)",
     "minPlayersOptional": "Minimum Players (Optional)",
     "minPlayersPlaceholder": "e.g., 6",
+    "phaseOptional": "Practice Phase (Optional)",
+    "selectPhase": "Select phase",
+    "noPhase": "Not tagged",
     "createExercise": "Create Exercise",
     "duplicateExercise": "Duplicate Exercise",
     "duplicateName": "{{name}} (copy)"
@@ -883,6 +893,8 @@
     "subtitleLoading": "Plan your week and manage attendance",
     "subtitle": "Plan your training week and track attendance",
     "trainingScheduleOverview": "Training Schedule Overview",
+    "exportPdf": "Export PDF",
+    "couldntExportPdf": "Couldn't export PDF",
     "previous": "Previous",
     "previousWeek": "Previous Week",
     "next": "Next",

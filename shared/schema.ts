@@ -132,6 +132,8 @@ export const exercises = pgTable("exercises", {
   nameEs: text("name_es"),
   descriptionEs: text("description_es"),
   instructionsEs: text("instructions_es"),
+  // "warmup" | "main" | "cooldown" | null — see EXERCISE_PHASES below.
+  phase: text("phase"),
 });
 
 // A drill's optional animated court diagram — same shape and step-by-step
@@ -495,6 +497,11 @@ export type LogDrillAttempt = z.infer<typeof logDrillAttemptSchema>;
 
 export const DIFFICULTY_LEVELS = ["easy", "medium", "hard"] as const;
 
+// Where a drill fits in a practice's run-of-show — separate from `category`
+// (what skill it trains). Optional: null means the coach hasn't tagged it,
+// which is the default for every exercise until they choose to.
+export const EXERCISE_PHASES = ["warmup", "main", "cooldown"] as const;
+
 export const ATTENDANCE_STATUSES = ["present", "absent", "late", "excused"] as const;
 
 export const GAME_LOCATIONS = ["home", "away"] as const;
@@ -552,6 +559,7 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
   duration: z.number().int().min(1, "Duration must be at least 1 minute"),
   difficulty: z.enum(DIFFICULTY_LEVELS),
   minPlayers: z.number().int().min(1, "Must be at least 1 player").nullish(),
+  phase: z.enum(EXERCISE_PHASES).nullish(),
 });
 
 export const insertPhysicalTestSchema = createInsertSchema(physicalTests).omit({

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat, CalendarRange, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, Clock, Users, CalendarPlus, Repeat, CalendarRange, Pencil, Download, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import AttendanceModal from "@/components/AttendanceModal";
@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import { useSessionAttendance } from "@/hooks/use-session-attendance";
+import { exportWeeklySchedulePdf } from "@/lib/exportWeeklySchedulePdf";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { TrainingSession, Player, PlayerInjury } from "@shared/schema";
 
@@ -51,6 +53,8 @@ const STATUS_COLORS = {
 
 export default function WeeklySchedule() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const [isExportingSchedule, setIsExportingSchedule] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(() => {
     const today = new Date();
     const monday = new Date(today);
@@ -136,6 +140,23 @@ export default function WeeklySchedule() {
     setIsAttendanceModalOpen(true);
   };
 
+  const handleExportSchedule = async () => {
+    setIsExportingSchedule(true);
+    try {
+      const sessionsByDate = new Map<string, TrainingSession[]>();
+      for (const session of Array.isArray(sessions) ? sessions : []) {
+        const existing = sessionsByDate.get(session.date);
+        if (existing) existing.push(session);
+        else sessionsByDate.set(session.date, [session]);
+      }
+      await exportWeeklySchedulePdf(weekDates, sessionsByDate);
+    } catch (error) {
+      toast({ title: t("schedule.couldntExportPdf"), description: t("common.tryAgain"), variant: "destructive" });
+    } finally {
+      setIsExportingSchedule(false);
+    }
+  };
+
   const getSessionsForDate = (date: Date) => {
     const dateString = date.toISOString().split('T')[0];
     return Array.isArray(sessions) ? sessions.filter(session => session.date === dateString) : [];
@@ -216,10 +237,20 @@ export default function WeeklySchedule() {
               {t("schedule.monthView")}
             </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setIsRecurringDialogOpen(true)}>
-            <Repeat className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
-            {t("recurringSchedule.openButton")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {viewMode === "week" && (
+              <Button variant="outline" size="sm" onClick={handleExportSchedule} disabled={isExportingSchedule}>
+                {isExportingSchedule
+                  ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
+                  : <Download className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />}
+                {t("schedule.exportPdf")}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setIsRecurringDialogOpen(true)}>
+              <Repeat className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+              {t("recurringSchedule.openButton")}
+            </Button>
+          </div>
         </div>
 
         {viewMode === "month" ? (

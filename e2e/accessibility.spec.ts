@@ -753,6 +753,47 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("exercise library — tagging an exercise's phase shows a badge and filters correctly", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.click('button:has-text("Add Exercise")');
+    await page.waitForSelector("text=Create New Exercise");
+    await page.fill('input[placeholder="e.g., Free Throw Form Drill"]', "E2E Warmup Drill");
+    await page.fill('textarea[placeholder="Brief description of the exercise..."]', "A drill for testing phase tags");
+    // Category, difficulty, and phase are the form's only comboboxes —
+    // phase is the last of the three. Scoped to the open listbox (not a
+    // bare text= click) since Radix's Select also renders a visually-hidden
+    // native <select> for form autofill, whose <option>s share the same
+    // text and would otherwise resolve ambiguously.
+    await page.locator('button[role="combobox"]').last().click();
+    await page.getByRole("listbox").getByText("Warm-up").click();
+    await page.click('button:has-text("Create Exercise")');
+    await page.waitForSelector("text=Exercise created successfully");
+
+    await page.waitForSelector("text=E2E Warmup Drill");
+    await expect(page.getByText("warm-up", { exact: true }).first()).toBeVisible();
+
+    await page.getByLabel("Filter by phase").click();
+    await page.getByRole("listbox").getByText("Cool-down").click();
+    await expect(page.getByText("E2E Warmup Drill", { exact: true })).toHaveCount(0);
+    await page.getByLabel("Filter by phase").click();
+    await page.getByRole("listbox").getByText("Warm-up").click();
+    await expect(page.getByText("E2E Warmup Drill", { exact: true }).first()).toBeVisible();
+
+    // Same pre-existing Radix Toast a11y issue disabled elsewhere in this
+    // file — the create-exercise toast from moments ago can still be mid-
+    // transition when this scan runs.
+    const results = await scan(page, { disableRules: ["aria-hidden-focus", "list", "aria-allowed-role"] });
+    expect(summarize(results.violations)).toEqual([]);
+
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    // Delete every matching row, not just the one this run created — a
+    // previous failed run could have left one behind.
+    const created = exercises.filter((e: { name: string }) => e.name === "E2E Warmup Drill");
+    await Promise.all(created.map((e: { id: number }) => page.request.delete(`/api/exercises/${e.id}`)));
+  });
+
   test("exercise library — sharing to the community toggles the globe icon", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");
@@ -1247,6 +1288,16 @@ test.describe("accessibility (axe)", () => {
     await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("weekly schedule — export PDF downloads the current week", async ({ page }) => {
+    await login(page);
+    await page.goto("/weekly-schedule");
+    await page.waitForLoadState("networkidle");
+    const downloadPromise = page.waitForEvent("download");
+    await page.click('button:has-text("Export PDF")');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^\d{4}-\d{2}-\d{2}-weekly-schedule\.pdf$/);
   });
 
   test("weekly schedule — attendance modal open", async ({ page }) => {

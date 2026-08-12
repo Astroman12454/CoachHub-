@@ -46,6 +46,11 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
           <Badge className={`${difficultyColorClass} shadow-sm`}>
             {t(`categories.difficulty.${exercise.difficulty}`, exercise.difficulty).toLowerCase()}
           </Badge>
+          {exercise.phase && (
+            <Badge variant="outline" className="border-border text-muted-foreground">
+              {t(`categories.phase.${exercise.phase}`, exercise.phase).toLowerCase()}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
