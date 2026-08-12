@@ -197,6 +197,37 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/training-sessions/${created.id}`);
   });
 
+  test("dashboard — today's hero warns when the session has no exercises yet", async ({ page }) => {
+    await login(page);
+    const createRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E No-Exercises Today Session",
+        date: new Date().toISOString().split("T")[0],
+        time: "05:00",
+        duration: 60,
+        exerciseIds: [],
+        notes: null,
+      },
+    });
+    const created = await createRes.json();
+
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E No-Exercises Today Session");
+    const warning = page.getByRole("button", { name: /has no exercises yet/i });
+    await expect(warning).toBeVisible();
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Tapping it opens the session editor (not "create new") — the coach
+    // fixes the same session, not a different one.
+    await warning.click();
+    await page.waitForSelector("text=Edit Training Session");
+    await expect(page.locator('input[name="name"]')).toHaveValue("E2E No-Exercises Today Session");
+
+    await page.request.delete(`/api/training-sessions/${created.id}`);
+  });
+
   test("training sessions", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
@@ -225,6 +256,37 @@ test.describe("accessibility (axe)", () => {
       await cards.nth(i).click();
     }
     await page.waitForSelector("text=Session Timeline");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training sessions — drag to reorder exercises in the timeline", async ({ page }) => {
+    await login(page);
+    await page.goto("/training-sessions");
+    await page.click('button:has-text("New Session")');
+    await page.waitForSelector("text=Create Training Session");
+    const cards = page.locator('[aria-label="Available exercises"] > div');
+    const count = await cards.count();
+    for (let i = 0; i < Math.min(3, count); i++) {
+      await cards.nth(i).click();
+    }
+    await page.waitForSelector("text=Session Timeline");
+
+    const timelineItems = page.locator("ol > li");
+    await expect(timelineItems).toHaveCount(Math.min(3, count));
+    // span.truncate (not just .font-medium — the up/down/remove buttons in
+    // each block also carry font-medium from their own base button style).
+    const namesBefore = await timelineItems.locator("span.truncate").allTextContents();
+
+    // Drag the first block's grip handle onto the last block — same
+    // splice-based reorder the up/down buttons drive, exercised through
+    // native HTML5 drag-and-drop instead.
+    const firstGrip = timelineItems.first().locator('div[draggable="true"]');
+    await firstGrip.dragTo(timelineItems.last());
+
+    const namesAfter = await timelineItems.locator("span.truncate").allTextContents();
+    expect(namesAfter).toEqual([...namesBefore.slice(1), namesBefore[0]]);
+
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -363,6 +425,57 @@ test.describe("accessibility (axe)", () => {
     await page.waitForSelector("text=Exercise 1 of 2");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("training mode — pausing checkpoints progress, and reopening the session restores it", async ({ page }) => {
+    await login(page);
+    const exercisesRes = await page.request.get("/api/exercises");
+    const exercises = await exercisesRes.json();
+    const sessionRes = await page.request.post("/api/training-sessions", {
+      data: {
+        name: "E2E Resume Progress Session",
+        date: new Date().toISOString().split("T")[0],
+        time: "17:00",
+        duration: 60,
+        exerciseIds: exercises.slice(0, 2).map((e: { id: number }) => e.id.toString()),
+        notes: null,
+      },
+    });
+    const session = await sessionRes.json();
+    await page.goto(`/training-sessions/${session.id}/live`);
+    await page.waitForSelector("text=Exercise 1 of 2");
+
+    // Move to the second exercise and pause — the checkpoint this test is
+    // actually about.
+    await page.click('button[aria-label="Next exercise"]');
+    await page.waitForSelector("text=Exercise 2 of 2");
+    await page.click('button[aria-label="Pause"]');
+    await page.waitForSelector('button[aria-label="Resume"]');
+
+    // Reopening the same session (as if the tab had been closed and
+    // reopened) lands back on exercise 2, still paused — not reset to
+    // exercise 1 with a full clock.
+    await page.goto(`/training-sessions/${session.id}/live`);
+    await page.waitForSelector("text=Exercise 2 of 2");
+    await page.waitForSelector('button[aria-label="Resume"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    // Finishing the session clears the checkpoint — a session reused later
+    // (e.g. via "Repeat Last Session") shouldn't inherit stale progress.
+    await page.click('button:has-text("Finish")');
+    await page.waitForSelector("text=Finish this training session?");
+    await page.click('[role="alertdialog"] button:has-text("Finish")');
+    await page.waitForSelector("text=Session completed");
+    await page.click('button:has-text("Done")');
+    await page.waitForURL("/training-sessions");
+    const storedProgress = await page.evaluate(
+      (id) => window.localStorage.getItem(`coachhub.trainingProgress.${id}`),
+      session.id
+    );
+    expect(storedProgress).toBeNull();
+
+    await page.request.delete(`/api/training-sessions/${session.id}`);
   });
 
   test("training mode — physical test recorded before the exercise sequence", async ({ page }) => {
@@ -581,6 +694,31 @@ test.describe("accessibility (axe)", () => {
     await page.waitForTimeout(700);
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("exercise library — filter by duration", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library");
+    await page.waitForLoadState("networkidle");
+    // Suicide Sprints (8 min) and Free Throw Form Drill (15 min) are both
+    // part of the fixture account's seed library — a short/medium pair on
+    // either side of the "under 15" boundary.
+    await page.waitForSelector("text=Suicide Sprints");
+    await page.waitForSelector("text=Free Throw Form Drill");
+
+    await page.getByLabel("Filter by duration").click();
+    await page.click("text=Under 15 min");
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Suicide Sprints", { exact: true })).toBeVisible();
+    await expect(page.getByText("Free Throw Form Drill", { exact: true })).toHaveCount(0);
+
+    await page.getByLabel("Filter by duration").click();
+    await page.click("text=15–30 min");
+    await expect(page.getByText("Free Throw Form Drill", { exact: true })).toBeVisible();
+    await expect(page.getByText("Suicide Sprints", { exact: true })).toHaveCount(0);
+
+    const results2 = await scan(page);
+    expect(summarize(results2.violations)).toEqual([]);
   });
 
   test("exercise library — duplicate flow pre-fills the form", async ({ page }) => {

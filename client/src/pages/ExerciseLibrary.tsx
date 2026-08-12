@@ -39,6 +39,7 @@ export default function ExerciseLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>(initialCategory);
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [durationFilter, setDurationFilter] = useState<"all" | "short" | "medium" | "long">("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"default" | "recentlyUsed">("default");
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
@@ -164,9 +165,13 @@ export default function ExerciseLibrary() {
                            localized.description.toLowerCase().includes(query);
       const matchesCategory = categoryFilter === "all" || exercise.category === categoryFilter;
       const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
+      const matchesDuration = durationFilter === "all" ||
+        (durationFilter === "short" && exercise.duration < 15) ||
+        (durationFilter === "medium" && exercise.duration >= 15 && exercise.duration <= 30) ||
+        (durationFilter === "long" && exercise.duration > 30);
       const matchesFavorite = !favoritesOnly || exercise.isFavorite === 1;
 
-      return matchesSearch && matchesCategory && matchesDifficulty && matchesFavorite;
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesDuration && matchesFavorite;
     });
 
     if (sortBy === "recentlyUsed") {
@@ -180,7 +185,7 @@ export default function ExerciseLibrary() {
       });
     }
     return filtered;
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter, favoritesOnly, sortBy, usageStats, isPendingDelete, i18n.language]);
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, durationFilter, favoritesOnly, sortBy, usageStats, isPendingDelete, i18n.language]);
 
   if (isLoading) {
     return (
@@ -259,6 +264,18 @@ export default function ExerciseLibrary() {
               </SelectContent>
             </Select>
 
+            <Select value={durationFilter} onValueChange={(v) => setDurationFilter(v as "all" | "short" | "medium" | "long")}>
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("exerciseLibrary.filterByDuration")}>
+                <SelectValue placeholder={t("exerciseLibrary.filterByDuration")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("exerciseLibrary.allDurations")}</SelectItem>
+                <SelectItem value="short">{t("exerciseLibrary.durationShort")}</SelectItem>
+                <SelectItem value="medium">{t("exerciseLibrary.durationMedium")}</SelectItem>
+                <SelectItem value="long">{t("exerciseLibrary.durationLong")}</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as "default" | "recentlyUsed")}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("exerciseLibrary.sortBy")}>
                 <SelectValue placeholder={t("exerciseLibrary.sortBy")} />
@@ -307,11 +324,11 @@ export default function ExerciseLibrary() {
             icon={Dumbbell}
             title={t("exerciseLibrary.emptyTitle")}
             description={
-              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all" || favoritesOnly
+              searchQuery || categoryFilter !== "all" || difficultyFilter !== "all" || durationFilter !== "all" || favoritesOnly
                 ? t("exerciseLibrary.emptyFilterDescription")
                 : t("exerciseLibrary.emptyDescription")
             }
-            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && !favoritesOnly ? {
+            action={!searchQuery && categoryFilter === "all" && difficultyFilter === "all" && durationFilter === "all" && !favoritesOnly ? {
               label: t("exerciseLibrary.addFirstExercise"),
               icon: Plus,
               onClick: handleAddExerciseClick,

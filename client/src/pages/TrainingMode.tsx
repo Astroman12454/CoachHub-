@@ -19,6 +19,7 @@ import { haptic } from "@/lib/haptics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isSoundEnabled, setSoundEnabled, playTimerDone, playSessionFinish } from "@/lib/sound";
 import { localizedExerciseText } from "@/lib/exerciseI18n";
+import { saveTrainingProgress, loadTrainingProgress, clearTrainingProgress } from "@/lib/trainingProgress";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/types";
 import type { TrainingSession, Exercise, Play as PlaybookPlay, Player, PlayerInjury, PhysicalTest } from "@shared/schema";
@@ -95,6 +96,8 @@ export default function TrainingMode() {
   const isMobile = useIsMobile();
   const [soundEnabled, setSoundEnabledState] = useState(() => isSoundEnabled());
   const startedRef = useRef(false);
+  const restoredProgressRef = useRef(false);
+  const pendingRestoreRef = useRef<{ stepIndex: number; secondsLeft: number } | null>(null);
 
   const toggleSound = () => {
     const next = !soundEnabled;
@@ -114,11 +117,33 @@ export default function TrainingMode() {
   // Resets the countdown to the new step's own duration whenever the coach
   // moves to a different exercise (forward, back, or the sequence just
   // finished loading) — each exercise carries its own typical duration
-  // already, so there's nothing extra to configure here.
+  // already, so there's nothing extra to configure here. Except right after
+  // a restore (below) jumps stepIndex to a saved checkpoint: that pending
+  // checkpoint's secondsLeft wins instead of the exercise's full duration,
+  // so reopening a paused session resumes where it left off rather than
+  // resetting the clock.
   useEffect(() => {
-    setSecondsLeft((currentExercise?.duration ?? 0) * 60);
+    if (pendingRestoreRef.current && pendingRestoreRef.current.stepIndex === stepIndex) {
+      setSecondsLeft(pendingRestoreRef.current.secondsLeft);
+      pendingRestoreRef.current = null;
+    } else {
+      setSecondsLeft((currentExercise?.duration ?? 0) * 60);
+    }
     reachedZeroRef.current = false;
   }, [stepIndex, currentExercise?.id]);
+
+  // Restores a checkpoint saved the last time this session was paused (see
+  // togglePause below) — once the exercise sequence is actually loaded, so
+  // the restored stepIndex can be validated against its real length.
+  useEffect(() => {
+    if (restoredProgressRef.current || sequence.length === 0 || isNaN(sessionId)) return;
+    restoredProgressRef.current = true;
+    const saved = loadTrainingProgress(sessionId);
+    if (!saved || saved.stepIndex >= sequence.length) return;
+    pendingRestoreRef.current = saved;
+    setStepIndex(saved.stepIndex);
+    setIsRunning(false);
+  }, [sequence.length, sessionId]);
 
   useEffect(() => {
     if (!isRunning || !currentExercise) return;
@@ -187,14 +212,25 @@ export default function TrainingMode() {
 
   const togglePause = () => {
     haptic("tap");
-    setIsRunning((r) => !r);
+    setIsRunning((r) => {
+      // Checkpointing on the transition into paused (not every tick) is
+      // the moment progress is genuinely "at rest" — resuming immediately
+      // re-saves nothing until the coach pauses again.
+      if (r && !isNaN(sessionId)) {
+        saveTrainingProgress(sessionId, { stepIndex, secondsLeft });
+      }
+      return !r;
+    });
   };
 
   const handleFinish = () => {
     haptic("success");
     playSessionFinish();
     updateSessionMutation.mutate({ status: "completed" }, {
-      onSuccess: () => setIsSummaryOpen(true),
+      onSuccess: () => {
+        if (!isNaN(sessionId)) clearTrainingProgress(sessionId);
+        setIsSummaryOpen(true);
+      },
     });
   };
 
