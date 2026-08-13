@@ -36,6 +36,13 @@
       "when": 1786615967212,
       "tag": "0004_cool_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786616589799,
+      "tag": "0005_black_rage",
+      "breakpoints": true
     }
   ]
 }

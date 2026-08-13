@@ -560,15 +560,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cross-account by design — any signed-in coach can browse what other
-  // coaches have opted to share, same as browsing their own library. Never
-  // exposes which account shared a given exercise.
+  // coaches have opted to share, same as browsing their own library.
+  // publishedBy exposes the sharing account's public name (never its
+  // accountId/email directly) now that publishing requires one — see PUT
+  // /api/exercises/:id/share-community.
   app.get("/api/community-exercises", async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const sort = req.query.sort === "popular" ? "popular" : "recent";
-      const shared = await storage.getCommunityExercises(accountId, sort);
-      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe }) =>
-        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe })
+      const followingOnly = req.query.following === "true";
+      const shared = await storage.getCommunityExercises(accountId, { sort, followingOnly });
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, publishedBy }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, publishedBy })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community exercises" });
@@ -601,6 +604,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to unlike exercise" });
+    }
+  });
+
+  // Following is free on every plan, same as liking. accountId here is
+  // always the *target* being followed — the follower is always resolved
+  // from the session, same as everywhere else in this file.
+  app.post("/api/coaches/:accountId/follow", async (req, res) => {
+    try {
+      const targetId = parseId(req, res, "accountId");
+      if (targetId === null) return;
+      const followerAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      if (followerAccountId === targetId) {
+        return res.status(400).json({ message: "You can't follow yourself" });
+      }
+
+      const followed = await storage.followCoach(followerAccountId, targetId);
+      if (!followed) {
+        return res.status(404).json({ message: "Coach not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to follow coach" });
+    }
+  });
+
+  app.delete("/api/coaches/:accountId/follow", async (req, res) => {
+    try {
+      const targetId = parseId(req, res, "accountId");
+      if (targetId === null) return;
+      const followerAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unfollowCoach(followerAccountId, targetId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unfollow coach" });
+    }
+  });
+
+  // A coach's public mini-profile — 404s for both "no such account" and
+  // "that account never set a public name" alike, so probing account ids
+  // can't distinguish the two.
+  app.get("/api/coaches/:accountId", async (req, res) => {
+    try {
+      const targetId = parseId(req, res, "accountId");
+      if (targetId === null) return;
+      const viewerAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const profile = await storage.getCoachProfile(targetId, viewerAccountId);
+      if (!profile) {
+        return res.status(404).json({ message: "Coach not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch coach profile" });
     }
   });
 
