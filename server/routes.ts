@@ -644,6 +644,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // A coach's public mini-profile — 404s for both "no such account" and
   // "that account never set a public name" alike, so probing account ids
   // can't distinguish the two.
+  // Registered before /api/coaches/:accountId below — Express matches route
+  // patterns in registration order, and :accountId would otherwise swallow
+  // "suggested" as its param value (then 400 on failing to parse it as a number).
+  app.get("/api/coaches/suggested", async (req, res) => {
+    try {
+      const viewerAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const requested = parseInt(req.query.limit as string);
+      const limit = Number.isNaN(requested) ? 5 : Math.min(Math.max(requested, 1), 1000);
+      const suggestions = await storage.getSuggestedCoaches(viewerAccountId, limit);
+      res.json(suggestions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch suggested coaches" });
+    }
+  });
+
   app.get("/api/coaches/:accountId", async (req, res) => {
     try {
       const targetId = parseId(req, res, "accountId");

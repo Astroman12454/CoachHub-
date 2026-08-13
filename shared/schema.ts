@@ -816,6 +816,19 @@ export interface NotificationView {
   createdAt: string | null;
 }
 
+// A "coaches to follow" candidate for the Discover tab — any account that
+// has published at least one community exercise, isn't the viewer, and the
+// viewer doesn't already follow (see storage.getSuggestedCoaches). Ranked
+// by likeCount then exerciseCount, so a coach whose work actually resonates
+// surfaces before one who's merely prolific.
+export interface SuggestedCoach {
+  accountId: number;
+  publicName: string;
+  exerciseCount: number;
+  likeCount: number;
+  followerCount: number;
+}
+
 export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;
 export type PhysicalTest = typeof physicalTests.$inferSelect;
 export type PhysicalTestResult = typeof physicalTestResults.$inferSelect;

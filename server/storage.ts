@@ -67,6 +67,7 @@ import {
   type PlayerPhysicalTestHistory,
   type CoachProfile,
   type NotificationView,
+  type SuggestedCoach,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
@@ -148,6 +149,8 @@ export interface IStorage {
   // exist or hasn't set a public name (same "not found" either way, so
   // guessing account ids can't distinguish the two).
   getCoachProfile(accountId: number, viewerAccountId: number): Promise<CoachProfile | undefined>;
+  // "Who to follow" candidates for the Discover tab — see SuggestedCoach.
+  getSuggestedCoaches(viewerAccountId: number, limit?: number): Promise<SuggestedCoach[]>;
   // The bell-icon feed — see notifications table comment in shared/schema.ts.
   // Callers don't create these directly; likeExercise/followCoach do it
   // internally, only for a genuinely new like/follow and never for self.
@@ -673,6 +676,52 @@ export class DatabaseStorage implements IStorage {
       followedByMe: !!existingFollow,
       isOwnProfile: account.id === viewerAccountId,
     };
+  }
+
+  async getSuggestedCoaches(viewerAccountId: number, limit = 5): Promise<SuggestedCoach[]> {
+    const followingRows = await db
+      .select({ followingAccountId: coachFollows.followingAccountId })
+      .from(coachFollows)
+      .where(eq(coachFollows.followerAccountId, viewerAccountId));
+    const excludedAccountIds = new Set([viewerAccountId, ...followingRows.map((row) => row.followingAccountId)]);
+
+    // publicName is guaranteed non-null here — publishing has required one
+    // since Fase A — but joined in anyway rather than assumed, since a
+    // pre-Fase-A row shared before that gate existed could still be null.
+    const publisherRows = await db
+      .select({
+        accountId: exercises.accountId,
+        publicName: accounts.publicName,
+        exerciseCount: sql<number>`count(distinct ${exercises.id})::int`,
+        likeCount: sql<number>`count(${exerciseLikes.id})::int`,
+      })
+      .from(exercises)
+      .innerJoin(accounts, eq(accounts.id, exercises.accountId))
+      .leftJoin(exerciseLikes, eq(exerciseLikes.exerciseId, exercises.id))
+      .where(eq(exercises.sharedToCommunity, 1))
+      .groupBy(exercises.accountId, accounts.publicName);
+
+    const candidates = publisherRows.filter((row) => row.publicName && !excludedAccountIds.has(row.accountId));
+    if (candidates.length === 0) return [];
+
+    const candidateIds = candidates.map((row) => row.accountId);
+    const followerCounts = await db
+      .select({ followingAccountId: coachFollows.followingAccountId, count: sql<number>`count(*)::int` })
+      .from(coachFollows)
+      .where(inArray(coachFollows.followingAccountId, candidateIds))
+      .groupBy(coachFollows.followingAccountId);
+    const followerCountByAccountId = new Map(followerCounts.map((row) => [row.followingAccountId, row.count]));
+
+    return candidates
+      .map((row) => ({
+        accountId: row.accountId,
+        publicName: row.publicName as string,
+        exerciseCount: row.exerciseCount,
+        likeCount: row.likeCount,
+        followerCount: followerCountByAccountId.get(row.accountId) ?? 0,
+      }))
+      .sort((a, b) => b.likeCount - a.likeCount || b.exerciseCount - a.exerciseCount || a.accountId - b.accountId)
+      .slice(0, limit);
   }
 
   async createNotification(data: { accountId: number; type: "follow" | "like"; actorAccountId: number; exerciseId?: number }): Promise<void> {

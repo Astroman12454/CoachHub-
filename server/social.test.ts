@@ -433,3 +433,80 @@ describe("notifications", () => {
     expect(res.body.unreadCount).toBe(0);
   });
 });
+
+describe("suggested coaches", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  async function accountId(agent: request.Agent): Promise<number> {
+    const res = await agent.get("/api/session");
+    return res.body.account.id;
+  }
+
+  it("suggests a coach who has published exercises", async () => {
+    const { agent: publisher } = await signedInPaidAgent(app);
+    await shareNewExercise(publisher, { name: "Suggested Drill" });
+    const publisherId = await accountId(publisher);
+
+    const { agent: viewer } = await signedInAgent(app);
+    const res = await viewer.get("/api/coaches/suggested?limit=1000");
+    expect(res.status).toBe(200);
+    const suggestion = res.body.find((c: { accountId: number }) => c.accountId === publisherId);
+    expect(suggestion).toMatchObject({ publicName: "Coach Social", exerciseCount: 1 });
+  });
+
+  it("never suggests yourself", async () => {
+    const { agent: publisher } = await signedInPaidAgent(app);
+    await shareNewExercise(publisher, { name: "Own Drill" });
+    const publisherId = await accountId(publisher);
+
+    const res = await publisher.get("/api/coaches/suggested");
+    expect(res.body.find((c: { accountId: number }) => c.accountId === publisherId)).toBeUndefined();
+  });
+
+  it("excludes coaches the viewer already follows", async () => {
+    const { agent: publisher } = await signedInPaidAgent(app);
+    await shareNewExercise(publisher, { name: "Already Followed Drill" });
+    const publisherId = await accountId(publisher);
+
+    const { agent: viewer } = await signedInAgent(app);
+    await viewer.post(`/api/coaches/${publisherId}/follow`);
+
+    const res = await viewer.get("/api/coaches/suggested");
+    expect(res.body.find((c: { accountId: number }) => c.accountId === publisherId)).toBeUndefined();
+  });
+
+  it("excludes coaches who haven't published anything, even with a public name set", async () => {
+    const { agent: noPublications } = await signedInAgent(app);
+    await noPublications.put("/api/account/public-name").send({ publicName: "Coach No Drills" });
+    const noPublicationsId = await accountId(noPublications);
+
+    const { agent: viewer } = await signedInAgent(app);
+    const res = await viewer.get("/api/coaches/suggested");
+    expect(res.body.find((c: { accountId: number }) => c.accountId === noPublicationsId)).toBeUndefined();
+  });
+
+  it("ranks by likeCount, then exerciseCount", async () => {
+    const { agent: popular } = await signedInPaidAgent(app);
+    const popularExerciseId = await shareNewExercise(popular, { name: "Popular Suggested Drill" });
+    const popularId = await accountId(popular);
+
+    const { agent: prolific } = await signedInPaidAgent(app);
+    await shareNewExercise(prolific, { name: "Prolific Drill One" });
+    await shareNewExercise(prolific, { name: "Prolific Drill Two" });
+    const prolificId = await accountId(prolific);
+
+    const { agent: liker } = await signedInAgent(app);
+    await liker.post(`/api/community-exercises/${popularExerciseId}/like`);
+
+    const { agent: viewer } = await signedInAgent(app);
+    const res = await viewer.get("/api/coaches/suggested?limit=1000");
+    const ids = res.body.map((c: { accountId: number }) => c.accountId);
+    expect(ids.indexOf(popularId)).toBeGreaterThanOrEqual(0);
+    expect(ids.indexOf(prolificId)).toBeGreaterThanOrEqual(0);
+    expect(ids.indexOf(popularId)).toBeLessThan(ids.indexOf(prolificId));
+  });
+});

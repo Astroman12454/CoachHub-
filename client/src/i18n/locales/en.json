@@ -779,7 +779,11 @@
     "followingTab": "Following",
     "byCoach": "by {{name}}",
     "emptyFollowingTitle": "You're Not Following Any Coach Yet",
-    "emptyFollowingDescription": "Follow a coach from their profile to see their shared exercises here."
+    "emptyFollowingDescription": "Follow a coach from their profile to see their shared exercises here.",
+    "suggestedCoaches": "Coaches you might like to follow",
+    "suggestedCoachStats": "{{exercises}} exercises · {{likes}} likes",
+    "followName": "Follow {{name}}",
+    "couldntFollow": "Couldn't follow coach"
   },
   "coachProfile": {
     "title": "Coach Profile",
