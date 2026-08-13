@@ -838,6 +838,29 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("community exercises page — suggested coaches row, follows from a suggestion", async ({ page }) => {
+    // A throwaway second account publishes an exercise so it shows up as a
+    // suggestion for the shared test account (which hasn't followed it).
+    const secondEmail = `e2e-suggest-${Date.now()}@coachhub.test`;
+    await page.request.post("/api/signup", { data: { email: secondEmail, password: "e2e-test-password-123" } });
+    await page.request.put("/api/account/public-name", { data: { publicName: `E2E Suggested Coach ${Date.now()}` } });
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Suggested Drill", description: "Shared for suggestion testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    // Switch back to the shared test account for the rest of the test.
+    await page.request.post("/api/login", { data: { email: TEST_EMAIL, password: TEST_PASSWORD } });
+
+    await login(page);
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Coaches you might like to follow");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("coach profile page — own profile, sharing an exercise", async ({ page }) => {
     await login(page);
     const create = await page.request.post("/api/exercises", {

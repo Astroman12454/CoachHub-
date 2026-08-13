@@ -779,7 +779,11 @@
     "followingTab": "Siguiendo",
     "byCoach": "por {{name}}",
     "emptyFollowingTitle": "Aún No Sigues a Ningún Entrenador",
-    "emptyFollowingDescription": "Sigue a un entrenador desde su perfil para ver aquí sus ejercicios compartidos."
+    "emptyFollowingDescription": "Sigue a un entrenador desde su perfil para ver aquí sus ejercicios compartidos.",
+    "suggestedCoaches": "Entrenadores que podrías seguir",
+    "suggestedCoachStats": "{{exercises}} ejercicios · {{likes}} likes",
+    "followName": "Seguir a {{name}}",
+    "couldntFollow": "No se pudo seguir al entrenador"
   },
   "coachProfile": {
     "title": "Perfil del Entrenador",
