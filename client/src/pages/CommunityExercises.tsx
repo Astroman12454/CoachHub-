@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Compass, Download, Globe, Heart, UserCheck, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Clock, Compass, Download, Globe, Heart, MessageCircle, UserCheck, UserPlus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
+import ExerciseCommentsDialog from "@/components/ExerciseCommentsDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,6 +35,7 @@ interface CommunityExercise {
   instructionsEs: string | null;
   likeCount: number;
   likedByMe: boolean;
+  commentCount: number;
   publishedBy: { accountId: number; publicName: string | null };
 }
 
@@ -64,6 +66,7 @@ export default function CommunityExercises() {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
   const [feedTab, setFeedTab] = useState<"discover" | "following">("discover");
+  const [commentsExercise, setCommentsExercise] = useState<CommunityExercise | null>(null);
 
   // Each tab is its own cached query (server-filtered, not client-filtered)
   // since "coaches I follow" isn't data this page has any other copy of.
@@ -159,6 +162,16 @@ export default function CommunityExercises() {
       queryClient.invalidateQueries({ queryKey: ['/api/community-exercises?following=true'] });
     },
   });
+
+  // The comments dialog owns its own thread data; this just keeps the
+  // card's visible count in sync across whichever feed tab(s) have this
+  // exercise cached, without a full refetch.
+  const handleCommentCountChange = (exerciseId: number, delta: number) => {
+    queryClient.setQueriesData<CommunityExercise[]>(
+      { predicate: (query) => typeof query.queryKey[0] === "string" && (query.queryKey[0] as string).startsWith("/api/community-exercises") },
+      (old) => old?.map((ex) => ex.id === exerciseId ? { ...ex, commentCount: Math.max(0, ex.commentCount + delta) } : ex)
+    );
+  };
 
   const handleImportClick = (exercise: CommunityExercise) => {
     if (!canImport) {
@@ -412,6 +425,15 @@ export default function CommunityExercises() {
                         <Heart className={`w-3.5 h-3.5 ${exercise.likedByMe ? "text-red-500 fill-red-500" : ""}`} aria-hidden="true" />
                         <span className="text-xs font-medium">{exercise.likeCount}</span>
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setCommentsExercise(exercise)}
+                        className="flex items-center gap-1.5 hover:text-basketball-orange transition-colors"
+                        aria-label={t("communityExercises.viewComments", { name: localized.name })}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="text-xs font-medium">{exercise.commentCount}</span>
+                      </button>
                     </div>
                     <Button
                       type="button"
@@ -431,6 +453,13 @@ export default function CommunityExercises() {
           </div>
         )}
       </main>
+
+      <ExerciseCommentsDialog
+        exerciseId={commentsExercise?.id ?? null}
+        exerciseName={commentsExercise ? localizedExerciseText(commentsExercise, i18n.language).name : ""}
+        onOpenChange={(next) => { if (!next) setCommentsExercise(null); }}
+        onCommentCountChange={handleCommentCountChange}
+      />
     </div>
   );
 }

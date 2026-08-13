@@ -182,16 +182,35 @@ export const exerciseLikes = pgTable("exercise_likes", {
   exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
 }));
 
-export const NOTIFICATION_TYPES = ["follow", "like"] as const;
+// A coach's comment on a community-shared exercise — unlike likes/follows,
+// this shows the author's name next to real freeform text, so posting one
+// requires a public name set first (same 409 PUBLIC_NAME_REQUIRED gate as
+// publishing — see PUT /api/exercises/:id/share-community). Deletable by
+// either the comment's own author or the exercise's owner (moderating their
+// own published content), never by anyone else.
+export const exerciseComments = pgTable("exercise_comments", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const createExerciseCommentSchema = z.object({
+  body: z.string().trim().min(1, "Comment can't be empty").max(500, "Comment must be 500 characters or fewer"),
+});
+export type CreateExerciseComment = z.infer<typeof createExerciseCommentSchema>;
+
+export const NOTIFICATION_TYPES = ["follow", "like", "comment"] as const;
 export type NotificationType = typeof NOTIFICATION_TYPES[number];
 
 // The in-app bell-icon feed for the social layer above — a coach was
-// followed, or one of their published exercises got a like. Distinct from
-// server/notify.ts (push/email session reminders sent to a whole team);
-// this is per-account, unread-tracked, and only ever created for the two
-// event types above. exerciseId is only meaningful for "like" (null for
-// "follow"); actorAccountId is always the coach who took the action, never
-// the recipient.
+// followed, or one of their published exercises got a like or a comment.
+// Distinct from server/notify.ts (push/email session reminders sent to a
+// whole team); this is per-account, unread-tracked, and only ever created
+// for the three event types above. exerciseId is only meaningful for
+// "like"/"comment" (null for "follow"); actorAccountId is always the coach
+// who took the action, never the recipient.
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
@@ -827,6 +846,20 @@ export interface SuggestedCoach {
   exerciseCount: number;
   likeCount: number;
   followerCount: number;
+}
+
+// A comment row plus the display context it needs (author's public name)
+// and a viewer-specific canDelete flag — true for the comment's own author
+// or the exercise's owner, computed server-side against the requesting
+// account (see storage.getExerciseComments).
+export interface ExerciseCommentView {
+  id: number;
+  exerciseId: number;
+  accountId: number;
+  publicName: string | null;
+  body: string;
+  createdAt: string | null;
+  canDelete: boolean;
 }
 
 export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;

@@ -4,6 +4,7 @@ import {
   exercises,
   exerciseSteps,
   exerciseLikes,
+  exerciseComments,
   coachFollows,
   notifications,
   trainingSessions,
@@ -68,6 +69,7 @@ import {
   type CoachProfile,
   type NotificationView,
   type SuggestedCoach,
+  type ExerciseCommentView,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
@@ -152,13 +154,23 @@ export interface IStorage {
   // "Who to follow" candidates for the Discover tab — see SuggestedCoach.
   getSuggestedCoaches(viewerAccountId: number, limit?: number): Promise<SuggestedCoach[]>;
   // The bell-icon feed — see notifications table comment in shared/schema.ts.
-  // Callers don't create these directly; likeExercise/followCoach do it
-  // internally, only for a genuinely new like/follow and never for self.
-  createNotification(data: { accountId: number; type: "follow" | "like"; actorAccountId: number; exerciseId?: number }): Promise<void>;
+  // Callers don't create these directly; likeExercise/followCoach/
+  // createExerciseComment do it internally, only for a genuinely new like/
+  // follow/comment and never for self.
+  createNotification(data: { accountId: number; type: "follow" | "like" | "comment"; actorAccountId: number; exerciseId?: number }): Promise<void>;
   getNotifications(accountId: number, limit?: number): Promise<NotificationView[]>;
   getUnreadNotificationCount(accountId: number): Promise<number>;
   markNotificationRead(id: number, accountId: number): Promise<void>;
   markAllNotificationsRead(accountId: number): Promise<void>;
+  // Requires the exercise to currently be shared to the community (undefined
+  // otherwise); the notification to the owner (if any) happens internally.
+  createExerciseComment(exerciseId: number, accountId: number, body: string): Promise<ExerciseCommentView | undefined>;
+  // Undefined (not just empty) if the exercise doesn't exist or isn't
+  // currently shared — lets the route 404 instead of showing an empty thread.
+  getExerciseComments(exerciseId: number, viewerAccountId: number): Promise<ExerciseCommentView[] | undefined>;
+  // True only if the comment existed and the requester was allowed to
+  // delete it (its author, or the exercise's owner).
+  deleteExerciseComment(commentId: number, accountId: number): Promise<boolean>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -558,7 +570,7 @@ export class DatabaseStorage implements IStorage {
     return exercise || undefined;
   }
 
-  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; publishedBy: { accountId: number; publicName: string | null } })[]> {
+  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
     let shared = await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
     if (shared.length === 0) return [];
 
@@ -586,6 +598,13 @@ export class DatabaseStorage implements IStorage {
       .where(and(inArray(exerciseLikes.exerciseId, exerciseIds), eq(exerciseLikes.accountId, accountId)));
     const likedExerciseIds = new Set(likedRows.map((row) => row.exerciseId));
 
+    const commentCounts = await db
+      .select({ exerciseId: exerciseComments.exerciseId, count: sql<number>`count(*)::int` })
+      .from(exerciseComments)
+      .where(inArray(exerciseComments.exerciseId, exerciseIds))
+      .groupBy(exerciseComments.exerciseId);
+    const commentCountByExerciseId = new Map(commentCounts.map((row) => [row.exerciseId, row.count]));
+
     const publisherIds = Array.from(new Set(shared.map((exercise) => exercise.accountId)));
     const publishers = await db
       .select({ id: accounts.id, publicName: accounts.publicName })
@@ -597,6 +616,7 @@ export class DatabaseStorage implements IStorage {
       ...exercise,
       likeCount: countByExerciseId.get(exercise.id) ?? 0,
       likedByMe: likedExerciseIds.has(exercise.id),
+      commentCount: commentCountByExerciseId.get(exercise.id) ?? 0,
       publishedBy: {
         accountId: exercise.accountId,
         publicName: publisherById.get(exercise.accountId)?.publicName ?? null,
@@ -724,7 +744,7 @@ export class DatabaseStorage implements IStorage {
       .slice(0, limit);
   }
 
-  async createNotification(data: { accountId: number; type: "follow" | "like"; actorAccountId: number; exerciseId?: number }): Promise<void> {
+  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment"; actorAccountId: number; exerciseId?: number }): Promise<void> {
     await db.insert(notifications).values({
       accountId: data.accountId,
       type: data.type,
@@ -784,6 +804,76 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ read: 1 })
       .where(and(eq(notifications.accountId, accountId), eq(notifications.read, 0)));
+  }
+
+  async createExerciseComment(exerciseId: number, accountId: number, body: string): Promise<ExerciseCommentView | undefined> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
+    if (!exercise) return undefined;
+
+    const [comment] = await db.insert(exerciseComments).values({ exerciseId, accountId, body }).returning();
+
+    if (exercise.accountId !== accountId) {
+      await this.createNotification({ accountId: exercise.accountId, type: "comment", actorAccountId: accountId, exerciseId });
+    }
+
+    const [author] = await db.select({ publicName: accounts.publicName }).from(accounts).where(eq(accounts.id, accountId));
+
+    return {
+      id: comment.id,
+      exerciseId: comment.exerciseId,
+      accountId: comment.accountId,
+      publicName: author?.publicName ?? null,
+      body: comment.body,
+      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+      canDelete: true,
+    };
+  }
+
+  async getExerciseComments(exerciseId: number, viewerAccountId: number): Promise<ExerciseCommentView[] | undefined> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
+    if (!exercise) return undefined;
+
+    const rows = await db
+      .select({
+        id: exerciseComments.id,
+        exerciseId: exerciseComments.exerciseId,
+        accountId: exerciseComments.accountId,
+        publicName: accounts.publicName,
+        body: exerciseComments.body,
+        createdAt: exerciseComments.createdAt,
+      })
+      .from(exerciseComments)
+      .leftJoin(accounts, eq(accounts.id, exerciseComments.accountId))
+      .where(eq(exerciseComments.exerciseId, exerciseId))
+      .orderBy(asc(exerciseComments.id));
+
+    return rows.map((row) => ({
+      id: row.id,
+      exerciseId: row.exerciseId,
+      accountId: row.accountId,
+      publicName: row.publicName,
+      body: row.body,
+      createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+      canDelete: row.accountId === viewerAccountId || exercise.accountId === viewerAccountId,
+    }));
+  }
+
+  async deleteExerciseComment(commentId: number, accountId: number): Promise<boolean> {
+    const [comment] = await db.select().from(exerciseComments).where(eq(exerciseComments.id, commentId));
+    if (!comment) return false;
+
+    const [exercise] = await db.select().from(exercises).where(eq(exercises.id, comment.exerciseId));
+    const canDelete = comment.accountId === accountId || exercise?.accountId === accountId;
+    if (!canDelete) return false;
+
+    const result = await db.delete(exerciseComments).where(eq(exerciseComments.id, commentId));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {

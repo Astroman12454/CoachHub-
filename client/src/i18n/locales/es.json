@@ -783,7 +783,18 @@
     "suggestedCoaches": "Entrenadores que podrías seguir",
     "suggestedCoachStats": "{{exercises}} ejercicios · {{likes}} likes",
     "followName": "Seguir a {{name}}",
-    "couldntFollow": "No se pudo seguir al entrenador"
+    "couldntFollow": "No se pudo seguir al entrenador",
+    "viewComments": "Ver comentarios de {{name}}"
+  },
+  "exerciseCommentsDialog": {
+    "title": "Comentarios",
+    "description": "En \"{{name}}\"",
+    "empty": "Aún no hay comentarios — sé el primero.",
+    "placeholder": "Añade un comentario…",
+    "post": "Publicar",
+    "deleteComment": "Borrar comentario",
+    "couldntPost": "No se pudo publicar el comentario",
+    "couldntDelete": "No se pudo borrar el comentario"
   },
   "coachProfile": {
     "title": "Perfil del Entrenador",
@@ -804,7 +815,8 @@
     "markAllRead": "Marcar todo como leído",
     "someone": "Alguien",
     "followText": "{{name}} ha empezado a seguirte",
-    "likeText": "A {{name}} le gustó \"{{exercise}}\""
+    "likeText": "A {{name}} le gustó \"{{exercise}}\"",
+    "commentText": "{{name}} comentó en \"{{exercise}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",

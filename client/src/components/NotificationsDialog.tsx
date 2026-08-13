@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, UserCheck } from "lucide-react";
+import { Heart, MessageCircle, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface NotificationItem {
   id: number;
-  type: "follow" | "like";
+  type: "follow" | "like" | "comment";
   actorAccountId: number;
   actorPublicName: string | null;
   exerciseId: number | null;
@@ -95,6 +95,19 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
     }
   };
 
+  function iconFor(type: NotificationItem["type"]) {
+    if (type === "like") return <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />;
+    if (type === "comment") return <MessageCircle className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
+    return <UserCheck className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
+  }
+
+  function textFor(item: NotificationItem) {
+    const name = item.actorPublicName ?? t("notificationsDialog.someone");
+    if (item.type === "follow") return t("notificationsDialog.followText", { name });
+    if (item.type === "comment") return t("notificationsDialog.commentText", { name, exercise: item.exerciseName ?? "" });
+    return t("notificationsDialog.likeText", { name, exercise: item.exerciseName ?? "" });
+  }
+
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unreadCount ?? 0;
 
@@ -138,16 +151,10 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
                   className={`w-full text-left flex items-start gap-3 p-3 rounded-md hover:bg-muted transition-colors ${item.read ? "" : "bg-basketball-orange/5"}`}
                 >
                   <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${item.type === "like" ? "bg-red-100 dark:bg-red-950/40" : "bg-court/10"}`}>
-                    {item.type === "like"
-                      ? <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />
-                      : <UserCheck className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />}
+                    {iconFor(item.type)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-foreground">
-                      {item.type === "follow"
-                        ? t("notificationsDialog.followText", { name: item.actorPublicName ?? t("notificationsDialog.someone") })
-                        : t("notificationsDialog.likeText", { name: item.actorPublicName ?? t("notificationsDialog.someone"), exercise: item.exerciseName ?? "" })}
-                    </p>
+                    <p className="text-sm text-foreground">{textFor(item)}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatWhen(item.createdAt)}</p>
                   </div>
                   {!item.read && (

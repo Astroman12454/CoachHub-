@@ -510,3 +510,151 @@ describe("suggested coaches", () => {
     expect(ids.indexOf(popularId)).toBeLessThan(ids.indexOf(prolificId));
   });
 });
+
+describe("exercise comments", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("posts a comment and returns it with the author's public name and canDelete true", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Commented Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Commenter Coach" });
+    const res = await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Great drill!" });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ body: "Great drill!", publicName: "Commenter Coach", canDelete: true });
+  });
+
+  it("requires a public name before commenting", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "No Name Yet Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    const res = await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Nice!" });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("PUBLIC_NAME_REQUIRED");
+  });
+
+  it("rejects an empty or overlong comment", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Validation Drill" });
+    await owner.put("/api/account/public-name").send({ publicName: "Coach Social" });
+
+    const empty = await owner.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "   " });
+    expect(empty.status).toBe(400);
+
+    const overlong = await owner.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "x".repeat(501) });
+    expect(overlong.status).toBe(400);
+  });
+
+  it("404s commenting on an exercise that isn't shared or doesn't exist", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    await owner.put("/api/account/public-name").send({ publicName: "Coach Social" });
+    const create = await owner.post("/api/exercises").send(exerciseBody({ name: "Unshared Drill" }));
+
+    const res = await owner.post(`/api/community-exercises/${create.body.id}/comments`).send({ body: "Hi" });
+    expect(res.status).toBe(404);
+
+    const unknown = await owner.post("/api/community-exercises/999999/comments").send({ body: "Hi" });
+    expect(unknown.status).toBe(404);
+  });
+
+  it("lists comments in chronological order, computing canDelete per viewer", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Thread Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Thread Commenter" });
+    await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "First!" });
+    await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Second!" });
+
+    const asOwner = await owner.get(`/api/community-exercises/${exerciseId}/comments`);
+    expect(asOwner.body.map((c: { body: string }) => c.body)).toEqual(["First!", "Second!"]);
+    expect(asOwner.body.every((c: { canDelete: boolean }) => c.canDelete)).toBe(true);
+
+    const asCommenter = await commenter.get(`/api/community-exercises/${exerciseId}/comments`);
+    expect(asCommenter.body.every((c: { canDelete: boolean }) => c.canDelete)).toBe(true);
+
+    const { agent: bystander } = await signedInAgent(app);
+    const asBystander = await bystander.get(`/api/community-exercises/${exerciseId}/comments`);
+    expect(asBystander.body.every((c: { canDelete: boolean }) => !c.canDelete)).toBe(true);
+  });
+
+  it("lets the comment's author delete their own comment", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Self Delete Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Self Deleter" });
+    const create = await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Oops" });
+
+    const res = await commenter.delete(`/api/community-exercises/${exerciseId}/comments/${create.body.id}`);
+    expect(res.status).toBe(204);
+
+    const remaining = await owner.get(`/api/community-exercises/${exerciseId}/comments`);
+    expect(remaining.body).toHaveLength(0);
+  });
+
+  it("lets the exercise owner delete someone else's comment on their exercise", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Owner Moderates Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Moderated Commenter" });
+    const create = await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Rude comment" });
+
+    const res = await owner.delete(`/api/community-exercises/${exerciseId}/comments/${create.body.id}`);
+    expect(res.status).toBe(204);
+  });
+
+  it("404s deleting a comment you neither wrote nor own the exercise for", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Protected Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Protected Commenter" });
+    const create = await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Mine" });
+
+    const { agent: outsider } = await signedInAgent(app);
+    const res = await outsider.delete(`/api/community-exercises/${exerciseId}/comments/${create.body.id}`);
+    expect(res.status).toBe(404);
+
+    const stillThere = await owner.get(`/api/community-exercises/${exerciseId}/comments`);
+    expect(stillThere.body).toHaveLength(1);
+  });
+
+  it("notifies the exercise owner when someone else comments, never for commenting on your own", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Notify Comment Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Notify Commenter" });
+    await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Nice one" });
+
+    const notifications = await owner.get("/api/notifications");
+    expect(notifications.body.notifications[0]).toMatchObject({ type: "comment", actorPublicName: "Notify Commenter" });
+
+    await owner.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Thanks, self-comment" });
+    const afterSelfComment = await owner.get("/api/notifications");
+    expect(afterSelfComment.body.unreadCount).toBe(notifications.body.unreadCount);
+  });
+
+  it("reflects commentCount in the community exercises list", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Comment Count Drill" });
+
+    const { agent: commenter } = await signedInAgent(app);
+    await commenter.put("/api/account/public-name").send({ publicName: "Count Commenter" });
+    await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "One" });
+    await commenter.post(`/api/community-exercises/${exerciseId}/comments`).send({ body: "Two" });
+
+    const res = await owner.get("/api/community-exercises");
+    const found = res.body.find((ex: { id: number }) => ex.id === exerciseId);
+    expect(found.commentCount).toBe(2);
+  });
+});
