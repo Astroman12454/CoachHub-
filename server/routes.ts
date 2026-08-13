@@ -34,6 +34,7 @@ import {
   insertPhysicalTestSchema,
   recordPhysicalTestResultsSchema,
   setPublicNameSchema,
+  createExerciseCommentSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -570,8 +571,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sort = req.query.sort === "popular" ? "popular" : "recent";
       const followingOnly = req.query.following === "true";
       const shared = await storage.getCommunityExercises(accountId, { sort, followingOnly });
-      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, publishedBy }) =>
-        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, publishedBy })
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, commentCount, publishedBy }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, commentCount, publishedBy })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community exercises" });
@@ -604,6 +605,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to unlike exercise" });
+    }
+  });
+
+  // Comments show the author's name next to real text, so posting one
+  // needs a public name set first — same 409 PUBLIC_NAME_REQUIRED gate as
+  // publishing (see PUT /api/exercises/:id/share-community).
+  app.get("/api/community-exercises/:id/comments", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const comments = await storage.getExerciseComments(id, accountId);
+      if (!comments) {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/community-exercises/:id/comments", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!account?.publicName) {
+        return res.status(409).json({ message: "Set a public name before commenting.", code: "PUBLIC_NAME_REQUIRED" });
+      }
+
+      const { body } = createExerciseCommentSchema.parse(req.body);
+      const comment = await storage.createExerciseComment(id, accountId, body);
+      if (!comment) {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid comment" });
+    }
+  });
+
+  // Deletable by the comment's own author or the exercise's owner
+  // (moderating their own published content) — nobody else, see
+  // storage.deleteExerciseComment. 404 either way so a requester who isn't
+  // allowed can't tell "not found" from "not yours to delete".
+  app.delete("/api/community-exercises/:id/comments/:commentId", async (req, res) => {
+    try {
+      const commentId = parseId(req, res, "commentId");
+      if (commentId === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const deleted = await storage.deleteExerciseComment(commentId, accountId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
     }
   });
 

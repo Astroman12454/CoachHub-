@@ -914,6 +914,29 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/exercises/${exercise.id}`);
   });
 
+  test("exercise comments dialog — posts and shows a comment", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Comment Drill", description: "Shared for comment testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Comment Drill");
+    await page.click('button[aria-label="View comments on E2E Comment Drill"]');
+    await page.waitForSelector("text=No comments yet — be the first.");
+
+    await page.fill('textarea[aria-label="Add a comment…"]', "Great drill, thanks for sharing!");
+    await page.click('button:has-text("Post")');
+    await page.waitForSelector("text=Great drill, thanks for sharing!");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("community exercises — imports a shared drill into the library", async ({ page }) => {
     await login(page);
     const create = await page.request.post("/api/exercises", {
