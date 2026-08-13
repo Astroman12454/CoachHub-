@@ -659,6 +659,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // The bell-icon feed — a coach was followed, or one of their published
+  // exercises got liked. See storage.createNotification for how these get
+  // created (never directly from a route; always a side effect of
+  // followCoach/likeExercise).
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const [items, unreadCount] = await Promise.all([
+        storage.getNotifications(accountId),
+        storage.getUnreadNotificationCount(accountId),
+      ]);
+      res.json({ notifications: items, unreadCount });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/read-all", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.markAllNotificationsRead(accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark notifications read" });
+    }
+  });
+
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.markNotificationRead(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark notification read" });
+    }
+  });
+
   // Importing copies the drill into your own library, so it's gated the
   // same as creating any other custom exercise.
   app.post("/api/community-exercises/:id/import", async (req, res) => {

@@ -1,10 +1,16 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Menu, Search, X, Plus, Bell } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SessionModal from "./SessionModal";
+import NotificationsDialog from "./NotificationsDialog";
 import { useSidebar } from "@/hooks/use-sidebar";
+
+interface NotificationsResponse {
+  unreadCount: number;
+}
 
 interface TopBarProps {
   title: string;
@@ -23,8 +29,18 @@ export default function TopBar({
 }: TopBarProps) {
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { openMobile } = useSidebar();
+
+  // Polling, not push — matches the rest of this app's "no websockets"
+  // approach. 45s keeps the badge reasonably fresh without hammering the
+  // server across every open tab/page (TopBar mounts on every page).
+  const { data: notificationsSummary } = useQuery<NotificationsResponse>({
+    queryKey: ['/api/notifications'],
+    refetchInterval: 45000,
+  });
+  const unreadCount = notificationsSummary?.unreadCount ?? 0;
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -91,14 +107,22 @@ export default function TopBar({
 
             <button
               type="button"
-              className="hidden lg:flex w-10 h-10 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
-              aria-label={t("common.notifications")}
+              onClick={() => setIsNotificationsOpen(true)}
+              className="hidden lg:flex relative w-10 h-10 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
+              aria-label={unreadCount > 0 ? t("common.notificationsUnread", { count: unreadCount }) : t("common.notifications")}
             >
               <Bell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full basketball-orange text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
       </header>
+
+      <NotificationsDialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen} />
 
       {isModalOpen && (
         <SessionModal
