@@ -201,22 +201,28 @@ export const createExerciseCommentSchema = z.object({
 });
 export type CreateExerciseComment = z.infer<typeof createExerciseCommentSchema>;
 
-export const NOTIFICATION_TYPES = ["follow", "like", "comment"] as const;
+// "like"/"comment" (no suffix) mean an exercise, kept as-is for backward
+// compatibility with rows already written before plays joined the
+// community — "like_play"/"comment_play" are the play equivalents. A
+// future content type follows the same _suffix convention rather than
+// renaming the original two.
+export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play"] as const;
 export type NotificationType = typeof NOTIFICATION_TYPES[number];
 
 // The in-app bell-icon feed for the social layer above — a coach was
-// followed, or one of their published exercises got a like or a comment.
-// Distinct from server/notify.ts (push/email session reminders sent to a
-// whole team); this is per-account, unread-tracked, and only ever created
-// for the three event types above. exerciseId is only meaningful for
-// "like"/"comment" (null for "follow"); actorAccountId is always the coach
-// who took the action, never the recipient.
+// followed, or one of their published exercises/plays got a like or a
+// comment. Distinct from server/notify.ts (push/email session reminders
+// sent to a whole team); this is per-account, unread-tracked. exerciseId/
+// playId are only meaningful for their matching type (both null for
+// "follow"); actorAccountId is always the coach who took the action, never
+// the recipient.
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   type: text("type").notNull(),
   actorAccountId: integer("actor_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   exerciseId: integer("exercise_id").references(() => exercises.id, { onDelete: "cascade" }),
+  playId: integer("play_id").references(() => plays.id, { onDelete: "cascade" }),
   read: integer("read").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -510,6 +516,12 @@ export const plays = pgTable("plays", {
   // Toggled through its own ungated endpoint, since starring an existing
   // play isn't "creating" a new one against the plan's play limit.
   isFavorite: integer("is_favorite").default(0),
+  // 1 when a coach has opted this play into the cross-team community
+  // library — same convention and gating (public name required to publish)
+  // as exercises.sharedToCommunity. A play belongs to a team, not directly
+  // to an account, so "who published it" for community purposes is resolved
+  // through teams.accountId (see storage.getCommunityPlays).
+  sharedToCommunity: integer("shared_to_community").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -520,6 +532,42 @@ export const playSteps = pgTable("play_steps", {
   tokens: json("tokens").notNull().$type<Token[]>(),
   drawings: json("drawings").notNull().$type<Drawing[]>(),
 });
+
+// The play community's like/comment/save trio — structurally identical to
+// exerciseLikes/exerciseComments (see above) and kept as their own tables
+// rather than a generic polymorphic one, same reasoning: real foreign keys,
+// grep-able, matches how the rest of this schema favors explicit per-domain
+// tables over generic ones.
+export const playLikes = pgTable("play_likes", {
+  id: serial("id").primaryKey(),
+  playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  playAccountUnique: unique().on(table.playId, table.accountId),
+}));
+
+export const playComments = pgTable("play_comments", {
+  id: serial("id").primaryKey(),
+  playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// A private bookmark — "guardado" — on a community-shared play. Unlike a
+// like, it's not a public signal and doesn't show up as a count anyone else
+// sees; it's just this account's own reading list, kept in its own table
+// per content type so a coach's saved plays, exercises, and physical tests
+// never mix (see the Discover/Following/Saved tabs on each community page).
+export const playSaves = pgTable("play_saves", {
+  id: serial("id").primaryKey(),
+  playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  playAccountUnique: unique().on(table.playId, table.accountId),
+}));
 
 export const EXERCISE_CATEGORIES = [
   "shooting",
@@ -831,6 +879,8 @@ export interface NotificationView {
   actorPublicName: string | null;
   exerciseId: number | null;
   exerciseName: string | null;
+  playId: number | null;
+  playName: string | null;
   read: boolean;
   createdAt: string | null;
 }
@@ -855,6 +905,19 @@ export interface SuggestedCoach {
 export interface ExerciseCommentView {
   id: number;
   exerciseId: number;
+  accountId: number;
+  publicName: string | null;
+  body: string;
+  createdAt: string | null;
+  canDelete: boolean;
+}
+
+// Same shape as ExerciseCommentView, for a play's comment thread — canDelete
+// is true for the comment's own author or the play's owning team's account
+// (resolved through teams.accountId, see storage.getPlayComments).
+export interface PlayCommentView {
+  id: number;
+  playId: number;
   accountId: number;
   publicName: string | null;
   body: string;

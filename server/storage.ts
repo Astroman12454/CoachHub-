@@ -5,6 +5,9 @@ import {
   exerciseSteps,
   exerciseLikes,
   exerciseComments,
+  playLikes,
+  playComments,
+  playSaves,
   coachFollows,
   notifications,
   trainingSessions,
@@ -68,8 +71,10 @@ import {
   type PlayerPhysicalTestHistory,
   type CoachProfile,
   type NotificationView,
+  type NotificationType,
   type SuggestedCoach,
   type ExerciseCommentView,
+  type PlayCommentView,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
@@ -157,7 +162,7 @@ export interface IStorage {
   // Callers don't create these directly; likeExercise/followCoach/
   // createExerciseComment do it internally, only for a genuinely new like/
   // follow/comment and never for self.
-  createNotification(data: { accountId: number; type: "follow" | "like" | "comment"; actorAccountId: number; exerciseId?: number }): Promise<void>;
+  createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play"; actorAccountId: number; exerciseId?: number; playId?: number }): Promise<void>;
   getNotifications(accountId: number, limit?: number): Promise<NotificationView[]>;
   getUnreadNotificationCount(accountId: number): Promise<number>;
   markNotificationRead(id: number, accountId: number): Promise<void>;
@@ -171,6 +176,25 @@ export interface IStorage {
   // True only if the comment existed and the requester was allowed to
   // delete it (its author, or the exercise's owner).
   deleteExerciseComment(commentId: number, accountId: number): Promise<boolean>;
+
+  // Play (playbook) community — same shape as the exercise community above,
+  // except a play's "owner" for social purposes is resolved through
+  // teams.accountId (a play belongs to a team, not directly to an account).
+  setPlayCommunityShare(id: number, teamId: number, shared: boolean): Promise<Play | undefined>;
+  getCommunityPlays(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(Play & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  // Copies a shared play (with its steps) into the importing team's own
+  // playbook as a brand-new row — same "fresh copy, never linked back" model
+  // as importCommunityExercise.
+  importCommunityPlay(id: number, teamId: number): Promise<Play | undefined>;
+  likePlay(playId: number, accountId: number): Promise<boolean>;
+  unlikePlay(playId: number, accountId: number): Promise<void>;
+  // "Guardado" — a private bookmark, distinct from liking. Also only works
+  // on a currently-shared play.
+  savePlay(playId: number, accountId: number): Promise<boolean>;
+  unsavePlay(playId: number, accountId: number): Promise<void>;
+  createPlayComment(playId: number, accountId: number, body: string): Promise<PlayCommentView | undefined>;
+  getPlayComments(playId: number, viewerAccountId: number): Promise<PlayCommentView[] | undefined>;
+  deletePlayComment(commentId: number, accountId: number): Promise<boolean>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -744,12 +768,13 @@ export class DatabaseStorage implements IStorage {
       .slice(0, limit);
   }
 
-  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment"; actorAccountId: number; exerciseId?: number }): Promise<void> {
+  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play"; actorAccountId: number; exerciseId?: number; playId?: number }): Promise<void> {
     await db.insert(notifications).values({
       accountId: data.accountId,
       type: data.type,
       actorAccountId: data.actorAccountId,
       exerciseId: data.exerciseId ?? null,
+      playId: data.playId ?? null,
     });
   }
 
@@ -762,23 +787,28 @@ export class DatabaseStorage implements IStorage {
         actorPublicName: accounts.publicName,
         exerciseId: notifications.exerciseId,
         exerciseName: exercises.name,
+        playId: notifications.playId,
+        playName: plays.name,
         read: notifications.read,
         createdAt: notifications.createdAt,
       })
       .from(notifications)
       .leftJoin(accounts, eq(notifications.actorAccountId, accounts.id))
       .leftJoin(exercises, eq(notifications.exerciseId, exercises.id))
+      .leftJoin(plays, eq(notifications.playId, plays.id))
       .where(eq(notifications.accountId, accountId))
       .orderBy(desc(notifications.id))
       .limit(limit);
 
     return rows.map((row) => ({
       id: row.id,
-      type: row.type as "follow" | "like",
+      type: row.type as NotificationType,
       actorAccountId: row.actorAccountId,
       actorPublicName: row.actorPublicName,
       exerciseId: row.exerciseId,
       exerciseName: row.exerciseName,
+      playId: row.playId,
+      playName: row.playName,
       read: row.read === 1,
       createdAt: row.createdAt ? row.createdAt.toISOString() : null,
     }));
@@ -873,6 +903,236 @@ export class DatabaseStorage implements IStorage {
     if (!canDelete) return false;
 
     const result = await db.delete(exerciseComments).where(eq(exerciseComments.id, commentId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async setPlayCommunityShare(id: number, teamId: number, shared: boolean): Promise<Play | undefined> {
+    const [play] = await db
+      .update(plays)
+      .set({ sharedToCommunity: shared ? 1 : 0 })
+      .where(and(eq(plays.id, id), eq(plays.teamId, teamId)))
+      .returning();
+    return play || undefined;
+  }
+
+  async getCommunityPlays(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(Play & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+    let shared = await db
+      .select({ play: plays, ownerAccountId: teams.accountId })
+      .from(plays)
+      .innerJoin(teams, eq(teams.id, plays.teamId))
+      .where(eq(plays.sharedToCommunity, 1));
+    if (shared.length === 0) return [];
+
+    if (opts.followingOnly) {
+      const followingRows = await db
+        .select({ followingAccountId: coachFollows.followingAccountId })
+        .from(coachFollows)
+        .where(eq(coachFollows.followerAccountId, accountId));
+      const followingAccountIds = new Set(followingRows.map((row) => row.followingAccountId));
+      shared = shared.filter((row) => followingAccountIds.has(row.ownerAccountId));
+    }
+
+    if (opts.savedOnly) {
+      const savedRows = await db.select({ playId: playSaves.playId }).from(playSaves).where(eq(playSaves.accountId, accountId));
+      const savedPlayIds = new Set(savedRows.map((row) => row.playId));
+      shared = shared.filter((row) => savedPlayIds.has(row.play.id));
+    }
+
+    if (shared.length === 0) return [];
+
+    const playIds = shared.map((row) => row.play.id);
+    const likeCounts = await db
+      .select({ playId: playLikes.playId, count: sql<number>`count(*)::int` })
+      .from(playLikes)
+      .where(inArray(playLikes.playId, playIds))
+      .groupBy(playLikes.playId);
+    const likeCountByPlayId = new Map(likeCounts.map((row) => [row.playId, row.count]));
+
+    const likedRows = await db
+      .select({ playId: playLikes.playId })
+      .from(playLikes)
+      .where(and(inArray(playLikes.playId, playIds), eq(playLikes.accountId, accountId)));
+    const likedPlayIds = new Set(likedRows.map((row) => row.playId));
+
+    const savedRowsForViewer = await db
+      .select({ playId: playSaves.playId })
+      .from(playSaves)
+      .where(and(inArray(playSaves.playId, playIds), eq(playSaves.accountId, accountId)));
+    const savedPlayIdsForViewer = new Set(savedRowsForViewer.map((row) => row.playId));
+
+    const commentCounts = await db
+      .select({ playId: playComments.playId, count: sql<number>`count(*)::int` })
+      .from(playComments)
+      .where(inArray(playComments.playId, playIds))
+      .groupBy(playComments.playId);
+    const commentCountByPlayId = new Map(commentCounts.map((row) => [row.playId, row.count]));
+
+    const publisherIds = Array.from(new Set(shared.map((row) => row.ownerAccountId)));
+    const publishers = await db
+      .select({ id: accounts.id, publicName: accounts.publicName })
+      .from(accounts)
+      .where(inArray(accounts.id, publisherIds));
+    const publisherById = new Map(publishers.map((publisher) => [publisher.id, publisher]));
+
+    const withExtras = shared.map((row) => ({
+      ...row.play,
+      likeCount: likeCountByPlayId.get(row.play.id) ?? 0,
+      likedByMe: likedPlayIds.has(row.play.id),
+      savedByMe: savedPlayIdsForViewer.has(row.play.id),
+      commentCount: commentCountByPlayId.get(row.play.id) ?? 0,
+      publishedBy: {
+        accountId: row.ownerAccountId,
+        publicName: publisherById.get(row.ownerAccountId)?.publicName ?? null,
+      },
+    }));
+
+    return opts.sort === "popular"
+      ? withExtras.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
+      : withExtras.sort((a, b) => b.id - a.id);
+  }
+
+  async importCommunityPlay(id: number, teamId: number): Promise<Play | undefined> {
+    return await db.transaction(async (tx) => {
+      const [source] = await tx.select().from(plays).where(and(eq(plays.id, id), eq(plays.sharedToCommunity, 1)));
+      if (!source) return undefined;
+
+      const [imported] = await tx
+        .insert(plays)
+        .values({
+          teamId,
+          name: source.name,
+          category: source.category,
+          courtType: source.courtType,
+          situation: source.situation,
+          notes: source.notes,
+        })
+        .returning();
+
+      const sourceSteps = await tx
+        .select()
+        .from(playSteps)
+        .where(eq(playSteps.playId, source.id))
+        .orderBy(asc(playSteps.stepIndex));
+      if (sourceSteps.length > 0) {
+        await tx.insert(playSteps).values(
+          sourceSteps.map((step) => ({
+            playId: imported.id,
+            stepIndex: step.stepIndex,
+            tokens: step.tokens,
+            drawings: step.drawings,
+          })),
+        );
+      }
+
+      return imported;
+    });
+  }
+
+  async likePlay(playId: number, accountId: number): Promise<boolean> {
+    const [row] = await db
+      .select({ ownerAccountId: teams.accountId })
+      .from(plays)
+      .innerJoin(teams, eq(teams.id, plays.teamId))
+      .where(and(eq(plays.id, playId), eq(plays.sharedToCommunity, 1)));
+    if (!row) return false;
+
+    const inserted = await db.insert(playLikes).values({ playId, accountId }).onConflictDoNothing().returning();
+    if (inserted.length > 0 && row.ownerAccountId !== accountId) {
+      await this.createNotification({ accountId: row.ownerAccountId, type: "like_play", actorAccountId: accountId, playId });
+    }
+    return true;
+  }
+
+  async unlikePlay(playId: number, accountId: number): Promise<void> {
+    await db.delete(playLikes).where(and(eq(playLikes.playId, playId), eq(playLikes.accountId, accountId)));
+  }
+
+  async savePlay(playId: number, accountId: number): Promise<boolean> {
+    const [play] = await db.select().from(plays).where(and(eq(plays.id, playId), eq(plays.sharedToCommunity, 1)));
+    if (!play) return false;
+
+    await db.insert(playSaves).values({ playId, accountId }).onConflictDoNothing();
+    return true;
+  }
+
+  async unsavePlay(playId: number, accountId: number): Promise<void> {
+    await db.delete(playSaves).where(and(eq(playSaves.playId, playId), eq(playSaves.accountId, accountId)));
+  }
+
+  async createPlayComment(playId: number, accountId: number, body: string): Promise<PlayCommentView | undefined> {
+    const [row] = await db
+      .select({ ownerAccountId: teams.accountId })
+      .from(plays)
+      .innerJoin(teams, eq(teams.id, plays.teamId))
+      .where(and(eq(plays.id, playId), eq(plays.sharedToCommunity, 1)));
+    if (!row) return undefined;
+
+    const [comment] = await db.insert(playComments).values({ playId, accountId, body }).returning();
+
+    if (row.ownerAccountId !== accountId) {
+      await this.createNotification({ accountId: row.ownerAccountId, type: "comment_play", actorAccountId: accountId, playId });
+    }
+
+    const [author] = await db.select({ publicName: accounts.publicName }).from(accounts).where(eq(accounts.id, accountId));
+
+    return {
+      id: comment.id,
+      playId: comment.playId,
+      accountId: comment.accountId,
+      publicName: author?.publicName ?? null,
+      body: comment.body,
+      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+      canDelete: true,
+    };
+  }
+
+  async getPlayComments(playId: number, viewerAccountId: number): Promise<PlayCommentView[] | undefined> {
+    const [row] = await db
+      .select({ ownerAccountId: teams.accountId })
+      .from(plays)
+      .innerJoin(teams, eq(teams.id, plays.teamId))
+      .where(and(eq(plays.id, playId), eq(plays.sharedToCommunity, 1)));
+    if (!row) return undefined;
+
+    const rows = await db
+      .select({
+        id: playComments.id,
+        playId: playComments.playId,
+        accountId: playComments.accountId,
+        publicName: accounts.publicName,
+        body: playComments.body,
+        createdAt: playComments.createdAt,
+      })
+      .from(playComments)
+      .leftJoin(accounts, eq(accounts.id, playComments.accountId))
+      .where(eq(playComments.playId, playId))
+      .orderBy(asc(playComments.id));
+
+    return rows.map((r) => ({
+      id: r.id,
+      playId: r.playId,
+      accountId: r.accountId,
+      publicName: r.publicName,
+      body: r.body,
+      createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+      canDelete: r.accountId === viewerAccountId || row.ownerAccountId === viewerAccountId,
+    }));
+  }
+
+  async deletePlayComment(commentId: number, accountId: number): Promise<boolean> {
+    const [comment] = await db.select().from(playComments).where(eq(playComments.id, commentId));
+    if (!comment) return false;
+
+    const [row] = await db
+      .select({ ownerAccountId: teams.accountId })
+      .from(plays)
+      .innerJoin(teams, eq(teams.id, plays.teamId))
+      .where(eq(plays.id, comment.playId));
+
+    const canDelete = comment.accountId === accountId || row?.ownerAccountId === accountId;
+    if (!canDelete) return false;
+
+    const result = await db.delete(playComments).where(eq(playComments.id, commentId));
     return (result.rowCount ?? 0) > 0;
   }
 

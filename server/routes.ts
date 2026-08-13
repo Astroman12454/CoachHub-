@@ -1970,6 +1970,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const setPlayCommunityShareSchema = z.object({ shared: z.boolean() });
+
+  // Play community — same shape and gating as the exercise community above
+  // (see PUT /api/exercises/:id/share-community's comment for why publishing
+  // needs a public name first), scoped by teamId since a play belongs to a
+  // team rather than directly to an account.
+  app.put("/api/plays/:id/share-community", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const teamId = req.session.currentTeamId!;
+      const { shared } = setPlayCommunityShareSchema.parse(req.body);
+
+      const existing = await storage.getPlayById(id, teamId);
+      if (!existing) {
+        return res.status(404).json({ message: "Play not found" });
+      }
+      if (shared) {
+        const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+        const account = await storage.getAccountById(accountId);
+        if (!account?.publicName) {
+          return res.status(409).json({ message: "Set a public name before publishing to the community.", code: "PUBLIC_NAME_REQUIRED" });
+        }
+      }
+      const play = await storage.setPlayCommunityShare(id, teamId, shared);
+      if (!play) {
+        return res.status(404).json({ message: "Play not found" });
+      }
+      res.json(play);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  app.get("/api/community-plays", requireTeam, async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const sort = req.query.sort === "popular" ? "popular" : "recent";
+      const followingOnly = req.query.following === "true";
+      const savedOnly = req.query.saved === "true";
+      const shared = await storage.getCommunityPlays(accountId, { sort, followingOnly, savedOnly });
+      res.json(shared.map(({ id, name, category, courtType, situation, notes, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
+        ({ id, name, category, courtType, situation, notes, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
+      ));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch community plays" });
+    }
+  });
+
+  app.post("/api/community-plays/:id/like", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const liked = await storage.likePlay(id, accountId);
+      if (!liked) {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to like play" });
+    }
+  });
+
+  app.delete("/api/community-plays/:id/like", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unlikePlay(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unlike play" });
+    }
+  });
+
+  // "Guardado" — a private bookmark, distinct from liking (see playSaves in
+  // shared/schema.ts). Free on every plan, same as liking.
+  app.post("/api/community-plays/:id/save", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const saved = await storage.savePlay(id, accountId);
+      if (!saved) {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save play" });
+    }
+  });
+
+  app.delete("/api/community-plays/:id/save", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unsavePlay(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unsave play" });
+    }
+  });
+
+  app.get("/api/community-plays/:id/comments", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const comments = await storage.getPlayComments(id, accountId);
+      if (!comments) {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/community-plays/:id/comments", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!account?.publicName) {
+        return res.status(409).json({ message: "Set a public name before commenting.", code: "PUBLIC_NAME_REQUIRED" });
+      }
+
+      const { body } = createExerciseCommentSchema.parse(req.body);
+      const comment = await storage.createPlayComment(id, accountId, body);
+      if (!comment) {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid comment" });
+    }
+  });
+
+  app.delete("/api/community-plays/:id/comments/:commentId", requireTeam, async (req, res) => {
+    try {
+      const commentId = parseId(req, res, "commentId");
+      if (commentId === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const deleted = await storage.deletePlayComment(commentId, accountId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // Importing consumes a play slot exactly like drawing up a new one from
+  // scratch — plays were never behind the exercises-style "custom content
+  // requires paid" gate, just the free plan's play-count cap, so importing
+  // stays consistent with that (not a blanket paid-only gate).
+  app.post("/api/community-plays/:id/import", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const teamId = req.session.currentTeamId!;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      const currentPlayCount = await storage.getPlayCount(teamId);
+      if (!canCreatePlay(account?.plan ?? "free", currentPlayCount)) {
+        return res.status(403).json({
+          message: `Free plan is limited to ${FREE_PLAN_PLAY_LIMIT} saved plays. Upgrade to save more.`,
+        });
+      }
+
+      const imported = await storage.importCommunityPlay(id, teamId);
+      if (!imported) {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.status(201).json(imported);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to import play" });
+    }
+  });
+
   // AI box-score import — upload a photo or PDF, get a draft back for the
   // coach to review/correct before it's saved via POST /api/games above.
   // Nothing is persisted here; this route only ever reads.

@@ -637,7 +637,11 @@
     "couldntUpdateFavorite": "Couldn't update favorite",
     "duplicateAction": "Duplicate {{name}}",
     "duplicateName": "{{name}} (copy)",
-    "couldntDuplicate": "Couldn't duplicate play"
+    "couldntDuplicate": "Couldn't duplicate play",
+    "community": "Community",
+    "addToCommunity": "Add {{name}} to the community",
+    "removeFromCommunity": "Remove {{name}} from the community",
+    "couldntUpdateCommunityShare": "Couldn't update community share"
   },
   "playEditor": {
     "nameRequired": "Name required",
@@ -796,6 +800,30 @@
     "couldntPost": "Couldn't post comment",
     "couldntDelete": "Couldn't delete comment"
   },
+  "communityPlays": {
+    "title": "Community Plays",
+    "subtitle": "Browse and import plays other coaches have shared publicly",
+    "backToPlaybook": "Back to playbook",
+    "savedTab": "Saved",
+    "emptyTitle": "No Community Plays Yet",
+    "emptyDescription": "No coach has shared a play to the community yet — share one of your own from the Playbook.",
+    "emptyFilterDescription": "No community plays match your current filters.",
+    "emptyFollowingTitle": "You're Not Following Any Coach Yet",
+    "emptyFollowingDescription": "Follow a coach from their profile to see their shared plays here.",
+    "emptySavedTitle": "No Saved Plays Yet",
+    "emptySavedDescription": "Bookmark a play from the community to find it here later.",
+    "imported": "Play imported",
+    "importedDescription": "\"{{name}}\" was added to your playbook.",
+    "couldntImport": "Couldn't import play",
+    "importName": "Import {{name}}",
+    "couldntUpdateLike": "Couldn't update like",
+    "couldntUpdateSave": "Couldn't update saved play",
+    "like": "Like {{name}}",
+    "unlike": "Unlike {{name}}",
+    "save": "Save {{name}}",
+    "unsave": "Unsave {{name}}",
+    "viewComments": "View comments on {{name}}"
+  },
   "coachProfile": {
     "title": "Coach Profile",
     "subtitle": "Public profile and shared exercises",
@@ -816,7 +844,9 @@
     "someone": "Someone",
     "followText": "{{name}} started following you",
     "likeText": "{{name}} liked \"{{exercise}}\"",
-    "commentText": "{{name}} commented on \"{{exercise}}\""
+    "commentText": "{{name}} commented on \"{{exercise}}\"",
+    "likePlayText": "{{name}} liked your play \"{{play}}\"",
+    "commentPlayText": "{{name}} commented on your play \"{{play}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",

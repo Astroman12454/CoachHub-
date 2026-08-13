@@ -637,7 +637,11 @@
     "couldntUpdateFavorite": "No se pudo actualizar el favorito",
     "duplicateAction": "Duplicar {{name}}",
     "duplicateName": "{{name}} (copia)",
-    "couldntDuplicate": "No se pudo duplicar la jugada"
+    "couldntDuplicate": "No se pudo duplicar la jugada",
+    "community": "Comunidad",
+    "addToCommunity": "Añadir {{name}} a la comunidad",
+    "removeFromCommunity": "Quitar {{name}} de la comunidad",
+    "couldntUpdateCommunityShare": "No se pudo actualizar el estado en la comunidad"
   },
   "playEditor": {
     "nameRequired": "Nombre requerido",
@@ -796,6 +800,30 @@
     "couldntPost": "No se pudo publicar el comentario",
     "couldntDelete": "No se pudo borrar el comentario"
   },
+  "communityPlays": {
+    "title": "Jugadas de la Comunidad",
+    "subtitle": "Explora e importa jugadas que otros entrenadores compartieron públicamente",
+    "backToPlaybook": "Volver al playbook",
+    "savedTab": "Guardadas",
+    "emptyTitle": "Aún No Hay Jugadas de la Comunidad",
+    "emptyDescription": "Ningún entrenador compartió una jugada con la comunidad todavía — comparte una de las tuyas desde el Playbook.",
+    "emptyFilterDescription": "Ninguna jugada de la comunidad coincide con tus filtros actuales.",
+    "emptyFollowingTitle": "Aún No Sigues a Ningún Entrenador",
+    "emptyFollowingDescription": "Sigue a un entrenador desde su perfil para ver aquí sus jugadas compartidas.",
+    "emptySavedTitle": "Aún No Hay Jugadas Guardadas",
+    "emptySavedDescription": "Guarda una jugada de la comunidad para encontrarla aquí más tarde.",
+    "imported": "Jugada importada",
+    "importedDescription": "\"{{name}}\" se añadió a tu playbook.",
+    "couldntImport": "No se pudo importar la jugada",
+    "importName": "Importar {{name}}",
+    "couldntUpdateLike": "No se pudo actualizar el me gusta",
+    "couldntUpdateSave": "No se pudo actualizar la jugada guardada",
+    "like": "Me gusta {{name}}",
+    "unlike": "Ya no me gusta {{name}}",
+    "save": "Guardar {{name}}",
+    "unsave": "Quitar de guardadas {{name}}",
+    "viewComments": "Ver comentarios de {{name}}"
+  },
   "coachProfile": {
     "title": "Perfil del Entrenador",
     "subtitle": "Perfil público y ejercicios compartidos",
@@ -816,7 +844,9 @@
     "someone": "Alguien",
     "followText": "{{name}} ha empezado a seguirte",
     "likeText": "A {{name}} le gustó \"{{exercise}}\"",
-    "commentText": "{{name}} comentó en \"{{exercise}}\""
+    "commentText": "{{name}} comentó en \"{{exercise}}\"",
+    "likePlayText": "A {{name}} le gustó tu jugada \"{{play}}\"",
+    "commentPlayText": "{{name}} comentó en tu jugada \"{{play}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",

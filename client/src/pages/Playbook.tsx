@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Trash2, Plus, ClipboardList, Menu, Layers, Flame, Search, Star, Copy } from "lucide-react";
+import { Trash2, Plus, ClipboardList, Globe, Menu, Layers, Flame, Search, Star, Copy, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
+import SetPublicNameDialog from "@/components/SetPublicNameDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { apiRequest, extractErrorMessage, extractErrorCode } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { PLAY_SITUATIONS } from "@shared/schema";
 import type { Play, PlayPracticeStats } from "@shared/schema";
@@ -37,9 +38,32 @@ export default function Playbook() {
   const [searchQuery, setSearchQuery] = useState("");
   const [situationFilter, setSituationFilter] = useState<string>("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [pendingPublishId, setPendingPublishId] = useState<number | null>(null);
 
   const { data: plays = [], isLoading, isError, refetch } = useQuery<Play[]>({
     queryKey: ["/api/plays"],
+  });
+
+  const toggleCommunityShareMutation = useMutation({
+    mutationFn: async ({ id, shared }: { id: number; shared: boolean }) =>
+      apiRequest("PUT", `/api/plays/${id}/share-community`, { shared }),
+    onMutate: async ({ id, shared }) => {
+      const queryKey = ["/api/plays"];
+      await queryClient.cancelQueries({ queryKey });
+      const previousPlays = queryClient.getQueryData<Play[]>(queryKey);
+      queryClient.setQueryData<Play[]>(queryKey, (old = []) =>
+        old.map((p) => (p.id === id ? { ...p, sharedToCommunity: shared ? 1 : 0 } : p))
+      );
+      return { previousPlays, queryKey };
+    },
+    onError: (error, variables, context) => {
+      if (context) queryClient.setQueryData(context.queryKey, context.previousPlays);
+      if (extractErrorCode(error) === "PUBLIC_NAME_REQUIRED") {
+        setPendingPublishId(variables.id);
+        return;
+      }
+      toast({ title: t("playbook.couldntUpdateCommunityShare"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
   });
 
   const toggleFavoriteMutation = useMutation({
@@ -152,6 +176,11 @@ export default function Playbook() {
               <SelectItem value="least-practiced">{t("playbook.sortLeastPracticed")}</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={() => setLocation("/playbook/community")} className="whitespace-nowrap">
+            <Users className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <span className="hidden sm:inline">{t("playbook.community")}</span>
+            <span className="sm:hidden">{t("playbook.community")}</span>
+          </Button>
           <Button onClick={() => setLocation("/playbook/new")} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
             <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
             <span className="hidden sm:inline">{t("playbook.newPlay")}</span>
@@ -265,6 +294,15 @@ export default function Playbook() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={(e) => { e.stopPropagation(); toggleCommunityShareMutation.mutate({ id: play.id, shared: play.sharedToCommunity !== 1 }); }}
+                        aria-label={play.sharedToCommunity === 1 ? t("playbook.removeFromCommunity", { name: play.name }) : t("playbook.addToCommunity", { name: play.name })}
+                        aria-pressed={play.sharedToCommunity === 1}
+                      >
+                        <Globe className={cn("w-4 h-4", play.sharedToCommunity === 1 ? "text-court" : "text-muted-foreground")} strokeWidth={1.75} aria-hidden="true" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => { e.stopPropagation(); duplicatePlayMutation.mutate(play); }}
                         aria-label={t("playbook.duplicateAction", { name: play.name })}
                       >
@@ -325,6 +363,15 @@ export default function Playbook() {
         title={t("playbook.deleteConfirmTitle")}
         description={t("playbook.deleteConfirmDescription", { name: playToDelete?.name })}
         onConfirm={confirmDelete}
+      />
+
+      <SetPublicNameDialog
+        open={pendingPublishId !== null}
+        onOpenChange={(open) => !open && setPendingPublishId(null)}
+        onSuccess={() => {
+          if (pendingPublishId !== null) toggleCommunityShareMutation.mutate({ id: pendingPublishId, shared: true });
+          setPendingPublishId(null);
+        }}
       />
     </div>
   );

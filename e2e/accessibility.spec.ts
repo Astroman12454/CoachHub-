@@ -1712,6 +1712,53 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("playbook — sharing to the community toggles the globe icon", async ({ page }) => {
+    await login(page);
+    await page.goto("/playbook");
+    await page.waitForLoadState("networkidle");
+
+    const shareToggle = page.locator('button[aria-label^="Add "][aria-label*="to the community"]').first();
+    await shareToggle.click();
+    await expect(page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first()).toHaveAttribute("aria-pressed", "true");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first().click();
+  });
+
+  test("community plays page — likes, saves, and comments a shared play", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/plays", {
+      data: {
+        name: "E2E Community Play",
+        category: "offense",
+        courtType: "half",
+        steps: [{ tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] }],
+      },
+    });
+    const play = await create.json();
+    await page.request.put(`/api/plays/${play.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/playbook/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Community Play");
+
+    await page.click('button[aria-label="Like E2E Community Play"]');
+    await expect(page.locator('button[aria-label="Unlike E2E Community Play"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button[aria-label="Save E2E Community Play"]');
+    await expect(page.locator('button[aria-label="Unsave E2E Community Play"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button[aria-label="View comments on E2E Community Play"]');
+    await page.fill('textarea[aria-label="Add a comment…"]', "Great play!");
+    await page.click('button:has-text("Post")');
+    await page.waitForSelector("text=Great play!");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/plays/${play.id}`);
+  });
+
   test("playbook — duplicate flow opens the copy in the editor", async ({ page }) => {
     await login(page);
     await page.goto("/playbook");
