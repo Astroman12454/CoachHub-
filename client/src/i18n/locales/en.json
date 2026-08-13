@@ -12,6 +12,7 @@
     "loading": "Loading...",
     "search": "Search",
     "notifications": "Notifications",
+    "notificationsUnread": "Notifications ({{count}} unread)",
     "openNavigationMenu": "Open navigation menu",
     "logOut": "Log out",
     "manageBilling": "Manage billing",
@@ -791,6 +792,14 @@
     "followingCount": "Following",
     "emptyExercisesTitle": "No Shared Exercises Yet",
     "emptyExercisesDescription": "This coach hasn't shared any exercises to the community yet."
+  },
+  "notificationsDialog": {
+    "title": "Notifications",
+    "description": "Follows and likes on your published exercises.",
+    "empty": "No notifications yet.",
+    "someone": "Someone",
+    "followText": "{{name}} started following you",
+    "likeText": "{{name}} liked \"{{exercise}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",

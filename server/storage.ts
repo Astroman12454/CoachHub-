@@ -5,6 +5,7 @@ import {
   exerciseSteps,
   exerciseLikes,
   coachFollows,
+  notifications,
   trainingSessions,
   players,
   attendance,
@@ -65,6 +66,7 @@ import {
   type PhysicalTestResult,
   type PlayerPhysicalTestHistory,
   type CoachProfile,
+  type NotificationView,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
@@ -146,6 +148,14 @@ export interface IStorage {
   // exist or hasn't set a public name (same "not found" either way, so
   // guessing account ids can't distinguish the two).
   getCoachProfile(accountId: number, viewerAccountId: number): Promise<CoachProfile | undefined>;
+  // The bell-icon feed — see notifications table comment in shared/schema.ts.
+  // Callers don't create these directly; likeExercise/followCoach do it
+  // internally, only for a genuinely new like/follow and never for self.
+  createNotification(data: { accountId: number; type: "follow" | "like"; actorAccountId: number; exerciseId?: number }): Promise<void>;
+  getNotifications(accountId: number, limit?: number): Promise<NotificationView[]>;
+  getUnreadNotificationCount(accountId: number): Promise<number>;
+  markNotificationRead(id: number, accountId: number): Promise<void>;
+  markAllNotificationsRead(accountId: number): Promise<void>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -602,7 +612,13 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
     if (!exercise) return false;
 
-    await db.insert(exerciseLikes).values({ exerciseId, accountId }).onConflictDoNothing();
+    // .returning() comes back empty on the onConflictDoNothing no-op path
+    // (already liked) — only a genuinely new like notifies the owner, and
+    // never for liking your own exercise.
+    const inserted = await db.insert(exerciseLikes).values({ exerciseId, accountId }).onConflictDoNothing().returning();
+    if (inserted.length > 0 && exercise.accountId !== accountId) {
+      await this.createNotification({ accountId: exercise.accountId, type: "like", actorAccountId: accountId, exerciseId });
+    }
     return true;
   }
 
@@ -614,7 +630,10 @@ export class DatabaseStorage implements IStorage {
     const [target] = await db.select().from(accounts).where(eq(accounts.id, followingAccountId));
     if (!target?.publicName) return false;
 
-    await db.insert(coachFollows).values({ followerAccountId, followingAccountId }).onConflictDoNothing();
+    const inserted = await db.insert(coachFollows).values({ followerAccountId, followingAccountId }).onConflictDoNothing().returning();
+    if (inserted.length > 0) {
+      await this.createNotification({ accountId: followingAccountId, type: "follow", actorAccountId: followerAccountId });
+    }
     return true;
   }
 
@@ -654,6 +673,68 @@ export class DatabaseStorage implements IStorage {
       followedByMe: !!existingFollow,
       isOwnProfile: account.id === viewerAccountId,
     };
+  }
+
+  async createNotification(data: { accountId: number; type: "follow" | "like"; actorAccountId: number; exerciseId?: number }): Promise<void> {
+    await db.insert(notifications).values({
+      accountId: data.accountId,
+      type: data.type,
+      actorAccountId: data.actorAccountId,
+      exerciseId: data.exerciseId ?? null,
+    });
+  }
+
+  async getNotifications(accountId: number, limit = 30): Promise<NotificationView[]> {
+    const rows = await db
+      .select({
+        id: notifications.id,
+        type: notifications.type,
+        actorAccountId: notifications.actorAccountId,
+        actorPublicName: accounts.publicName,
+        exerciseId: notifications.exerciseId,
+        exerciseName: exercises.name,
+        read: notifications.read,
+        createdAt: notifications.createdAt,
+      })
+      .from(notifications)
+      .leftJoin(accounts, eq(notifications.actorAccountId, accounts.id))
+      .leftJoin(exercises, eq(notifications.exerciseId, exercises.id))
+      .where(eq(notifications.accountId, accountId))
+      .orderBy(desc(notifications.id))
+      .limit(limit);
+
+    return rows.map((row) => ({
+      id: row.id,
+      type: row.type as "follow" | "like",
+      actorAccountId: row.actorAccountId,
+      actorPublicName: row.actorPublicName,
+      exerciseId: row.exerciseId,
+      exerciseName: row.exerciseName,
+      read: row.read === 1,
+      createdAt: row.createdAt ? row.createdAt.toISOString() : null,
+    }));
+  }
+
+  async getUnreadNotificationCount(accountId: number): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(eq(notifications.accountId, accountId), eq(notifications.read, 0)));
+    return row.count;
+  }
+
+  async markNotificationRead(id: number, accountId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: 1 })
+      .where(and(eq(notifications.id, id), eq(notifications.accountId, accountId)));
+  }
+
+  async markAllNotificationsRead(accountId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: 1 })
+      .where(and(eq(notifications.accountId, accountId), eq(notifications.read, 0)));
   }
 
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {

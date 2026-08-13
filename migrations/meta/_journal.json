@@ -43,6 +43,13 @@
       "when": 1786616589799,
       "tag": "0005_black_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786620218509,
+      "tag": "0006_supreme_tag",
+      "breakpoints": true
     }
   ]
 }

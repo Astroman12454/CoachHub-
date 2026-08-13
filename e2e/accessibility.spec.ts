@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { login } from "./helpers";
+import { login, TEST_EMAIL, TEST_PASSWORD } from "./helpers";
 
 // axe's default ruleset (WCAG 2.0/2.1 A+AA, best-practices) — includes
 // color-contrast, so this also covers the "revisión de contraste de color
@@ -853,6 +853,38 @@ test.describe("accessibility (axe)", () => {
     await page.goto(`/coaches/${published.publishedBy.accountId}`);
     await page.waitForLoadState("networkidle");
     await page.waitForSelector("text=E2E Profile Drill");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
+  test("notifications dialog — unread follow and like notifications", async ({ page }) => {
+    await login(page);
+    const sessionRes = await page.request.get("/api/session");
+    const session = await sessionRes.json();
+    const mainAccountId = session.account.id;
+
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Notify Drill", description: "Shared for notification testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    // A throwaway second account generates a real follow + like notification
+    // for the shared test account — signup/login both skip the rate limiter
+    // on success (see server/auth.ts), so this is safe to do per-run.
+    await page.request.post("/api/signup", { data: { email: `e2e-notify-${Date.now()}@coachhub.test`, password: "e2e-test-password-123" } });
+    await page.request.post(`/api/coaches/${mainAccountId}/follow`);
+    await page.request.post(`/api/community-exercises/${exercise.id}/like`);
+
+    // Switch back to the shared test account for the rest of the test.
+    await page.request.post("/api/login", { data: { email: TEST_EMAIL, password: TEST_PASSWORD } });
+
+    await page.goto("/dashboard");
+    await page.waitForLoadState("networkidle");
+    await page.click('button[aria-label*="Notifications"]');
+    await page.waitForSelector("text=E2E Notify Drill");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
 

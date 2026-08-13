@@ -182,6 +182,26 @@ export const exerciseLikes = pgTable("exercise_likes", {
   exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
 }));
 
+export const NOTIFICATION_TYPES = ["follow", "like"] as const;
+export type NotificationType = typeof NOTIFICATION_TYPES[number];
+
+// The in-app bell-icon feed for the social layer above — a coach was
+// followed, or one of their published exercises got a like. Distinct from
+// server/notify.ts (push/email session reminders sent to a whole team);
+// this is per-account, unread-tracked, and only ever created for the two
+// event types above. exerciseId is only meaningful for "like" (null for
+// "follow"); actorAccountId is always the coach who took the action, never
+// the recipient.
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  actorAccountId: integer("actor_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  exerciseId: integer("exercise_id").references(() => exercises.id, { onDelete: "cascade" }),
+  read: integer("read").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const trainingSessions = pgTable("training_sessions", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
@@ -780,6 +800,20 @@ export interface CoachProfile {
   // club's profile as "own", not followable — comparing raw session account
   // ids would get this wrong for Club members.
   isOwnProfile: boolean;
+}
+
+// A notification row plus the display context it needs (actor's public
+// name, liked exercise's name) — the table itself only stores ids, same
+// pattern as CoachMember above for account_memberships.
+export interface NotificationView {
+  id: number;
+  type: NotificationType;
+  actorAccountId: number;
+  actorPublicName: string | null;
+  exerciseId: number | null;
+  exerciseName: string | null;
+  read: boolean;
+  createdAt: string | null;
 }
 
 export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;

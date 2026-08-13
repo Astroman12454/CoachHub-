@@ -12,6 +12,7 @@
     "loading": "Cargando...",
     "search": "Buscar",
     "notifications": "Notificaciones",
+    "notificationsUnread": "Notificaciones ({{count}} sin leer)",
     "openNavigationMenu": "Abrir menú de navegación",
     "logOut": "Cerrar sesión",
     "manageBilling": "Gestionar facturación",
@@ -791,6 +792,14 @@
     "followingCount": "Siguiendo",
     "emptyExercisesTitle": "Aún No Hay Ejercicios Compartidos",
     "emptyExercisesDescription": "Este entrenador todavía no compartió ningún ejercicio con la comunidad."
+  },
+  "notificationsDialog": {
+    "title": "Notificaciones",
+    "description": "Seguidores y likes en tus ejercicios publicados.",
+    "empty": "Aún no tienes notificaciones.",
+    "someone": "Alguien",
+    "followText": "{{name}} ha empezado a seguirte",
+    "likeText": "A {{name}} le gustó \"{{exercise}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",

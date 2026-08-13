@@ -310,3 +310,126 @@ describe("following coaches", () => {
     expect(ids).not.toContain(unfollowedId);
   });
 });
+
+describe("notifications", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  async function accountId(agent: request.Agent): Promise<number> {
+    const res = await agent.get("/api/session");
+    return res.body.account.id;
+  }
+
+  it("notifies a coach when someone follows them", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await coach.put("/api/account/public-name").send({ publicName: "Coach Followed" });
+    const coachId = await accountId(coach);
+
+    const { agent: fan } = await signedInAgent(app);
+    await fan.put("/api/account/public-name").send({ publicName: "Fan Coach" });
+    await fan.post(`/api/coaches/${coachId}/follow`);
+
+    const res = await coach.get("/api/notifications");
+    expect(res.status).toBe(200);
+    expect(res.body.unreadCount).toBe(1);
+    expect(res.body.notifications).toHaveLength(1);
+    expect(res.body.notifications[0]).toMatchObject({ type: "follow", actorPublicName: "Fan Coach", read: false });
+  });
+
+  it("following twice only notifies once", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await coach.put("/api/account/public-name").send({ publicName: "Coach Idempotent Notify" });
+    const coachId = await accountId(coach);
+
+    const { agent: fan } = await signedInAgent(app);
+    await fan.post(`/api/coaches/${coachId}/follow`);
+    await fan.post(`/api/coaches/${coachId}/follow`);
+
+    const res = await coach.get("/api/notifications");
+    expect(res.body.unreadCount).toBe(1);
+  });
+
+  it("notifies the owner when someone else likes their exercise", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Liked Drill" });
+
+    const { agent: liker } = await signedInAgent(app);
+    await liker.put("/api/account/public-name").send({ publicName: "Liker Coach" });
+    await liker.post(`/api/community-exercises/${exerciseId}/like`);
+
+    const res = await owner.get("/api/notifications");
+    expect(res.body.unreadCount).toBe(1);
+    expect(res.body.notifications[0]).toMatchObject({ type: "like", actorPublicName: "Liker Coach", exerciseName: "Liked Drill", read: false });
+  });
+
+  it("never notifies for liking your own exercise", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Self Liked Drill" });
+    await owner.post(`/api/community-exercises/${exerciseId}/like`);
+
+    const res = await owner.get("/api/notifications");
+    expect(res.body.unreadCount).toBe(0);
+  });
+
+  it("marks a single notification read, and mark-all clears the rest", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseA = await shareNewExercise(owner, { name: "Drill A" });
+    const exerciseB = await shareNewExercise(owner, { name: "Drill B" });
+
+    const { agent: liker } = await signedInAgent(app);
+    await liker.post(`/api/community-exercises/${exerciseA}/like`);
+    await liker.post(`/api/community-exercises/${exerciseB}/like`);
+
+    const before = await owner.get("/api/notifications");
+    expect(before.body.unreadCount).toBe(2);
+    const firstId = before.body.notifications[0].id;
+
+    const markOne = await owner.post(`/api/notifications/${firstId}/read`);
+    expect(markOne.status).toBe(204);
+
+    const afterOne = await owner.get("/api/notifications");
+    expect(afterOne.body.unreadCount).toBe(1);
+
+    const markAll = await owner.post("/api/notifications/read-all");
+    expect(markAll.status).toBe(204);
+
+    const afterAll = await owner.get("/api/notifications");
+    expect(afterAll.body.unreadCount).toBe(0);
+    expect(afterAll.body.notifications.every((n: { read: boolean }) => n.read)).toBe(true);
+  });
+
+  it("scopes notifications to the recipient — marking someone else's notification read is a silent no-op", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner, { name: "Scoped Drill" });
+
+    const { agent: liker } = await signedInAgent(app);
+    await liker.post(`/api/community-exercises/${exerciseId}/like`);
+
+    const ownerNotifications = await owner.get("/api/notifications");
+    const notificationId = ownerNotifications.body.notifications[0].id;
+
+    const { agent: outsider } = await signedInAgent(app);
+    const res = await outsider.post(`/api/notifications/${notificationId}/read`);
+    expect(res.status).toBe(204);
+
+    const stillUnread = await owner.get("/api/notifications");
+    expect(stillUnread.body.unreadCount).toBe(1);
+  });
+
+  it("never leaks another account's notifications in the list", async () => {
+    const { agent: coachA } = await signedInPaidAgent(app);
+    await coachA.put("/api/account/public-name").send({ publicName: "Coach A Notify" });
+    const coachAId = await accountId(coachA);
+
+    const { agent: fan } = await signedInAgent(app);
+    await fan.post(`/api/coaches/${coachAId}/follow`);
+
+    const { agent: coachB } = await signedInAgent(app);
+    const res = await coachB.get("/api/notifications");
+    expect(res.body.notifications).toHaveLength(0);
+    expect(res.body.unreadCount).toBe(0);
+  });
+});
