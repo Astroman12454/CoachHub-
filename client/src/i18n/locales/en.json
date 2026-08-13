@@ -767,7 +767,13 @@
     "importName": "Import {{name}}",
     "imported": "Exercise imported",
     "importedDescription": "\"{{name}}\" was added to your library.",
-    "couldntImport": "Couldn't import exercise"
+    "couldntImport": "Couldn't import exercise",
+    "sortBy": "Sort by",
+    "sortRecent": "Most recent",
+    "sortPopular": "Most liked",
+    "like": "Like {{name}}",
+    "unlike": "Unlike {{name}}",
+    "couldntUpdateLike": "Couldn't update like"
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",
