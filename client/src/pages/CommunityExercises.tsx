@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Compass, Download, Globe, Heart, MessageCircle, UserCheck, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Bookmark, Clock, Compass, Download, Globe, Heart, MessageCircle, UserCheck, UserPlus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
@@ -35,6 +35,7 @@ interface CommunityExercise {
   instructionsEs: string | null;
   likeCount: number;
   likedByMe: boolean;
+  savedByMe: boolean;
   commentCount: number;
   publishedBy: { accountId: number; publicName: string | null };
 }
@@ -65,14 +66,17 @@ export default function CommunityExercises() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
-  const [feedTab, setFeedTab] = useState<"discover" | "following">("discover");
+  const [feedTab, setFeedTab] = useState<"discover" | "following" | "saved">("discover");
   const [commentsExercise, setCommentsExercise] = useState<CommunityExercise | null>(null);
 
   // Each tab is its own cached query (server-filtered, not client-filtered)
-  // since "coaches I follow" isn't data this page has any other copy of.
+  // since "coaches I follow"/"what I've saved" isn't data this page has any
+  // other copy of.
   const queryKey = feedTab === "following"
     ? ['/api/community-exercises?following=true']
-    : ['/api/community-exercises'];
+    : feedTab === "saved"
+      ? ['/api/community-exercises?saved=true']
+      : ['/api/community-exercises'];
 
   const { data: exercises = [], isLoading, isError, refetch } = useQuery<CommunityExercise[]>({
     queryKey,
@@ -121,6 +125,38 @@ export default function CommunityExercises() {
       }
       toast({
         title: t("communityExercises.couldntUpdateLike"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => typeof query.queryKey[0] === "string" && (query.queryKey[0] as string).startsWith("/api/community-exercises") && query.queryKey[0] !== queryKey[0],
+      });
+    },
+  });
+
+  // "Guardado" is a private bookmark, distinct from liking — see
+  // exerciseSaves in shared/schema.ts.
+  const toggleSaveMutation = useMutation({
+    mutationFn: async ({ id, saved }: { id: number; saved: boolean }) =>
+      apiRequest(saved ? "POST" : "DELETE", `/api/community-exercises/${id}/save`),
+    onMutate: async ({ id, saved }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousExercises = queryClient.getQueryData<CommunityExercise[]>(queryKey);
+      queryClient.setQueryData<CommunityExercise[]>(queryKey, (old = []) =>
+        saved
+          ? old.map((ex) => ex.id === id ? { ...ex, savedByMe: true } : ex)
+          : (feedTab === "saved" ? old.filter((ex) => ex.id !== id) : old.map((ex) => ex.id === id ? { ...ex, savedByMe: false } : ex))
+      );
+      return { previousExercises, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousExercises);
+      }
+      toast({
+        title: t("communityExercises.couldntUpdateSave"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -267,6 +303,17 @@ export default function CommunityExercises() {
             <UserCheck className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityExercises.followingTab")}
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={feedTab === "saved" ? "default" : "ghost"}
+            aria-pressed={feedTab === "saved"}
+            onClick={() => setFeedTab("saved")}
+            className={feedTab === "saved" ? "basketball-orange basketball-orange-hover text-white" : ""}
+          >
+            <Bookmark className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            {t("communityPlays.savedTab")}
+          </Button>
         </div>
 
         {feedTab === "discover" && suggestedCoaches.length > 0 && (
@@ -351,14 +398,18 @@ export default function CommunityExercises() {
 
         {filteredExercises.length === 0 ? (
           <EmptyState
-            icon={feedTab === "following" ? UserCheck : Globe}
-            title={feedTab === "following" ? t("communityExercises.emptyFollowingTitle") : t("communityExercises.emptyTitle")}
+            icon={feedTab === "saved" ? Bookmark : feedTab === "following" ? UserCheck : Globe}
+            title={
+              feedTab === "saved" ? t("communityExercises.emptySavedTitle")
+                : feedTab === "following" ? t("communityExercises.emptyFollowingTitle")
+                : t("communityExercises.emptyTitle")
+            }
             description={
               searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
                 ? t("communityExercises.emptyFilterDescription")
-                : feedTab === "following"
-                  ? t("communityExercises.emptyFollowingDescription")
-                  : t("communityExercises.emptyDescription")
+                : feedTab === "saved" ? t("communityExercises.emptySavedDescription")
+                : feedTab === "following" ? t("communityExercises.emptyFollowingDescription")
+                : t("communityExercises.emptyDescription")
             }
           />
         ) : (
@@ -433,6 +484,15 @@ export default function CommunityExercises() {
                       >
                         <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                         <span className="text-xs font-medium">{exercise.commentCount}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleSaveMutation.mutate({ id: exercise.id, saved: !exercise.savedByMe })}
+                        className="flex items-center gap-1.5 hover:text-basketball-orange transition-colors"
+                        aria-pressed={exercise.savedByMe}
+                        aria-label={exercise.savedByMe ? t("communityExercises.unsave", { name: localized.name }) : t("communityExercises.save", { name: localized.name })}
+                      >
+                        <Bookmark className={`w-3.5 h-3.5 ${exercise.savedByMe ? "text-basketball-orange fill-basketball-orange" : ""}`} aria-hidden="true" />
                       </button>
                     </div>
                     <Button

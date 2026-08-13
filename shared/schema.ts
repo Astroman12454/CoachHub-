@@ -182,6 +182,20 @@ export const exerciseLikes = pgTable("exercise_likes", {
   exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
 }));
 
+// A private bookmark — "guardado" — on a community-shared exercise, added
+// after plays/physical tests already had one (see playSaves/
+// physicalTestSaves) so all three content types reach parity. Not a public
+// signal like a like; just this account's own reading list, kept in its
+// own table so saved exercises never mix with saved plays or physical tests.
+export const exerciseSaves = pgTable("exercise_saves", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
+}));
+
 // A coach's comment on a community-shared exercise — unlike likes/follows,
 // this shows the author's name next to real freeform text, so posting one
 // requires a public name set first (same 409 PUBLIC_NAME_REQUIRED gate as

@@ -658,3 +658,75 @@ describe("exercise comments", () => {
     expect(found.commentCount).toBe(2);
   });
 });
+
+describe("community exercise saves (bookmarks)", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  it("saves and unsaves a shared exercise, separate from liking", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner);
+
+    const { agent: saver } = await signedInAgent(app);
+    const save = await saver.post(`/api/community-exercises/${exerciseId}/save`);
+    expect(save.status).toBe(204);
+
+    const afterSave = await saver.get("/api/community-exercises");
+    const found = afterSave.body.find((ex: { id: number }) => ex.id === exerciseId);
+    expect(found.savedByMe).toBe(true);
+    expect(found.likedByMe).toBe(false);
+
+    const unsave = await saver.delete(`/api/community-exercises/${exerciseId}/save`);
+    expect(unsave.status).toBe(204);
+
+    const afterUnsave = await saver.get("/api/community-exercises");
+    expect(afterUnsave.body.find((ex: { id: number }) => ex.id === exerciseId).savedByMe).toBe(false);
+  });
+
+  it("filters the community feed to only saved exercises with ?saved=true", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const savedId = await shareNewExercise(owner, { name: "Saved Drill" });
+    const unsavedId = await shareNewExercise(owner, { name: "Unsaved Drill" });
+
+    const { agent: saver } = await signedInAgent(app);
+    await saver.post(`/api/community-exercises/${savedId}/save`);
+
+    const res = await saver.get("/api/community-exercises?saved=true");
+    const ids = res.body.map((ex: { id: number }) => ex.id);
+    expect(ids).toContain(savedId);
+    expect(ids).not.toContain(unsavedId);
+  });
+
+  it("saving twice is idempotent and never creates a notification", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner);
+
+    const { agent: saver } = await signedInAgent(app);
+    await saver.post(`/api/community-exercises/${exerciseId}/save`);
+    await saver.post(`/api/community-exercises/${exerciseId}/save`);
+
+    const notifications = await owner.get("/api/notifications");
+    expect(notifications.body.unreadCount).toBe(0);
+  });
+
+  it("404s saving an exercise that isn't shared or doesn't exist", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const notShared = await owner.post("/api/exercises").send(exerciseBody());
+
+    const { agent: saver } = await signedInAgent(app);
+    const res = await saver.post(`/api/community-exercises/${notShared.body.id}/save`);
+    expect(res.status).toBe(404);
+  });
+
+  it("unsaving something never saved is a harmless no-op", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner);
+
+    const { agent: saver } = await signedInAgent(app);
+    const res = await saver.delete(`/api/community-exercises/${exerciseId}/save`);
+    expect(res.status).toBe(204);
+  });
+});
