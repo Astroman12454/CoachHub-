@@ -63,6 +63,49 @@ test.describe("accessibility (axe)", () => {
       expect(summarize(results.violations)).toEqual([]);
     });
 
+    test("signup — welcome dialog suggests a coach to follow", async ({ page }) => {
+      // A throwaway coach shares an exercise first so the brand-new signup
+      // below actually has someone to be suggested (see
+      // WelcomeFollowCoachesDialog — it stays closed if there's nobody to
+      // recommend).
+      const suggestRes = await page.request.post("/api/signup", {
+        data: { email: `e2e-welcome-suggest-${Date.now()}@coachhub.test`, password: "e2e-test-password-123" },
+      });
+      await page.request.put("/api/account/public-name", { data: { publicName: `E2E Welcome Coach ${Date.now()}` } });
+      const create = await page.request.post("/api/exercises", {
+        data: { name: "E2E Welcome Suggestion Drill", description: "Shared for welcome dialog testing", category: "shooting", duration: 10, difficulty: "easy" },
+      });
+      const exercise = await create.json();
+      await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+      expect(suggestRes.ok()).toBe(true);
+      // page.request shares this context's cookie jar with page.goto below —
+      // without logging back out, the throwaway coach's session would still
+      // be active and "/?signup=1" would bounce straight to its dashboard
+      // instead of showing the signup form.
+      await page.request.post("/api/logout");
+
+      // Now sign up as a genuinely new coach through the real UI form —
+      // the dialog only ever opens off the sessionStorage flag set inside
+      // use-auth's signupMutation, never for a login or an API-only signup.
+      await page.goto("/?signup=1");
+      await page.waitForLoadState("networkidle");
+      await page.fill("#email", `e2e-new-coach-${Date.now()}@coachhub.test`);
+      await page.fill("#password", "e2e-test-password-123");
+      await page.click('button:has-text("Create Account")');
+
+      await page.waitForSelector("text=Welcome to CoachHub!");
+      // Not asserting our own throwaway coach specifically appears — ranking
+      // is by likes/exercise count across every coach ever shared in this
+      // dev DB (see getSuggestedCoaches), so an older candidate can easily
+      // outrank it. The row existing at all is the thing this test is for.
+      await page.locator('button[aria-label^="Follow "]').first().click();
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+
+      await page.click('button:has-text("Continue")');
+      await expect(page.locator("text=Welcome to CoachHub!")).toHaveCount(0);
+    });
+
     test("accept-invite page with an invalid token", async ({ page }) => {
       await page.goto("/accept-invite?token=not-a-real-token");
       await page.waitForLoadState("networkidle");

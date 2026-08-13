@@ -1172,6 +1172,11 @@
     "placeholder": "e.g., Coach Alex",
     "couldntSave": "Couldn't save your public name"
   },
+  "welcomeFollowDialog": {
+    "title": "Welcome to CoachHub!",
+    "description": "Follow a few coaches to see their exercises, plays, and physical tests in your Community feeds.",
+    "continue": "Continue"
+  },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
     "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."

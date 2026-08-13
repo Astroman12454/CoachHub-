@@ -1172,6 +1172,11 @@
     "placeholder": "ej., Entrenador Alex",
     "couldntSave": "No se pudo guardar tu nombre público"
   },
+  "welcomeFollowDialog": {
+    "title": "¡Bienvenido a CoachHub!",
+    "description": "Sigue a algunos entrenadores para ver sus ejercicios, jugadas y pruebas físicas en tus feeds de Comunidad.",
+    "continue": "Continuar"
+  },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
     "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
