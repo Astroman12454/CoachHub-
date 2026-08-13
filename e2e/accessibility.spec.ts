@@ -1165,6 +1165,48 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("physical tests — sharing to the community toggles the globe icon", async ({ page }) => {
+    await login(page);
+    await page.goto("/physical-tests");
+    await page.waitForLoadState("networkidle");
+
+    const shareToggle = page.locator('button[aria-label^="Add "][aria-label*="to the community"]').first();
+    await shareToggle.click();
+    await expect(page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first()).toHaveAttribute("aria-pressed", "true");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first().click();
+  });
+
+  test("community physical tests page — likes, saves, and comments a shared test", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/physical-tests", {
+      data: { name: "E2E Community Test", unit: "seconds", lowerIsBetter: 1, description: "Shared for community testing" },
+    });
+    const test = await create.json();
+    await page.request.put(`/api/physical-tests/${test.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/physical-tests/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Community Test");
+
+    await page.click('button[aria-label="Like E2E Community Test"]');
+    await expect(page.locator('button[aria-label="Unlike E2E Community Test"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button[aria-label="Save E2E Community Test"]');
+    await expect(page.locator('button[aria-label="Unsave E2E Community Test"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button[aria-label="View comments on E2E Community Test"]');
+    await page.fill('textarea[aria-label="Add a comment…"]', "Solid test!");
+    await page.click('button:has-text("Post")');
+    await page.waitForSelector("text=Solid test!");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/physical-tests/${test.id}`);
+  });
+
   test("physical tests — record results dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/physical-tests");

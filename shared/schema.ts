@@ -202,20 +202,20 @@ export const createExerciseCommentSchema = z.object({
 export type CreateExerciseComment = z.infer<typeof createExerciseCommentSchema>;
 
 // "like"/"comment" (no suffix) mean an exercise, kept as-is for backward
-// compatibility with rows already written before plays joined the
-// community — "like_play"/"comment_play" are the play equivalents. A
-// future content type follows the same _suffix convention rather than
-// renaming the original two.
-export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play"] as const;
+// compatibility with rows already written before plays/physical tests
+// joined the community — "like_play"/"comment_play" and
+// "like_physical_test"/"comment_physical_test" are their equivalents,
+// following the same _suffix convention rather than renaming the original two.
+export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play", "like_physical_test", "comment_physical_test"] as const;
 export type NotificationType = typeof NOTIFICATION_TYPES[number];
 
 // The in-app bell-icon feed for the social layer above — a coach was
-// followed, or one of their published exercises/plays got a like or a
-// comment. Distinct from server/notify.ts (push/email session reminders
-// sent to a whole team); this is per-account, unread-tracked. exerciseId/
-// playId are only meaningful for their matching type (both null for
-// "follow"); actorAccountId is always the coach who took the action, never
-// the recipient.
+// followed, or one of their published exercises/plays/physical tests got a
+// like or a comment. Distinct from server/notify.ts (push/email session
+// reminders sent to a whole team); this is per-account, unread-tracked.
+// exerciseId/playId/physicalTestId are only meaningful for their matching
+// type (all null for "follow"); actorAccountId is always the coach who took
+// the action, never the recipient.
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
@@ -223,6 +223,7 @@ export const notifications = pgTable("notifications", {
   actorAccountId: integer("actor_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   exerciseId: integer("exercise_id").references(() => exercises.id, { onDelete: "cascade" }),
   playId: integer("play_id").references(() => plays.id, { onDelete: "cascade" }),
+  physicalTestId: integer("physical_test_id").references(() => physicalTests.id, { onDelete: "cascade" }),
   read: integer("read").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -378,8 +379,41 @@ export const physicalTests = pgTable("physical_tests", {
   unit: text("unit").notNull(), // free text, e.g. "seconds", "reps", "meters"
   lowerIsBetter: integer("lower_is_better").notNull().default(0), // 1 for timed tests, 0 for reps/distance
   description: text("description"),
+  // 1 when a coach has opted this test into the cross-account community
+  // library — scoped directly by accountId, same as exercises (a physical
+  // test has no team indirection to resolve, unlike plays).
+  sharedToCommunity: integer("shared_to_community").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Same like/comment/save trio pattern as exercises and plays — see their
+// comments above for why these stay separate explicit tables rather than
+// one polymorphic one.
+export const physicalTestLikes = pgTable("physical_test_likes", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  testAccountUnique: unique().on(table.testId, table.accountId),
+}));
+
+export const physicalTestComments = pgTable("physical_test_comments", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const physicalTestSaves = pgTable("physical_test_saves", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  testAccountUnique: unique().on(table.testId, table.accountId),
+}));
 
 // One player's result on one occasion a test was run — recorded in bulk
 // (the whole active roster at once, see POST /api/physical-tests/:id/results)
@@ -881,6 +915,8 @@ export interface NotificationView {
   exerciseName: string | null;
   playId: number | null;
   playName: string | null;
+  physicalTestId: number | null;
+  physicalTestName: string | null;
   read: boolean;
   createdAt: string | null;
 }
@@ -918,6 +954,19 @@ export interface ExerciseCommentView {
 export interface PlayCommentView {
   id: number;
   playId: number;
+  accountId: number;
+  publicName: string | null;
+  body: string;
+  createdAt: string | null;
+  canDelete: boolean;
+}
+
+// Same shape again, for a physical test's comment thread — canDelete is
+// true for the comment's own author or the test's owning account (a
+// physical test is scoped directly by accountId, no team indirection).
+export interface PhysicalTestCommentView {
+  id: number;
+  testId: number;
   accountId: number;
   publicName: string | null;
   body: string;
