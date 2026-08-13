@@ -564,12 +564,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // exposes which account shared a given exercise.
   app.get("/api/community-exercises", async (req, res) => {
     try {
-      const shared = await storage.getCommunityExercises();
-      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs }) =>
-        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs })
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const sort = req.query.sort === "popular" ? "popular" : "recent";
+      const shared = await storage.getCommunityExercises(accountId, sort);
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community exercises" });
+    }
+  });
+
+  // Liking is free on every plan, same as favoriting — see the community
+  // share route above for why publishing/importing are gated but this isn't.
+  app.post("/api/community-exercises/:id/like", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const liked = await storage.likeExercise(id, accountId);
+      if (!liked) {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to like exercise" });
+    }
+  });
+
+  app.delete("/api/community-exercises/:id/like", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unlikeExercise(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unlike exercise" });
     }
   });
 

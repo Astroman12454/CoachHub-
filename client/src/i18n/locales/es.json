@@ -767,7 +767,13 @@
     "importName": "Importar {{name}}",
     "imported": "Ejercicio importado",
     "importedDescription": "\"{{name}}\" se añadió a tu biblioteca.",
-    "couldntImport": "No se pudo importar el ejercicio"
+    "couldntImport": "No se pudo importar el ejercicio",
+    "sortBy": "Ordenar por",
+    "sortRecent": "Más recientes",
+    "sortPopular": "Más gustados",
+    "like": "Me gusta {{name}}",
+    "unlike": "Ya no me gusta {{name}}",
+    "couldntUpdateLike": "No se pudo actualizar el me gusta"
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",

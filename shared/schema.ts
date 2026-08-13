@@ -155,6 +155,19 @@ export const exerciseSteps = pgTable("exercise_steps", {
   drawings: json("drawings").notNull().$type<Drawing[]>(),
 });
 
+// A coach's like on a community-shared exercise — the social-network "like"
+// counterpart to publishing (see exercises.sharedToCommunity and PUT
+// /api/exercises/:id/share-community). Liking your own published exercise
+// isn't specially prevented since it's harmless and not worth a special case.
+export const exerciseLikes = pgTable("exercise_likes", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
+}));
+
 export const trainingSessions = pgTable("training_sessions", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),

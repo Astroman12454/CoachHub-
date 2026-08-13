@@ -3,6 +3,7 @@ import {
   teams,
   exercises,
   exerciseSteps,
+  exerciseLikes,
   trainingSessions,
   players,
   attendance,
@@ -122,12 +123,17 @@ export interface IStorage {
   getExerciseByShareToken(token: string): Promise<Exercise | undefined>;
   setExerciseCommunityShare(id: number, accountId: number, shared: boolean): Promise<Exercise | undefined>;
   // Cross-account by design — every exercise any coach has opted into the
-  // community library, not scoped to the requesting account.
-  getCommunityExercises(): Promise<Exercise[]>;
+  // community library, not scoped to the requesting account. likeCount/
+  // likedByMe are computed against exerciseLikes for the requesting account.
+  getCommunityExercises(accountId: number, sort?: "recent" | "popular"): Promise<(Exercise & { likeCount: number; likedByMe: boolean })[]>;
   // Copies a shared exercise into the importing account as a brand-new,
   // private row (fresh id, isFavorite/shareToken/sharedToCommunity all
   // reset) — importing never mutates or links back to the original.
   importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined>;
+  // Idempotent — liking twice is a no-op, not an error. Only works on
+  // exercises currently shared to the community (false if not found/shared).
+  likeExercise(exerciseId: number, accountId: number): Promise<boolean>;
+  unlikeExercise(exerciseId: number, accountId: number): Promise<void>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -527,8 +533,48 @@ export class DatabaseStorage implements IStorage {
     return exercise || undefined;
   }
 
-  async getCommunityExercises(): Promise<Exercise[]> {
-    return await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
+  async getCommunityExercises(accountId: number, sort: "recent" | "popular" = "recent"): Promise<(Exercise & { likeCount: number; likedByMe: boolean })[]> {
+    const shared = await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
+    if (shared.length === 0) return [];
+
+    const exerciseIds = shared.map((exercise) => exercise.id);
+    const counts = await db
+      .select({ exerciseId: exerciseLikes.exerciseId, count: sql<number>`count(*)::int` })
+      .from(exerciseLikes)
+      .where(inArray(exerciseLikes.exerciseId, exerciseIds))
+      .groupBy(exerciseLikes.exerciseId);
+    const countByExerciseId = new Map(counts.map((row) => [row.exerciseId, row.count]));
+
+    const likedRows = await db
+      .select({ exerciseId: exerciseLikes.exerciseId })
+      .from(exerciseLikes)
+      .where(and(inArray(exerciseLikes.exerciseId, exerciseIds), eq(exerciseLikes.accountId, accountId)));
+    const likedExerciseIds = new Set(likedRows.map((row) => row.exerciseId));
+
+    const withLikes = shared.map((exercise) => ({
+      ...exercise,
+      likeCount: countByExerciseId.get(exercise.id) ?? 0,
+      likedByMe: likedExerciseIds.has(exercise.id),
+    }));
+
+    return sort === "popular"
+      ? withLikes.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
+      : withLikes.sort((a, b) => b.id - a.id);
+  }
+
+  async likeExercise(exerciseId: number, accountId: number): Promise<boolean> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
+    if (!exercise) return false;
+
+    await db.insert(exerciseLikes).values({ exerciseId, accountId }).onConflictDoNothing();
+    return true;
+  }
+
+  async unlikeExercise(exerciseId: number, accountId: number): Promise<void> {
+    await db.delete(exerciseLikes).where(and(eq(exerciseLikes.exerciseId, exerciseId), eq(exerciseLikes.accountId, accountId)));
   }
 
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {

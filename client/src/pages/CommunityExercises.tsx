@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Download, Globe, Users } from "lucide-react";
+import { ArrowLeft, Clock, Download, Globe, Heart, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
@@ -32,6 +32,8 @@ interface CommunityExercise {
   nameEs: string | null;
   descriptionEs: string | null;
   instructionsEs: string | null;
+  likeCount: number;
+  likedByMe: boolean;
 }
 
 // Browsing surface for exercises other coaches have opted into the
@@ -51,6 +53,7 @@ export default function CommunityExercises() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
 
   const { data: exercises = [], isLoading, isError, refetch } = useQuery<CommunityExercise[]>({
     queryKey: ['/api/community-exercises'],
@@ -67,6 +70,37 @@ export default function CommunityExercises() {
     onError: (error) => {
       toast({
         title: t("communityExercises.couldntImport"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Flips the heart immediately — same instant-feedback pattern as
+  // favoriting in the Exercise Library.
+  const toggleLikeMutation = useMutation({
+    mutationFn: async ({ id, liked }: { id: number; liked: boolean }) =>
+      apiRequest(liked ? "POST" : "DELETE", `/api/community-exercises/${id}/like`),
+    onMutate: async ({ id, liked }) => {
+      const queryKey = ['/api/community-exercises'];
+      await queryClient.cancelQueries({ queryKey });
+      const previousExercises = queryClient.getQueryData<CommunityExercise[]>(queryKey);
+
+      queryClient.setQueryData<CommunityExercise[]>(queryKey, (old = []) =>
+        old.map((ex) => ex.id === id
+          ? { ...ex, likedByMe: liked, likeCount: ex.likeCount + (liked ? 1 : -1) }
+          : ex
+        )
+      );
+
+      return { previousExercises, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousExercises);
+      }
+      toast({
+        title: t("communityExercises.couldntUpdateLike"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -91,7 +125,7 @@ export default function CommunityExercises() {
 
   const filteredExercises = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return exercises.filter((exercise) => {
+    const filtered = exercises.filter((exercise) => {
       const localized = localizedExerciseText(exercise, i18n.language);
       const matchesSearch = localized.name.toLowerCase().includes(query) ||
         localized.description.toLowerCase().includes(query);
@@ -99,7 +133,12 @@ export default function CommunityExercises() {
       const matchesDifficulty = difficultyFilter === "all" || exercise.difficulty === difficultyFilter;
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
-  }, [exercises, searchQuery, categoryFilter, difficultyFilter, i18n.language]);
+
+    if (sortBy === "popular") {
+      return [...filtered].sort((a, b) => b.likeCount - a.likeCount || b.id - a.id);
+    }
+    return filtered;
+  }, [exercises, searchQuery, categoryFilter, difficultyFilter, sortBy, i18n.language]);
 
   const header = (
     <TopBar
@@ -173,6 +212,16 @@ export default function CommunityExercises() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular")}>
+              <SelectTrigger className="w-full sm:w-48" aria-label={t("communityExercises.sortBy")}>
+                <SelectValue placeholder={t("communityExercises.sortBy")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">{t("communityExercises.sortRecent")}</SelectItem>
+                <SelectItem value="popular">{t("communityExercises.sortPopular")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -232,6 +281,16 @@ export default function CommunityExercises() {
                           <span className="text-xs font-medium">{t("exerciseCard.minPlayers", { count: exercise.minPlayers })}</span>
                         </div>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => toggleLikeMutation.mutate({ id: exercise.id, liked: !exercise.likedByMe })}
+                        className="flex items-center gap-1.5 hover:text-red-500 transition-colors"
+                        aria-pressed={exercise.likedByMe}
+                        aria-label={exercise.likedByMe ? t("communityExercises.unlike", { name: localized.name }) : t("communityExercises.like", { name: localized.name })}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${exercise.likedByMe ? "text-red-500 fill-red-500" : ""}`} aria-hidden="true" />
+                        <span className="text-xs font-medium">{exercise.likeCount}</span>
+                      </button>
                     </div>
                     <Button
                       type="button"
