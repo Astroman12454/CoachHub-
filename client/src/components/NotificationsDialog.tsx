@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { apiRequest } from "@/lib/queryClient";
@@ -37,9 +37,11 @@ interface NotificationsDialogProps {
 // The bell icon's dropdown-turned-dialog (no Popover/DropdownMenu primitive
 // is installed in this app, and Dialog is already the accessible, tested
 // pattern everything else here uses) — lists follows and likes on the
-// coach's published exercises. Opening it marks everything read, same
-// "seen = read" model as most bell icons; there's no per-item unread state
-// to preserve once you've looked.
+// coach's published exercises. Opening the dialog no longer marks
+// everything read on its own — only a notification you actually click gets
+// marked read (see handleItemClick), so scrolling past the rest without
+// clicking leaves them genuinely unread. "Mark all as read" is a deliberate
+// opt-in action instead.
 export default function NotificationsDialog({ open, onOpenChange }: NotificationsDialogProps) {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
@@ -56,27 +58,35 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
   // so opening it usually just reads an already-warm cache.
   const { data, isLoading } = useQuery<NotificationsResponse>({
     queryKey: ['/api/notifications'],
+    refetchOnWindowFocus: true,
+  });
+
+  const markOneReadMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest("POST", `/api/notifications/${id}/read`),
+    onMutate: async (id) => {
+      queryClient.setQueryData<NotificationsResponse>(['/api/notifications'], (old) => {
+        if (!old) return old;
+        const target = old.notifications.find((n) => n.id === id);
+        if (!target || target.read) return old;
+        return {
+          unreadCount: Math.max(0, old.unreadCount - 1),
+          notifications: old.notifications.map((n) => n.id === id ? { ...n, read: true } : n),
+        };
+      });
+    },
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => apiRequest("POST", "/api/notifications/read-all"),
-    onSuccess: () => {
+    onMutate: async () => {
       queryClient.setQueryData<NotificationsResponse>(['/api/notifications'], (old) =>
         old && { unreadCount: 0, notifications: old.notifications.map((n) => ({ ...n, read: true })) }
       );
     },
   });
 
-  useEffect(() => {
-    if (open && data && data.unreadCount > 0) {
-      markAllReadMutation.mutate();
-    }
-    // Only fire once per open, right after the list loads unread items —
-    // not on every data refetch while the dialog stays open.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, data?.unreadCount]);
-
   const handleItemClick = (item: NotificationItem) => {
+    if (!item.read) markOneReadMutation.mutate(item.id);
     handleOpenChange(false);
     if (item.type === "follow") {
       setLocation(`/coaches/${item.actorAccountId}`);
@@ -86,13 +96,30 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
   };
 
   const notifications = data?.notifications ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display uppercase tracking-tight">{t("notificationsDialog.title")}</DialogTitle>
-          <DialogDescription>{t("notificationsDialog.description")}</DialogDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <DialogTitle className="font-display uppercase tracking-tight">{t("notificationsDialog.title")}</DialogTitle>
+              <DialogDescription>{t("notificationsDialog.description")}</DialogDescription>
+            </div>
+            {unreadCount > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => markAllReadMutation.mutate()}
+                disabled={markAllReadMutation.isPending}
+                className="whitespace-nowrap flex-shrink-0"
+              >
+                {t("notificationsDialog.markAllRead")}
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {isLoading ? (
@@ -115,7 +142,7 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
                       ? <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />
                       : <UserCheck className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-foreground">
                       {item.type === "follow"
                         ? t("notificationsDialog.followText", { name: item.actorPublicName ?? t("notificationsDialog.someone") })
@@ -123,6 +150,9 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatWhen(item.createdAt)}</p>
                   </div>
+                  {!item.read && (
+                    <span className="w-2 h-2 flex-shrink-0 mt-1.5 rounded-full basketball-orange" aria-hidden="true" />
+                  )}
                 </button>
               </li>
             ))}

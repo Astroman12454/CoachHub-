@@ -1869,5 +1869,17 @@ test.describe("accessibility (axe)", () => {
       const results = await scan(page);
       expect(summarize(results.violations)).toEqual([]);
     });
+
+    // The bell used to be desktop-only (hidden lg:flex) — a coach on their
+    // phone had no way to see who followed them or liked their exercises.
+    test("notifications bell is reachable and opens the dialog", async ({ page }) => {
+      await login(page);
+      await page.goto("/dashboard");
+      await page.waitForLoadState("networkidle");
+      await page.click('button[aria-label*="Notifications"]');
+      await page.waitForSelector("text=Follows and likes on your published exercises.");
+      const results = await scan(page);
+      expect(summarize(results.violations)).toEqual([]);
+    });
   });
 });

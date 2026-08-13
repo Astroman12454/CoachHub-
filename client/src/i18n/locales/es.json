@@ -797,6 +797,7 @@
     "title": "Notificaciones",
     "description": "Seguidores y likes en tus ejercicios publicados.",
     "empty": "Aún no tienes notificaciones.",
+    "markAllRead": "Marcar todo como leído",
     "someone": "Alguien",
     "followText": "{{name}} ha empezado a seguirte",
     "likeText": "A {{name}} le gustó \"{{exercise}}\""
