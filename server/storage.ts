@@ -8,6 +8,9 @@ import {
   playLikes,
   playComments,
   playSaves,
+  physicalTestLikes,
+  physicalTestComments,
+  physicalTestSaves,
   coachFollows,
   notifications,
   trainingSessions,
@@ -75,6 +78,7 @@ import {
   type SuggestedCoach,
   type ExerciseCommentView,
   type PlayCommentView,
+  type PhysicalTestCommentView,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
@@ -195,6 +199,19 @@ export interface IStorage {
   createPlayComment(playId: number, accountId: number, body: string): Promise<PlayCommentView | undefined>;
   getPlayComments(playId: number, viewerAccountId: number): Promise<PlayCommentView[] | undefined>;
   deletePlayComment(commentId: number, accountId: number): Promise<boolean>;
+
+  // Physical test community — scoped directly by accountId, same as
+  // exercises (no team indirection to resolve, unlike plays above).
+  setPhysicalTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<PhysicalTest | undefined>;
+  getCommunityPhysicalTests(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(PhysicalTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  importCommunityPhysicalTest(id: number, accountId: number): Promise<PhysicalTest | undefined>;
+  likePhysicalTest(testId: number, accountId: number): Promise<boolean>;
+  unlikePhysicalTest(testId: number, accountId: number): Promise<void>;
+  savePhysicalTest(testId: number, accountId: number): Promise<boolean>;
+  unsavePhysicalTest(testId: number, accountId: number): Promise<void>;
+  createPhysicalTestComment(testId: number, accountId: number, body: string): Promise<PhysicalTestCommentView | undefined>;
+  getPhysicalTestComments(testId: number, viewerAccountId: number): Promise<PhysicalTestCommentView[] | undefined>;
+  deletePhysicalTestComment(commentId: number, accountId: number): Promise<boolean>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -768,13 +785,14 @@ export class DatabaseStorage implements IStorage {
       .slice(0, limit);
   }
 
-  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play"; actorAccountId: number; exerciseId?: number; playId?: number }): Promise<void> {
+  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test"; actorAccountId: number; exerciseId?: number; playId?: number; physicalTestId?: number }): Promise<void> {
     await db.insert(notifications).values({
       accountId: data.accountId,
       type: data.type,
       actorAccountId: data.actorAccountId,
       exerciseId: data.exerciseId ?? null,
       playId: data.playId ?? null,
+      physicalTestId: data.physicalTestId ?? null,
     });
   }
 
@@ -789,6 +807,8 @@ export class DatabaseStorage implements IStorage {
         exerciseName: exercises.name,
         playId: notifications.playId,
         playName: plays.name,
+        physicalTestId: notifications.physicalTestId,
+        physicalTestName: physicalTests.name,
         read: notifications.read,
         createdAt: notifications.createdAt,
       })
@@ -796,6 +816,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(accounts, eq(notifications.actorAccountId, accounts.id))
       .leftJoin(exercises, eq(notifications.exerciseId, exercises.id))
       .leftJoin(plays, eq(notifications.playId, plays.id))
+      .leftJoin(physicalTests, eq(notifications.physicalTestId, physicalTests.id))
       .where(eq(notifications.accountId, accountId))
       .orderBy(desc(notifications.id))
       .limit(limit);
@@ -809,6 +830,8 @@ export class DatabaseStorage implements IStorage {
       exerciseName: row.exerciseName,
       playId: row.playId,
       playName: row.playName,
+      physicalTestId: row.physicalTestId,
+      physicalTestName: row.physicalTestName,
       read: row.read === 1,
       createdAt: row.createdAt ? row.createdAt.toISOString() : null,
     }));
@@ -1133,6 +1156,195 @@ export class DatabaseStorage implements IStorage {
     if (!canDelete) return false;
 
     const result = await db.delete(playComments).where(eq(playComments.id, commentId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async setPhysicalTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<PhysicalTest | undefined> {
+    const [test] = await db
+      .update(physicalTests)
+      .set({ sharedToCommunity: shared ? 1 : 0 })
+      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)))
+      .returning();
+    return test || undefined;
+  }
+
+  async getCommunityPhysicalTests(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(PhysicalTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+    let shared = await db.select().from(physicalTests).where(eq(physicalTests.sharedToCommunity, 1));
+    if (shared.length === 0) return [];
+
+    if (opts.followingOnly) {
+      const followingRows = await db
+        .select({ followingAccountId: coachFollows.followingAccountId })
+        .from(coachFollows)
+        .where(eq(coachFollows.followerAccountId, accountId));
+      const followingAccountIds = new Set(followingRows.map((row) => row.followingAccountId));
+      shared = shared.filter((test) => followingAccountIds.has(test.accountId));
+    }
+
+    if (opts.savedOnly) {
+      const savedRows = await db.select({ testId: physicalTestSaves.testId }).from(physicalTestSaves).where(eq(physicalTestSaves.accountId, accountId));
+      const savedTestIds = new Set(savedRows.map((row) => row.testId));
+      shared = shared.filter((test) => savedTestIds.has(test.id));
+    }
+
+    if (shared.length === 0) return [];
+
+    const testIds = shared.map((test) => test.id);
+    const likeCounts = await db
+      .select({ testId: physicalTestLikes.testId, count: sql<number>`count(*)::int` })
+      .from(physicalTestLikes)
+      .where(inArray(physicalTestLikes.testId, testIds))
+      .groupBy(physicalTestLikes.testId);
+    const likeCountByTestId = new Map(likeCounts.map((row) => [row.testId, row.count]));
+
+    const likedRows = await db
+      .select({ testId: physicalTestLikes.testId })
+      .from(physicalTestLikes)
+      .where(and(inArray(physicalTestLikes.testId, testIds), eq(physicalTestLikes.accountId, accountId)));
+    const likedTestIds = new Set(likedRows.map((row) => row.testId));
+
+    const savedRowsForViewer = await db
+      .select({ testId: physicalTestSaves.testId })
+      .from(physicalTestSaves)
+      .where(and(inArray(physicalTestSaves.testId, testIds), eq(physicalTestSaves.accountId, accountId)));
+    const savedTestIdsForViewer = new Set(savedRowsForViewer.map((row) => row.testId));
+
+    const commentCounts = await db
+      .select({ testId: physicalTestComments.testId, count: sql<number>`count(*)::int` })
+      .from(physicalTestComments)
+      .where(inArray(physicalTestComments.testId, testIds))
+      .groupBy(physicalTestComments.testId);
+    const commentCountByTestId = new Map(commentCounts.map((row) => [row.testId, row.count]));
+
+    const publisherIds = Array.from(new Set(shared.map((test) => test.accountId)));
+    const publishers = await db
+      .select({ id: accounts.id, publicName: accounts.publicName })
+      .from(accounts)
+      .where(inArray(accounts.id, publisherIds));
+    const publisherById = new Map(publishers.map((publisher) => [publisher.id, publisher]));
+
+    const withExtras = shared.map((test) => ({
+      ...test,
+      likeCount: likeCountByTestId.get(test.id) ?? 0,
+      likedByMe: likedTestIds.has(test.id),
+      savedByMe: savedTestIdsForViewer.has(test.id),
+      commentCount: commentCountByTestId.get(test.id) ?? 0,
+      publishedBy: {
+        accountId: test.accountId,
+        publicName: publisherById.get(test.accountId)?.publicName ?? null,
+      },
+    }));
+
+    return opts.sort === "popular"
+      ? withExtras.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
+      : withExtras.sort((a, b) => b.id - a.id);
+  }
+
+  async importCommunityPhysicalTest(id: number, accountId: number): Promise<PhysicalTest | undefined> {
+    const [source] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, id), eq(physicalTests.sharedToCommunity, 1)));
+    if (!source) return undefined;
+
+    const [imported] = await db
+      .insert(physicalTests)
+      .values({
+        accountId,
+        name: source.name,
+        unit: source.unit,
+        lowerIsBetter: source.lowerIsBetter,
+        description: source.description,
+      })
+      .returning();
+    return imported;
+  }
+
+  async likePhysicalTest(testId: number, accountId: number): Promise<boolean> {
+    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
+    if (!test) return false;
+
+    const inserted = await db.insert(physicalTestLikes).values({ testId, accountId }).onConflictDoNothing().returning();
+    if (inserted.length > 0 && test.accountId !== accountId) {
+      await this.createNotification({ accountId: test.accountId, type: "like_physical_test", actorAccountId: accountId, physicalTestId: testId });
+    }
+    return true;
+  }
+
+  async unlikePhysicalTest(testId: number, accountId: number): Promise<void> {
+    await db.delete(physicalTestLikes).where(and(eq(physicalTestLikes.testId, testId), eq(physicalTestLikes.accountId, accountId)));
+  }
+
+  async savePhysicalTest(testId: number, accountId: number): Promise<boolean> {
+    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
+    if (!test) return false;
+
+    await db.insert(physicalTestSaves).values({ testId, accountId }).onConflictDoNothing();
+    return true;
+  }
+
+  async unsavePhysicalTest(testId: number, accountId: number): Promise<void> {
+    await db.delete(physicalTestSaves).where(and(eq(physicalTestSaves.testId, testId), eq(physicalTestSaves.accountId, accountId)));
+  }
+
+  async createPhysicalTestComment(testId: number, accountId: number, body: string): Promise<PhysicalTestCommentView | undefined> {
+    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
+    if (!test) return undefined;
+
+    const [comment] = await db.insert(physicalTestComments).values({ testId, accountId, body }).returning();
+
+    if (test.accountId !== accountId) {
+      await this.createNotification({ accountId: test.accountId, type: "comment_physical_test", actorAccountId: accountId, physicalTestId: testId });
+    }
+
+    const [author] = await db.select({ publicName: accounts.publicName }).from(accounts).where(eq(accounts.id, accountId));
+
+    return {
+      id: comment.id,
+      testId: comment.testId,
+      accountId: comment.accountId,
+      publicName: author?.publicName ?? null,
+      body: comment.body,
+      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+      canDelete: true,
+    };
+  }
+
+  async getPhysicalTestComments(testId: number, viewerAccountId: number): Promise<PhysicalTestCommentView[] | undefined> {
+    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
+    if (!test) return undefined;
+
+    const rows = await db
+      .select({
+        id: physicalTestComments.id,
+        testId: physicalTestComments.testId,
+        accountId: physicalTestComments.accountId,
+        publicName: accounts.publicName,
+        body: physicalTestComments.body,
+        createdAt: physicalTestComments.createdAt,
+      })
+      .from(physicalTestComments)
+      .leftJoin(accounts, eq(accounts.id, physicalTestComments.accountId))
+      .where(eq(physicalTestComments.testId, testId))
+      .orderBy(asc(physicalTestComments.id));
+
+    return rows.map((r) => ({
+      id: r.id,
+      testId: r.testId,
+      accountId: r.accountId,
+      publicName: r.publicName,
+      body: r.body,
+      createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+      canDelete: r.accountId === viewerAccountId || test.accountId === viewerAccountId,
+    }));
+  }
+
+  async deletePhysicalTestComment(commentId: number, accountId: number): Promise<boolean> {
+    const [comment] = await db.select().from(physicalTestComments).where(eq(physicalTestComments.id, commentId));
+    if (!comment) return false;
+
+    const [test] = await db.select().from(physicalTests).where(eq(physicalTests.id, comment.testId));
+    const canDelete = comment.accountId === accountId || test?.accountId === accountId;
+    if (!canDelete) return false;
+
+    const result = await db.delete(physicalTestComments).where(eq(physicalTestComments.id, commentId));
     return (result.rowCount ?? 0) > 0;
   }
 

@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Activity, Pencil, Trash2, ClipboardList, ArrowDown, ArrowUp } from "lucide-react";
+import { useLocation } from "wouter";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Activity, Globe, Pencil, Trash2, ClipboardList, ArrowDown, ArrowUp, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PhysicalTestForm from "@/components/PhysicalTestForm";
 import RecordTestResultsDialog from "@/components/RecordTestResultsDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import SetPublicNameDialog from "@/components/SetPublicNameDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,15 +15,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, extractErrorMessage, extractErrorCode } from "@/lib/queryClient";
 import type { PhysicalTest } from "@shared/schema";
 
 export default function PhysicalTests() {
   const { t } = useTranslation();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [editingTest, setEditingTest] = useState<PhysicalTest | null>(null);
   const [testToDelete, setTestToDelete] = useState<PhysicalTest | null>(null);
   const [recordingTest, setRecordingTest] = useState<PhysicalTest | null>(null);
+  const [pendingPublishId, setPendingPublishId] = useState<number | null>(null);
 
   const { data: tests = [], isLoading, isError, refetch } = useQuery<PhysicalTest[]>({
     queryKey: ["/api/physical-tests"],
@@ -30,6 +38,28 @@ export default function PhysicalTests() {
   const { requestDelete, isPendingDelete } = useDeleteWithUndo({
     endpoint: "/api/physical-tests",
     errorMessage: t("physicalTests.failedToDelete"),
+  });
+
+  const toggleCommunityShareMutation = useMutation({
+    mutationFn: async ({ id, shared }: { id: number; shared: boolean }) =>
+      apiRequest("PUT", `/api/physical-tests/${id}/share-community`, { shared }),
+    onMutate: async ({ id, shared }) => {
+      const queryKey = ["/api/physical-tests"];
+      await queryClient.cancelQueries({ queryKey });
+      const previousTests = queryClient.getQueryData<PhysicalTest[]>(queryKey);
+      queryClient.setQueryData<PhysicalTest[]>(queryKey, (old = []) =>
+        old.map((t) => (t.id === id ? { ...t, sharedToCommunity: shared ? 1 : 0 } : t))
+      );
+      return { previousTests, queryKey };
+    },
+    onError: (error, variables, context) => {
+      if (context) queryClient.setQueryData(context.queryKey, context.previousTests);
+      if (extractErrorCode(error) === "PUBLIC_NAME_REQUIRED") {
+        setPendingPublishId(variables.id);
+        return;
+      }
+      toast({ title: t("physicalTests.couldntUpdateCommunityShare"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
   });
 
   const confirmDeleteTest = () => {
@@ -73,7 +103,16 @@ export default function PhysicalTests() {
       <TopBar title={t("nav.physicalTests")} subtitle={t("physicalTests.subtitle")} onSearch={setSearchQuery} searchPlaceholder={t("physicalTests.searchPlaceholder")} />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end gap-2 mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => setLocation("/physical-tests/community")}
+          >
+            <Users className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            {t("physicalTests.community")}
+          </Button>
           <Button
             className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
             onClick={() => setIsCreateFormOpen(true)}
@@ -124,6 +163,17 @@ export default function PhysicalTests() {
                       variant="outline"
                       size="icon"
                       className="w-8 h-8 shrink-0"
+                      onClick={() => toggleCommunityShareMutation.mutate({ id: test.id, shared: test.sharedToCommunity !== 1 })}
+                      aria-label={test.sharedToCommunity === 1 ? t("physicalTests.removeFromCommunity", { name: test.name }) : t("physicalTests.addToCommunity", { name: test.name })}
+                      aria-pressed={test.sharedToCommunity === 1}
+                      title={t("physicalTests.community")}
+                    >
+                      <Globe className={`w-3.5 h-3.5 ${test.sharedToCommunity === 1 ? "text-court" : ""}`} strokeWidth={1.75} aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-8 h-8 shrink-0"
                       onClick={() => setEditingTest(test)}
                       aria-label={t("physicalTests.editTestFor", { name: test.name })}
                       title={t("common.edit")}
@@ -164,6 +214,15 @@ export default function PhysicalTests() {
         title={t("physicalTests.deleteConfirmTitle")}
         description={t("physicalTests.deleteConfirmDescription", { name: testToDelete?.name })}
         onConfirm={confirmDeleteTest}
+      />
+
+      <SetPublicNameDialog
+        open={pendingPublishId !== null}
+        onOpenChange={(open) => !open && setPendingPublishId(null)}
+        onSuccess={() => {
+          if (pendingPublishId !== null) toggleCommunityShareMutation.mutate({ id: pendingPublishId, shared: true });
+          setPendingPublishId(null);
+        }}
       />
     </div>
   );

@@ -855,6 +855,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const setPhysicalTestCommunityShareSchema = z.object({ shared: z.boolean() });
+
+  // Physical test community — same shape and gating as the exercise/play
+  // communities above (public name required to publish). Scoped directly
+  // by accountId, same as the rest of this resource's routes.
+  app.put("/api/physical-tests/:id/share-community", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { shared } = setPhysicalTestCommunityShareSchema.parse(req.body);
+
+      const existing = await storage.getPhysicalTestById(id, accountId);
+      if (!existing) {
+        return res.status(404).json({ message: "Physical test not found" });
+      }
+      if (shared) {
+        const account = await storage.getAccountById(accountId);
+        if (!account?.publicName) {
+          return res.status(409).json({ message: "Set a public name before publishing to the community.", code: "PUBLIC_NAME_REQUIRED" });
+        }
+      }
+      const test = await storage.setPhysicalTestCommunityShare(id, accountId, shared);
+      if (!test) {
+        return res.status(404).json({ message: "Physical test not found" });
+      }
+      res.json(test);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  app.get("/api/community-physical-tests", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const sort = req.query.sort === "popular" ? "popular" : "recent";
+      const followingOnly = req.query.following === "true";
+      const savedOnly = req.query.saved === "true";
+      const shared = await storage.getCommunityPhysicalTests(accountId, { sort, followingOnly, savedOnly });
+      res.json(shared.map(({ id, name, unit, lowerIsBetter, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
+        ({ id, name, unit, lowerIsBetter, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
+      ));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch community physical tests" });
+    }
+  });
+
+  app.post("/api/community-physical-tests/:id/like", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const liked = await storage.likePhysicalTest(id, accountId);
+      if (!liked) {
+        return res.status(404).json({ message: "Community physical test not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to like physical test" });
+    }
+  });
+
+  app.delete("/api/community-physical-tests/:id/like", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unlikePhysicalTest(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unlike physical test" });
+    }
+  });
+
+  app.post("/api/community-physical-tests/:id/save", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const saved = await storage.savePhysicalTest(id, accountId);
+      if (!saved) {
+        return res.status(404).json({ message: "Community physical test not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save physical test" });
+    }
+  });
+
+  app.delete("/api/community-physical-tests/:id/save", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unsavePhysicalTest(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unsave physical test" });
+    }
+  });
+
+  app.get("/api/community-physical-tests/:id/comments", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const comments = await storage.getPhysicalTestComments(id, accountId);
+      if (!comments) {
+        return res.status(404).json({ message: "Community physical test not found" });
+      }
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/community-physical-tests/:id/comments", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!account?.publicName) {
+        return res.status(409).json({ message: "Set a public name before commenting.", code: "PUBLIC_NAME_REQUIRED" });
+      }
+
+      const { body } = createExerciseCommentSchema.parse(req.body);
+      const comment = await storage.createPhysicalTestComment(id, accountId, body);
+      if (!comment) {
+        return res.status(404).json({ message: "Community physical test not found" });
+      }
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid comment" });
+    }
+  });
+
+  app.delete("/api/community-physical-tests/:id/comments/:commentId", async (req, res) => {
+    try {
+      const commentId = parseId(req, res, "commentId");
+      if (commentId === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const deleted = await storage.deletePhysicalTestComment(commentId, accountId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // No plan gate, same as creating a physical test from scratch — see the
+  // comment on the physical test routes above.
+  app.post("/api/community-physical-tests/:id/import", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const imported = await storage.importCommunityPhysicalTest(id, accountId);
+      if (!imported) {
+        return res.status(404).json({ message: "Community physical test not found" });
+      }
+      res.status(201).json(imported);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to import physical test" });
+    }
+  });
+
   // A whole active roster's results for one test, recorded in a single
   // batch (the way a coach actually runs a fitness test — one session,
   // everyone in turn) rather than one request per player.

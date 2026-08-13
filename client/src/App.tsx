@@ -31,6 +31,7 @@ const CommunityExercises = lazy(() => import("@/pages/CommunityExercises"));
 const CoachProfile = lazy(() => import("@/pages/CoachProfile"));
 const ExerciseDiagramEditor = lazy(() => import("@/pages/ExerciseDiagramEditor"));
 const PhysicalTests = lazy(() => import("@/pages/PhysicalTests"));
+const CommunityPhysicalTests = lazy(() => import("@/pages/CommunityPhysicalTests"));
 const Players = lazy(() => import("@/pages/Players"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
@@ -98,6 +99,7 @@ function Router() {
       <Route path="/coaches/:accountId" component={() => <Layout><CoachProfile /></Layout>} />
       <Route path="/exercise-library/:id/diagram" component={() => <Layout><ExerciseDiagramEditor /></Layout>} />
       <Route path="/physical-tests" component={() => <Layout><PhysicalTests /></Layout>} />
+      <Route path="/physical-tests/community" component={() => <Layout><CommunityPhysicalTests /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />
       <Route path="/players/:id" component={() => <Layout><PlayerProfile /></Layout>} />
       <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />

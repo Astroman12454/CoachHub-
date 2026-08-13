@@ -824,6 +824,27 @@
     "unsave": "Unsave {{name}}",
     "viewComments": "View comments on {{name}}"
   },
+  "communityPhysicalTests": {
+    "title": "Community Physical Tests",
+    "subtitle": "Browse and import physical tests other coaches have shared publicly",
+    "backToTests": "Back to physical tests",
+    "emptyTitle": "No Community Physical Tests Yet",
+    "emptyDescription": "No coach has shared a physical test to the community yet — share one of your own from Physical Tests.",
+    "emptyFollowingDescription": "Follow a coach from their profile to see their shared physical tests here.",
+    "emptySavedTitle": "No Saved Physical Tests Yet",
+    "emptySavedDescription": "Bookmark a physical test from the community to find it here later.",
+    "imported": "Physical test imported",
+    "importedDescription": "\"{{name}}\" was added to your physical tests.",
+    "couldntImport": "Couldn't import physical test",
+    "importName": "Import {{name}}",
+    "couldntUpdateLike": "Couldn't update like",
+    "couldntUpdateSave": "Couldn't update saved physical test",
+    "like": "Like {{name}}",
+    "unlike": "Unlike {{name}}",
+    "save": "Save {{name}}",
+    "unsave": "Unsave {{name}}",
+    "viewComments": "View comments on {{name}}"
+  },
   "coachProfile": {
     "title": "Coach Profile",
     "subtitle": "Public profile and shared exercises",
@@ -846,7 +867,9 @@
     "likeText": "{{name}} liked \"{{exercise}}\"",
     "commentText": "{{name}} commented on \"{{exercise}}\"",
     "likePlayText": "{{name}} liked your play \"{{play}}\"",
-    "commentPlayText": "{{name}} commented on your play \"{{play}}\""
+    "commentPlayText": "{{name}} commented on your play \"{{play}}\"",
+    "likePhysicalTestText": "{{name}} liked your physical test \"{{test}}\"",
+    "commentPhysicalTestText": "{{name}} commented on your physical test \"{{test}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",
@@ -933,7 +956,11 @@
     "failedToDelete": "Failed to delete test",
     "deletedToast": "\"{{name}}\" deleted.",
     "deleteConfirmTitle": "Delete this test?",
-    "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and every recorded result for it. This can't be undone."
+    "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and every recorded result for it. This can't be undone.",
+    "community": "Community",
+    "addToCommunity": "Add {{name}} to the community",
+    "removeFromCommunity": "Remove {{name}} from the community",
+    "couldntUpdateCommunityShare": "Couldn't update community share"
   },
   "physicalTestForm": {
     "editTest": "Edit Physical Test",

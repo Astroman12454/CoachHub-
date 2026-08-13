@@ -64,6 +64,13 @@
       "when": 1786637703394,
       "tag": "0008_cuddly_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786639486630,
+      "tag": "0009_giant_tigra",
+      "breakpoints": true
     }
   ]
 }

@@ -824,6 +824,27 @@
     "unsave": "Quitar de guardadas {{name}}",
     "viewComments": "Ver comentarios de {{name}}"
   },
+  "communityPhysicalTests": {
+    "title": "Pruebas Físicas de la Comunidad",
+    "subtitle": "Explora e importa pruebas físicas que otros entrenadores compartieron públicamente",
+    "backToTests": "Volver a pruebas físicas",
+    "emptyTitle": "Aún No Hay Pruebas Físicas de la Comunidad",
+    "emptyDescription": "Ningún entrenador compartió una prueba física con la comunidad todavía — comparte una de las tuyas desde Pruebas Físicas.",
+    "emptyFollowingDescription": "Sigue a un entrenador desde su perfil para ver aquí sus pruebas físicas compartidas.",
+    "emptySavedTitle": "Aún No Hay Pruebas Físicas Guardadas",
+    "emptySavedDescription": "Guarda una prueba física de la comunidad para encontrarla aquí más tarde.",
+    "imported": "Prueba física importada",
+    "importedDescription": "\"{{name}}\" se añadió a tus pruebas físicas.",
+    "couldntImport": "No se pudo importar la prueba física",
+    "importName": "Importar {{name}}",
+    "couldntUpdateLike": "No se pudo actualizar el me gusta",
+    "couldntUpdateSave": "No se pudo actualizar la prueba guardada",
+    "like": "Me gusta {{name}}",
+    "unlike": "Ya no me gusta {{name}}",
+    "save": "Guardar {{name}}",
+    "unsave": "Quitar de guardadas {{name}}",
+    "viewComments": "Ver comentarios de {{name}}"
+  },
   "coachProfile": {
     "title": "Perfil del Entrenador",
     "subtitle": "Perfil público y ejercicios compartidos",
@@ -846,7 +867,9 @@
     "likeText": "A {{name}} le gustó \"{{exercise}}\"",
     "commentText": "{{name}} comentó en \"{{exercise}}\"",
     "likePlayText": "A {{name}} le gustó tu jugada \"{{play}}\"",
-    "commentPlayText": "{{name}} comentó en tu jugada \"{{play}}\""
+    "commentPlayText": "{{name}} comentó en tu jugada \"{{play}}\"",
+    "likePhysicalTestText": "A {{name}} le gustó tu prueba física \"{{test}}\"",
+    "commentPhysicalTestText": "{{name}} comentó en tu prueba física \"{{test}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",
@@ -933,7 +956,11 @@
     "failedToDelete": "No se pudo eliminar la prueba",
     "deletedToast": "\"{{name}}\" eliminada.",
     "deleteConfirmTitle": "¿Eliminar esta prueba?",
-    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\" y todos los resultados registrados para ella. No se puede deshacer."
+    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\" y todos los resultados registrados para ella. No se puede deshacer.",
+    "community": "Comunidad",
+    "addToCommunity": "Añadir {{name}} a la comunidad",
+    "removeFromCommunity": "Quitar {{name}} de la comunidad",
+    "couldntUpdateCommunityShare": "No se pudo actualizar el estado en la comunidad"
   },
   "physicalTestForm": {
     "editTest": "Editar Prueba Física",
