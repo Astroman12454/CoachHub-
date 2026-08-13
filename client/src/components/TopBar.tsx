@@ -35,10 +35,14 @@ export default function TopBar({
 
   // Polling, not push — matches the rest of this app's "no websockets"
   // approach. 45s keeps the badge reasonably fresh without hammering the
-  // server across every open tab/page (TopBar mounts on every page).
+  // server across every open tab/page (TopBar mounts on every page);
+  // refetchOnWindowFocus (off by default app-wide) is turned back on just
+  // for this query so switching back to the tab catches up immediately
+  // instead of waiting out the rest of the interval.
   const { data: notificationsSummary } = useQuery<NotificationsResponse>({
     queryKey: ['/api/notifications'],
     refetchInterval: 45000,
+    refetchOnWindowFocus: true,
   });
   const unreadCount = notificationsSummary?.unreadCount ?? 0;
 
@@ -108,7 +112,7 @@ export default function TopBar({
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(true)}
-              className="hidden lg:flex relative w-10 h-10 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
+              className="flex relative w-10 h-10 flex-shrink-0 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
               aria-label={unreadCount > 0 ? t("common.notificationsUnread", { count: unreadCount }) : t("common.notifications")}
             >
               <Bell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
