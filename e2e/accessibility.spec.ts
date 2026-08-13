@@ -1825,6 +1825,30 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/plays/${play.id}`);
   });
 
+  test("community plays page — suggested coaches row, follows from a suggestion", async ({ page }) => {
+    // Suggestions are ranked account-wide (see /api/coaches/suggested), so a
+    // throwaway account that only ever shared an exercise still shows up as
+    // a suggestion here on the plays community page.
+    const secondEmail = `e2e-suggest-play-${Date.now()}@coachhub.test`;
+    await page.request.post("/api/signup", { data: { email: secondEmail, password: "e2e-test-password-123" } });
+    await page.request.put("/api/account/public-name", { data: { publicName: `E2E Suggested Play Coach ${Date.now()}` } });
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Suggested Play Drill", description: "Shared for suggestion testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    // Switch back to the shared test account for the rest of the test.
+    await page.request.post("/api/login", { data: { email: TEST_EMAIL, password: TEST_PASSWORD } });
+
+    await login(page);
+    await page.goto("/playbook/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Coaches you might like to follow");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("playbook — duplicate flow opens the copy in the editor", async ({ page }) => {
     await login(page);
     await page.goto("/playbook");

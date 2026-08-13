@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bookmark, ClipboardList, Compass, Download, Heart, MessageCircle, UserCheck } from "lucide-react";
+import { ArrowLeft, Bookmark, ClipboardList, Compass, Download, Heart, MessageCircle, UserCheck, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
@@ -27,6 +27,14 @@ interface CommunityPlay {
   savedByMe: boolean;
   commentCount: number;
   publishedBy: { accountId: number; publicName: string | null };
+}
+
+interface SuggestedCoach {
+  accountId: number;
+  publicName: string;
+  exerciseCount: number;
+  likeCount: number;
+  followerCount: number;
 }
 
 type FeedTab = "discover" | "following" | "saved";
@@ -58,6 +66,36 @@ export default function CommunityPlays() {
 
   const { data: communityPlays = [], isLoading, isError, refetch } = useQuery<CommunityPlay[]>({
     queryKey,
+  });
+
+  // Same account-wide "who to follow" signal as CommunityExercises — the
+  // endpoint ranks by overall community activity, not plays specifically,
+  // so the row reads as "coaches worth following" rather than "coaches with
+  // plays," which is why the stats text still cites exercises/likes.
+  const { data: suggestedCoaches = [] } = useQuery<SuggestedCoach[]>({
+    queryKey: ['/api/coaches/suggested'],
+  });
+
+  const followSuggestedMutation = useMutation({
+    mutationFn: async (accountId: number) => apiRequest("POST", `/api/coaches/${accountId}/follow`),
+    onMutate: async (accountId) => {
+      const suggestedKey = ['/api/coaches/suggested'];
+      await queryClient.cancelQueries({ queryKey: suggestedKey });
+      const previousSuggestions = queryClient.getQueryData<SuggestedCoach[]>(suggestedKey);
+      queryClient.setQueryData<SuggestedCoach[]>(suggestedKey, (old = []) => old.filter((c) => c.accountId !== accountId));
+      return { previousSuggestions };
+    },
+    onError: (error, _accountId, context) => {
+      if (context?.previousSuggestions) queryClient.setQueryData(['/api/coaches/suggested'], context.previousSuggestions);
+      toast({
+        title: t("communityExercises.couldntFollow"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/community-plays?following=true'] });
+    },
   });
 
   const importMutation = useMutation({
@@ -216,6 +254,39 @@ export default function CommunityPlays() {
             {t("communityPlays.savedTab")}
           </Button>
         </div>
+
+        {feedTab === "discover" && suggestedCoaches.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">{t("communityExercises.suggestedCoaches")}</h3>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {suggestedCoaches.map((coach) => (
+                <div key={coach.accountId} className="flex-shrink-0 w-56 bg-card border border-border rounded-lg p-4">
+                  <Link
+                    href={`/coaches/${coach.accountId}`}
+                    className="font-display font-semibold uppercase tracking-tight text-sm text-foreground hover:text-basketball-orange hover:underline block truncate"
+                  >
+                    {coach.publicName}
+                  </Link>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    {t("communityExercises.suggestedCoachStats", { exercises: coach.exerciseCount, likes: coach.likeCount })}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => followSuggestedMutation.mutate(coach.accountId)}
+                    disabled={followSuggestedMutation.isPending}
+                    aria-label={t("communityExercises.followName", { name: coach.publicName })}
+                  >
+                    <UserPlus className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+                    {t("coachProfile.follow")}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
