@@ -210,6 +210,7 @@ describe("community exercise library", () => {
   it("toggles community sharing — available on the free plan, unlike creating exercises", async () => {
     const { agent } = await signedInPaidAgent(app);
     const create = await agent.post("/api/exercises").send(exerciseBody());
+    await agent.put("/api/account/public-name").send({ publicName: "Coach Test" });
 
     const share = await agent.put(`/api/exercises/${create.body.id}/share-community`).send({ shared: true });
     expect(share.status).toBe(200);
@@ -232,6 +233,7 @@ describe("community exercise library", () => {
   it("lists exercises shared by any account, never leaking accountId or unshared exercises", async () => {
     const { agent: ownerA } = await signedInPaidAgent(app);
     const shared = await ownerA.post("/api/exercises").send(exerciseBody({ name: "Shared Drill", minPlayers: 4 }));
+    await ownerA.put("/api/account/public-name").send({ publicName: "Coach A" });
     await ownerA.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
     const notShared = await ownerA.post("/api/exercises").send(exerciseBody({ name: "Private Drill" }));
 
@@ -251,6 +253,7 @@ describe("community exercise library", () => {
   it("imports a community exercise as a fresh, private copy under the importer's account", async () => {
     const { agent: owner } = await signedInPaidAgent(app);
     const shared = await owner.post("/api/exercises").send(exerciseBody({ name: "Shared Drill", minPlayers: 4 }));
+    await owner.put("/api/account/public-name").send({ publicName: "Coach Owner" });
     await owner.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
     await owner.put(`/api/exercises/${shared.body.id}/favorite`).send({ isFavorite: true });
 
@@ -268,6 +271,7 @@ describe("community exercise library", () => {
   it("rejects importing on the free plan", async () => {
     const { agent: owner } = await signedInPaidAgent(app);
     const shared = await owner.post("/api/exercises").send(exerciseBody());
+    await owner.put("/api/account/public-name").send({ publicName: "Coach Owner" });
     await owner.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
 
     const { agent: freeImporter } = await signedInAgent(app);
@@ -418,6 +422,7 @@ describe("exercise diagrams", () => {
     const { agent: owner } = await signedInPaidAgent(app);
     const shared = await owner.post("/api/exercises").send(exerciseBody({ name: "Shared With Diagram" }));
     await owner.put(`/api/exercises/${shared.body.id}/diagram`).send(diagramBody({ courtType: "full" }));
+    await owner.put("/api/account/public-name").send({ publicName: "Coach Owner" });
     await owner.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
 
     const { agent: importer } = await signedInPaidAgent(app);

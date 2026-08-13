@@ -40,6 +40,12 @@ export const accounts = pgTable("accounts", {
   resetTokenHash: text("reset_token_hash"),
   resetTokenExpiresAt: timestamp("reset_token_expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  // A name the coach chooses to show on anything they publish to the
+  // community library or when following/being followed — never the email,
+  // never a team name (both stay private). Null until they first try to
+  // publish an exercise or follow another coach; those actions are the
+  // only things gated on it being set (see insertPublicNameSchema below).
+  publicName: text("public_name"),
 });
 
 // A pending invitation to join a Club account as a coach — consumed (row
@@ -485,6 +491,15 @@ export type CreatePlayerInjury = z.infer<typeof createPlayerInjurySchema>;
 export const recoverInjurySchema = z.object({
   recoveredDate: z.string().min(1, "Date is required"),
 });
+
+// The name a coach shows on published exercises and to accounts they
+// follow/are followed by — trimmed server-side, same 2-40 length window as
+// team names get in practice, just enforced explicitly since this one is
+// shown outside the coach's own account.
+export const setPublicNameSchema = z.object({
+  publicName: z.string().trim().min(2, "Name must be at least 2 characters").max(40, "Name must be 40 characters or fewer"),
+});
+export type SetPublicName = z.infer<typeof setPublicNameSchema>;
 
 export const logDrillAttemptSchema = z.object({
   drillName: z.string().min(1, "Drill name is required").max(100),

@@ -15,6 +15,10 @@ interface AccountInfo {
   // management actions (owner-only) versus a "managed by" note.
   isClubMember: boolean;
   ownerEmail?: string;
+  // The name this account shows on published community exercises and to
+  // coaches it follows/is followed by — null until the coach sets one
+  // (see SetPublicNameDialog). Never the email, never a team name.
+  publicName: string | null;
 }
 
 interface SessionResponse {

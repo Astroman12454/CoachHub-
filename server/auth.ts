@@ -48,6 +48,10 @@ async function sessionPayload(accountId: number, currentTeamId?: number) {
       plan: effectiveAccount?.plan ?? account.plan,
       isClubMember,
       ownerEmail: isClubMember ? effectiveAccount?.email : undefined,
+      // Published exercises are always attributed to the effective (owner)
+      // account, same as plan above — a Club member publishes under the
+      // club's chosen public name, not a personal one of their own.
+      publicName: effectiveAccount?.publicName ?? account.publicName,
     },
     teams: accountTeams,
     currentTeamId: currentTeamId ?? accountTeams[0]?.id,

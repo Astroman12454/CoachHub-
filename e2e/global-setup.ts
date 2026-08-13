@@ -107,6 +107,11 @@ export default async function globalSetup(config: FullConfig) {
     });
   }
 
+  // Publishing to the community now requires a public name set — do this
+  // once here rather than in every test that shares an exercise, same
+  // reasoning as the rest of this file's idempotent setup.
+  await page.request.put("/api/account/public-name", { data: { publicName: "E2E Test Coach" } });
+
   await page.context().storageState({ path: AUTH_STATE_PATH });
   await browser.close();
 }

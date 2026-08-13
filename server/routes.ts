@@ -33,6 +33,7 @@ import {
   generateSessionsFromSlotsSchema,
   insertPhysicalTestSchema,
   recordPhysicalTestResultsSchema,
+  setPublicNameSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -217,6 +218,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(team);
     } catch (error) {
       res.status(400).json({ message: "Invalid team data" });
+    }
+  });
+
+  // The name shown on anything this account publishes to the community
+  // library and to coaches it follows/is followed by — set once (prompted
+  // the first time the coach tries to publish or follow) and editable
+  // afterward from Coach Settings. Applies to the effective (owner)
+  // account, same as team/exercise ownership already does for Club
+  // members — see sessionPayload in server/auth.ts.
+  app.put("/api/account/public-name", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { publicName } = setPublicNameSchema.parse(req.body);
+      const account = await storage.setAccountPublicName(accountId, publicName);
+      if (!account) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+      res.json({ publicName: account.publicName });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid name" });
     }
   });
 
@@ -503,13 +524,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Opting in/out of the community library is a personal visibility choice,
   // not "editing" the exercise — same rationale as favoriting, deliberately
-  // not behind canUseCustomExercises.
+  // not behind canUseCustomExercises. Publishing (shared: true) does require
+  // a public name first, though — since the exercise now shows who
+  // published it, there's no such thing as an anonymous publish anymore.
   app.put("/api/exercises/:id/share-community", async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const { shared } = setCommunityShareSchema.parse(req.body);
+
+      // Ownership first (404 either way if this isn't the requester's own
+      // exercise), so a request for someone else's id never reveals
+      // anything about the requester's own public-name state.
+      const existing = await storage.getExerciseById(id, accountId);
+      if (!existing) {
+        return res.status(404).json({ message: "Exercise not found" });
+      }
+      if (shared) {
+        const account = await storage.getAccountById(accountId);
+        if (!account?.publicName) {
+          return res.status(409).json({ message: "Set a public name before publishing to the community.", code: "PUBLIC_NAME_REQUIRED" });
+        }
+      }
       const exercise = await storage.setExerciseCommunityShare(id, accountId, shared);
 
       if (!exercise) {
