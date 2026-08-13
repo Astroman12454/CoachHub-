@@ -57,6 +57,13 @@
       "when": 1786636288068,
       "tag": "0007_fat_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786637703394,
+      "tag": "0008_cuddly_blue_shield",
+      "breakpoints": true
     }
   ]
 }

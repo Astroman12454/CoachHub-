@@ -24,6 +24,7 @@ const TrainingSessions = lazy(() => import("@/pages/TrainingSessions"));
 const TrainingMode = lazy(() => import("@/pages/TrainingMode"));
 const Games = lazy(() => import("@/pages/Games"));
 const Playbook = lazy(() => import("@/pages/Playbook"));
+const CommunityPlays = lazy(() => import("@/pages/CommunityPlays"));
 const PlayEditor = lazy(() => import("@/pages/PlayEditor"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const CommunityExercises = lazy(() => import("@/pages/CommunityExercises"));
@@ -90,6 +91,7 @@ function Router() {
       />
       <Route path="/games" component={() => <Layout><Games /></Layout>} />
       <Route path="/playbook" component={() => <Layout><Playbook /></Layout>} />
+      <Route path="/playbook/community" component={() => <Layout><CommunityPlays /></Layout>} />
       <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
       <Route path="/exercise-library/community" component={() => <Layout><CommunityExercises /></Layout>} />

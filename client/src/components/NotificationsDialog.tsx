@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, UserCheck } from "lucide-react";
+import { ClipboardList, Heart, MessageCircle, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { apiRequest } from "@/lib/queryClient";
 
+// "like"/"comment" (no suffix) are exercise notifications, kept unsuffixed
+// for backward compatibility with rows written before plays joined the
+// community — see NOTIFICATION_TYPES in shared/schema.ts.
+type NotificationItemType = "follow" | "like" | "comment" | "like_play" | "comment_play";
+
 interface NotificationItem {
   id: number;
-  type: "follow" | "like" | "comment";
+  type: NotificationItemType;
   actorAccountId: number;
   actorPublicName: string | null;
   exerciseId: number | null;
   exerciseName: string | null;
+  playId: number | null;
+  playName: string | null;
   read: boolean;
   createdAt: string | null;
 }
@@ -90,13 +97,16 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
     handleOpenChange(false);
     if (item.type === "follow") {
       setLocation(`/coaches/${item.actorAccountId}`);
+    } else if (item.type === "like_play" || item.type === "comment_play") {
+      setLocation("/playbook");
     } else {
       setLocation("/exercise-library");
     }
   };
 
   function iconFor(type: NotificationItem["type"]) {
-    if (type === "like") return <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />;
+    if (type === "like" || type === "like_play") return <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />;
+    if (type === "comment_play") return <ClipboardList className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
     if (type === "comment") return <MessageCircle className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
     return <UserCheck className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
   }
@@ -105,6 +115,8 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
     const name = item.actorPublicName ?? t("notificationsDialog.someone");
     if (item.type === "follow") return t("notificationsDialog.followText", { name });
     if (item.type === "comment") return t("notificationsDialog.commentText", { name, exercise: item.exerciseName ?? "" });
+    if (item.type === "like_play") return t("notificationsDialog.likePlayText", { name, play: item.playName ?? "" });
+    if (item.type === "comment_play") return t("notificationsDialog.commentPlayText", { name, play: item.playName ?? "" });
     return t("notificationsDialog.likeText", { name, exercise: item.exerciseName ?? "" });
   }
 
@@ -150,7 +162,7 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
                   onClick={() => handleItemClick(item)}
                   className={`w-full text-left flex items-start gap-3 p-3 rounded-md hover:bg-muted transition-colors ${item.read ? "" : "bg-basketball-orange/5"}`}
                 >
-                  <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${item.type === "like" ? "bg-red-100 dark:bg-red-950/40" : "bg-court/10"}`}>
+                  <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${item.type === "like" || item.type === "like_play" ? "bg-red-100 dark:bg-red-950/40" : "bg-court/10"}`}>
                     {iconFor(item.type)}
                   </div>
                   <div className="min-w-0 flex-1">
