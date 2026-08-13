@@ -176,4 +176,137 @@ describe("community exercise likes", () => {
     const found = res.body.find((ex: { id: number }) => ex.id === exerciseId);
     expect(found.accountId).toBeUndefined();
   });
+
+  it("includes publishedBy (accountId + publicName) on shared exercises", async () => {
+    const { agent: owner } = await signedInPaidAgent(app);
+    const exerciseId = await shareNewExercise(owner);
+
+    const { agent: viewer } = await signedInAgent(app);
+    const res = await viewer.get("/api/community-exercises");
+    const found = res.body.find((ex: { id: number }) => ex.id === exerciseId);
+    expect(found.publishedBy).toMatchObject({ publicName: "Coach Social" });
+    expect(typeof found.publishedBy.accountId).toBe("number");
+  });
+});
+
+describe("following coaches", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  async function setPublicName(agent: request.Agent, name: string) {
+    await agent.put("/api/account/public-name").send({ publicName: name });
+  }
+
+  async function accountId(agent: request.Agent): Promise<number> {
+    const res = await agent.get("/api/session");
+    return res.body.account.id;
+  }
+
+  it("follows and unfollows a coach, updating follower/following counts", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await setPublicName(coach, "Coach Followed");
+    const coachId = await accountId(coach);
+
+    const { agent: fan } = await signedInAgent(app);
+    const follow = await fan.post(`/api/coaches/${coachId}/follow`);
+    expect(follow.status).toBe(204);
+
+    const profile = await fan.get(`/api/coaches/${coachId}`);
+    expect(profile.status).toBe(200);
+    expect(profile.body).toMatchObject({ publicName: "Coach Followed", followerCount: 1, followedByMe: true });
+
+    const unfollow = await fan.delete(`/api/coaches/${coachId}/follow`);
+    expect(unfollow.status).toBe(204);
+
+    const profileAfter = await fan.get(`/api/coaches/${coachId}`);
+    expect(profileAfter.body).toMatchObject({ followerCount: 0, followedByMe: false });
+  });
+
+  it("rejects following yourself", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await setPublicName(coach, "Coach Self");
+    const coachId = await accountId(coach);
+
+    const res = await coach.post(`/api/coaches/${coachId}/follow`);
+    expect(res.status).toBe(400);
+  });
+
+  it("404s following or viewing an account with no public name set", async () => {
+    const { agent: noName } = await signedInAgent(app);
+    const noNameId = await accountId(noName);
+
+    const { agent: fan } = await signedInAgent(app);
+    const follow = await fan.post(`/api/coaches/${noNameId}/follow`);
+    expect(follow.status).toBe(404);
+
+    const profile = await fan.get(`/api/coaches/${noNameId}`);
+    expect(profile.status).toBe(404);
+  });
+
+  it("404s following or viewing an account that doesn't exist", async () => {
+    const { agent: fan } = await signedInAgent(app);
+    const follow = await fan.post("/api/coaches/999999/follow");
+    expect(follow.status).toBe(404);
+
+    const profile = await fan.get("/api/coaches/999999");
+    expect(profile.status).toBe(404);
+  });
+
+  it("following twice is idempotent — followerCount doesn't double-count", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await setPublicName(coach, "Coach Idempotent");
+    const coachId = await accountId(coach);
+
+    const { agent: fan } = await signedInAgent(app);
+    await fan.post(`/api/coaches/${coachId}/follow`);
+    await fan.post(`/api/coaches/${coachId}/follow`);
+
+    const profile = await fan.get(`/api/coaches/${coachId}`);
+    expect(profile.body.followerCount).toBe(1);
+  });
+
+  it("unfollowing someone never followed is a harmless no-op", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await setPublicName(coach, "Coach Never Followed");
+    const coachId = await accountId(coach);
+
+    const { agent: fan } = await signedInAgent(app);
+    const res = await fan.delete(`/api/coaches/${coachId}/follow`);
+    expect(res.status).toBe(204);
+  });
+
+  it("reports exerciseCount and followingCount on the profile", async () => {
+    const { agent: coach } = await signedInPaidAgent(app);
+    await shareNewExercise(coach, { name: "Followed Coach's Drill" });
+    const coachId = await accountId(coach);
+
+    const { agent: coach2 } = await signedInPaidAgent(app);
+    await setPublicName(coach2, "Coach Two");
+    const coach2Id = await accountId(coach2);
+    await coach.post(`/api/coaches/${coach2Id}/follow`);
+
+    const profile = await coach.get(`/api/coaches/${coachId}`);
+    expect(profile.body.exerciseCount).toBeGreaterThanOrEqual(1);
+    expect(profile.body.followingCount).toBe(1);
+  });
+
+  it("filters the community feed to only followed coaches with ?following=true", async () => {
+    const { agent: followedCoach } = await signedInPaidAgent(app);
+    const followedId = await shareNewExercise(followedCoach, { name: "Followed Feed Drill" });
+    const followedCoachId = await accountId(followedCoach);
+
+    const { agent: unfollowedCoach } = await signedInPaidAgent(app);
+    const unfollowedId = await shareNewExercise(unfollowedCoach, { name: "Unfollowed Feed Drill" });
+
+    const { agent: fan } = await signedInAgent(app);
+    await fan.post(`/api/coaches/${followedCoachId}/follow`);
+
+    const res = await fan.get("/api/community-exercises?following=true");
+    const ids = res.body.map((ex: { id: number }) => ex.id);
+    expect(ids).toContain(followedId);
+    expect(ids).not.toContain(unfollowedId);
+  });
 });

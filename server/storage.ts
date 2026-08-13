@@ -4,6 +4,7 @@ import {
   exercises,
   exerciseSteps,
   exerciseLikes,
+  coachFollows,
   trainingSessions,
   players,
   attendance,
@@ -63,6 +64,7 @@ import {
   type InsertPhysicalTest,
   type PhysicalTestResult,
   type PlayerPhysicalTestHistory,
+  type CoachProfile,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
@@ -124,8 +126,10 @@ export interface IStorage {
   setExerciseCommunityShare(id: number, accountId: number, shared: boolean): Promise<Exercise | undefined>;
   // Cross-account by design — every exercise any coach has opted into the
   // community library, not scoped to the requesting account. likeCount/
-  // likedByMe are computed against exerciseLikes for the requesting account.
-  getCommunityExercises(accountId: number, sort?: "recent" | "popular"): Promise<(Exercise & { likeCount: number; likedByMe: boolean })[]>;
+  // likedByMe are computed against exerciseLikes for the requesting account,
+  // publishedBy against the sharing account's public name, and
+  // followingOnly narrows the list to accounts the requester follows.
+  getCommunityExercises(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean }): Promise<(Exercise & { likeCount: number; likedByMe: boolean; publishedBy: { accountId: number; publicName: string | null } })[]>;
   // Copies a shared exercise into the importing account as a brand-new,
   // private row (fresh id, isFavorite/shareToken/sharedToCommunity all
   // reset) — importing never mutates or links back to the original.
@@ -134,6 +138,14 @@ export interface IStorage {
   // exercises currently shared to the community (false if not found/shared).
   likeExercise(exerciseId: number, accountId: number): Promise<boolean>;
   unlikeExercise(exerciseId: number, accountId: number): Promise<void>;
+  // Idempotent — following twice is a no-op. False if the target account
+  // doesn't exist or hasn't set a public name (not followable).
+  followCoach(followerAccountId: number, followingAccountId: number): Promise<boolean>;
+  unfollowCoach(followerAccountId: number, followingAccountId: number): Promise<void>;
+  // Public mini-profile for a coach — undefined if the account doesn't
+  // exist or hasn't set a public name (same "not found" either way, so
+  // guessing account ids can't distinguish the two).
+  getCoachProfile(accountId: number, viewerAccountId: number): Promise<CoachProfile | undefined>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -533,9 +545,19 @@ export class DatabaseStorage implements IStorage {
     return exercise || undefined;
   }
 
-  async getCommunityExercises(accountId: number, sort: "recent" | "popular" = "recent"): Promise<(Exercise & { likeCount: number; likedByMe: boolean })[]> {
-    const shared = await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
+  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; publishedBy: { accountId: number; publicName: string | null } })[]> {
+    let shared = await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
     if (shared.length === 0) return [];
+
+    if (opts.followingOnly) {
+      const followingRows = await db
+        .select({ followingAccountId: coachFollows.followingAccountId })
+        .from(coachFollows)
+        .where(eq(coachFollows.followerAccountId, accountId));
+      const followingAccountIds = new Set(followingRows.map((row) => row.followingAccountId));
+      shared = shared.filter((exercise) => followingAccountIds.has(exercise.accountId));
+      if (shared.length === 0) return [];
+    }
 
     const exerciseIds = shared.map((exercise) => exercise.id);
     const counts = await db
@@ -551,15 +573,26 @@ export class DatabaseStorage implements IStorage {
       .where(and(inArray(exerciseLikes.exerciseId, exerciseIds), eq(exerciseLikes.accountId, accountId)));
     const likedExerciseIds = new Set(likedRows.map((row) => row.exerciseId));
 
-    const withLikes = shared.map((exercise) => ({
+    const publisherIds = Array.from(new Set(shared.map((exercise) => exercise.accountId)));
+    const publishers = await db
+      .select({ id: accounts.id, publicName: accounts.publicName })
+      .from(accounts)
+      .where(inArray(accounts.id, publisherIds));
+    const publisherById = new Map(publishers.map((publisher) => [publisher.id, publisher]));
+
+    const withExtras = shared.map((exercise) => ({
       ...exercise,
       likeCount: countByExerciseId.get(exercise.id) ?? 0,
       likedByMe: likedExerciseIds.has(exercise.id),
+      publishedBy: {
+        accountId: exercise.accountId,
+        publicName: publisherById.get(exercise.accountId)?.publicName ?? null,
+      },
     }));
 
-    return sort === "popular"
-      ? withLikes.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
-      : withLikes.sort((a, b) => b.id - a.id);
+    return opts.sort === "popular"
+      ? withExtras.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
+      : withExtras.sort((a, b) => b.id - a.id);
   }
 
   async likeExercise(exerciseId: number, accountId: number): Promise<boolean> {
@@ -575,6 +608,52 @@ export class DatabaseStorage implements IStorage {
 
   async unlikeExercise(exerciseId: number, accountId: number): Promise<void> {
     await db.delete(exerciseLikes).where(and(eq(exerciseLikes.exerciseId, exerciseId), eq(exerciseLikes.accountId, accountId)));
+  }
+
+  async followCoach(followerAccountId: number, followingAccountId: number): Promise<boolean> {
+    const [target] = await db.select().from(accounts).where(eq(accounts.id, followingAccountId));
+    if (!target?.publicName) return false;
+
+    await db.insert(coachFollows).values({ followerAccountId, followingAccountId }).onConflictDoNothing();
+    return true;
+  }
+
+  async unfollowCoach(followerAccountId: number, followingAccountId: number): Promise<void> {
+    await db
+      .delete(coachFollows)
+      .where(and(eq(coachFollows.followerAccountId, followerAccountId), eq(coachFollows.followingAccountId, followingAccountId)));
+  }
+
+  async getCoachProfile(accountId: number, viewerAccountId: number): Promise<CoachProfile | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, accountId));
+    if (!account?.publicName) return undefined;
+
+    const [exerciseCountRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(exercises)
+      .where(and(eq(exercises.accountId, accountId), eq(exercises.sharedToCommunity, 1)));
+    const [followerCountRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(coachFollows)
+      .where(eq(coachFollows.followingAccountId, accountId));
+    const [followingCountRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(coachFollows)
+      .where(eq(coachFollows.followerAccountId, accountId));
+    const [existingFollow] = await db
+      .select()
+      .from(coachFollows)
+      .where(and(eq(coachFollows.followerAccountId, viewerAccountId), eq(coachFollows.followingAccountId, accountId)));
+
+    return {
+      accountId: account.id,
+      publicName: account.publicName,
+      exerciseCount: exerciseCountRow.count,
+      followerCount: followerCountRow.count,
+      followingCount: followingCountRow.count,
+      followedByMe: !!existingFollow,
+      isOwnProfile: account.id === viewerAccountId,
+    };
   }
 
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {

@@ -773,7 +773,24 @@
     "sortPopular": "Most liked",
     "like": "Like {{name}}",
     "unlike": "Unlike {{name}}",
-    "couldntUpdateLike": "Couldn't update like"
+    "couldntUpdateLike": "Couldn't update like",
+    "discoverTab": "Discover",
+    "followingTab": "Following",
+    "byCoach": "by {{name}}",
+    "emptyFollowingTitle": "You're Not Following Any Coach Yet",
+    "emptyFollowingDescription": "Follow a coach from their profile to see their shared exercises here."
+  },
+  "coachProfile": {
+    "title": "Coach Profile",
+    "subtitle": "Public profile and shared exercises",
+    "follow": "Follow",
+    "following": "Following",
+    "couldntUpdateFollow": "Couldn't update follow",
+    "sharedExercises": "Shared Exercises",
+    "followers": "Followers",
+    "followingCount": "Following",
+    "emptyExercisesTitle": "No Shared Exercises Yet",
+    "emptyExercisesDescription": "This coach hasn't shared any exercises to the community yet."
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",

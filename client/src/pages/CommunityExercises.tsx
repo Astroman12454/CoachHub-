@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Download, Globe, Heart, Users } from "lucide-react";
+import { ArrowLeft, Clock, Compass, Download, Globe, Heart, UserCheck, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
@@ -34,6 +34,7 @@ interface CommunityExercise {
   instructionsEs: string | null;
   likeCount: number;
   likedByMe: boolean;
+  publishedBy: { accountId: number; publicName: string | null };
 }
 
 // Browsing surface for exercises other coaches have opted into the
@@ -54,9 +55,16 @@ export default function CommunityExercises() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
+  const [feedTab, setFeedTab] = useState<"discover" | "following">("discover");
+
+  // Each tab is its own cached query (server-filtered, not client-filtered)
+  // since "coaches I follow" isn't data this page has any other copy of.
+  const queryKey = feedTab === "following"
+    ? ['/api/community-exercises?following=true']
+    : ['/api/community-exercises'];
 
   const { data: exercises = [], isLoading, isError, refetch } = useQuery<CommunityExercise[]>({
-    queryKey: ['/api/community-exercises'],
+    queryKey,
   });
 
   const importMutation = useMutation({
@@ -77,12 +85,13 @@ export default function CommunityExercises() {
   });
 
   // Flips the heart immediately — same instant-feedback pattern as
-  // favoriting in the Exercise Library.
+  // favoriting in the Exercise Library. Both feed tabs are separately
+  // cached queries, so a like made while on one tab only invalidates the
+  // other (rather than patching data this page has no copy of).
   const toggleLikeMutation = useMutation({
     mutationFn: async ({ id, liked }: { id: number; liked: boolean }) =>
       apiRequest(liked ? "POST" : "DELETE", `/api/community-exercises/${id}/like`),
     onMutate: async ({ id, liked }) => {
-      const queryKey = ['/api/community-exercises'];
       await queryClient.cancelQueries({ queryKey });
       const previousExercises = queryClient.getQueryData<CommunityExercise[]>(queryKey);
 
@@ -103,6 +112,11 @@ export default function CommunityExercises() {
         title: t("communityExercises.couldntUpdateLike"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => typeof query.queryKey[0] === "string" && (query.queryKey[0] as string).startsWith("/api/community-exercises") && query.queryKey[0] !== queryKey[0],
       });
     },
   });
@@ -178,6 +192,31 @@ export default function CommunityExercises() {
       {header}
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <div className="flex items-center gap-1 mb-4 border border-border rounded-md p-1 w-fit">
+          <Button
+            type="button"
+            size="sm"
+            variant={feedTab === "discover" ? "default" : "ghost"}
+            aria-pressed={feedTab === "discover"}
+            onClick={() => setFeedTab("discover")}
+            className={feedTab === "discover" ? "basketball-orange basketball-orange-hover text-white" : ""}
+          >
+            <Compass className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            {t("communityExercises.discoverTab")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={feedTab === "following" ? "default" : "ghost"}
+            aria-pressed={feedTab === "following"}
+            onClick={() => setFeedTab("following")}
+            className={feedTab === "following" ? "basketball-orange basketball-orange-hover text-white" : ""}
+          >
+            <UserCheck className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            {t("communityExercises.followingTab")}
+          </Button>
+        </div>
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
             <Button type="button" variant="ghost" onClick={() => setLocation("/exercise-library")} className="justify-start sm:justify-center">
@@ -227,12 +266,14 @@ export default function CommunityExercises() {
 
         {filteredExercises.length === 0 ? (
           <EmptyState
-            icon={Globe}
-            title={t("communityExercises.emptyTitle")}
+            icon={feedTab === "following" ? UserCheck : Globe}
+            title={feedTab === "following" ? t("communityExercises.emptyFollowingTitle") : t("communityExercises.emptyTitle")}
             description={
               searchQuery || categoryFilter !== "all" || difficultyFilter !== "all"
                 ? t("communityExercises.emptyFilterDescription")
-                : t("communityExercises.emptyDescription")
+                : feedTab === "following"
+                  ? t("communityExercises.emptyFollowingDescription")
+                  : t("communityExercises.emptyDescription")
             }
           />
         ) : (
@@ -266,8 +307,16 @@ export default function CommunityExercises() {
                     </div>
                   )}
 
-                  <h3 className="font-display font-semibold uppercase tracking-tight text-foreground mb-2">{localized.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{localized.description}</p>
+                  <h3 className="font-display font-semibold uppercase tracking-tight text-foreground mb-1">{localized.name}</h3>
+                  {exercise.publishedBy.publicName && (
+                    <Link
+                      href={`/coaches/${exercise.publishedBy.accountId}`}
+                      className="text-xs text-muted-foreground hover:text-basketball-orange hover:underline mb-2 inline-block"
+                    >
+                      {t("communityExercises.byCoach", { name: exercise.publishedBy.publicName })}
+                    </Link>
+                  )}
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 mt-1">{localized.description}</p>
 
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 text-muted-foreground">

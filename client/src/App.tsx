@@ -27,6 +27,7 @@ const Playbook = lazy(() => import("@/pages/Playbook"));
 const PlayEditor = lazy(() => import("@/pages/PlayEditor"));
 const ExerciseLibrary = lazy(() => import("@/pages/ExerciseLibrary"));
 const CommunityExercises = lazy(() => import("@/pages/CommunityExercises"));
+const CoachProfile = lazy(() => import("@/pages/CoachProfile"));
 const ExerciseDiagramEditor = lazy(() => import("@/pages/ExerciseDiagramEditor"));
 const PhysicalTests = lazy(() => import("@/pages/PhysicalTests"));
 const Players = lazy(() => import("@/pages/Players"));
@@ -92,6 +93,7 @@ function Router() {
       <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />
       <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
       <Route path="/exercise-library/community" component={() => <Layout><CommunityExercises /></Layout>} />
+      <Route path="/coaches/:accountId" component={() => <Layout><CoachProfile /></Layout>} />
       <Route path="/exercise-library/:id/diagram" component={() => <Layout><ExerciseDiagramEditor /></Layout>} />
       <Route path="/physical-tests" component={() => <Layout><PhysicalTests /></Layout>} />
       <Route path="/players" component={() => <Layout><Players /></Layout>} />

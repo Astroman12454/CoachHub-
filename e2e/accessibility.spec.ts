@@ -827,6 +827,38 @@ test.describe("accessibility (axe)", () => {
     await page.request.put(`/api/exercises/${exercises[0].id}/share-community`, { data: { shared: false } });
   });
 
+  test("community exercises page — Following tab empty state", async ({ page }) => {
+    await login(page);
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Community Exercises");
+    await page.click('button[aria-pressed]:has-text("Following")');
+    await page.waitForSelector("text=You're Not Following Any Coach Yet");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("coach profile page — own profile, sharing an exercise", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Profile Drill", description: "Shared for coach profile testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    const communityRes = await page.request.get("/api/community-exercises");
+    const community = await communityRes.json();
+    const published = community.find((ex: { id: number }) => ex.id === exercise.id);
+
+    await page.goto(`/coaches/${published.publishedBy.accountId}`);
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Profile Drill");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("community exercises — imports a shared drill into the library", async ({ page }) => {
     await login(page);
     const create = await page.request.post("/api/exercises", {

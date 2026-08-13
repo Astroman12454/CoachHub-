@@ -155,6 +155,20 @@ export const exerciseSteps = pgTable("exercise_steps", {
   drawings: json("drawings").notNull().$type<Drawing[]>(),
 });
 
+// One coach account following another's public profile — self-follow is
+// rejected in route logic (400), not enforced here at the DB level, same as
+// most of this app's business rules. followingAccountId must have a
+// publicName set to be followable at all (see storage.followCoach); an
+// account can't be followed until it's chosen to be public.
+export const coachFollows = pgTable("coach_follows", {
+  id: serial("id").primaryKey(),
+  followerAccountId: integer("follower_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  followingAccountId: integer("following_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  followerFollowingUnique: unique().on(table.followerAccountId, table.followingAccountId),
+}));
+
 // A coach's like on a community-shared exercise — the social-network "like"
 // counterpart to publishing (see exercises.sharedToCommunity and PUT
 // /api/exercises/:id/share-community). Liking your own published exercise
@@ -749,6 +763,24 @@ export interface CoachMember {
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;
 export type Exercise = typeof exercises.$inferSelect;
 export type ExerciseStep = typeof exerciseSteps.$inferSelect;
+
+// A coach's public mini-profile — the page a "publishedBy" link or a follow
+// button leads to. Undefined (not just empty) when the account hasn't set a
+// public name, since it isn't a real page until then (see
+// storage.getCoachProfile).
+export interface CoachProfile {
+  accountId: number;
+  publicName: string;
+  exerciseCount: number;
+  followerCount: number;
+  followingCount: number;
+  followedByMe: boolean;
+  // Computed against the viewer's *effective* account (see
+  // resolveEffectiveAccountId) so a Club member correctly sees their own
+  // club's profile as "own", not followable — comparing raw session account
+  // ids would get this wrong for Club members.
+  isOwnProfile: boolean;
+}
 
 export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;
 export type PhysicalTest = typeof physicalTests.$inferSelect;

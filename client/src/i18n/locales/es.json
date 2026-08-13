@@ -773,7 +773,24 @@
     "sortPopular": "Más gustados",
     "like": "Me gusta {{name}}",
     "unlike": "Ya no me gusta {{name}}",
-    "couldntUpdateLike": "No se pudo actualizar el me gusta"
+    "couldntUpdateLike": "No se pudo actualizar el me gusta",
+    "discoverTab": "Descubrir",
+    "followingTab": "Siguiendo",
+    "byCoach": "por {{name}}",
+    "emptyFollowingTitle": "Aún No Sigues a Ningún Entrenador",
+    "emptyFollowingDescription": "Sigue a un entrenador desde su perfil para ver aquí sus ejercicios compartidos."
+  },
+  "coachProfile": {
+    "title": "Perfil del Entrenador",
+    "subtitle": "Perfil público y ejercicios compartidos",
+    "follow": "Seguir",
+    "following": "Siguiendo",
+    "couldntUpdateFollow": "No se pudo actualizar el seguimiento",
+    "sharedExercises": "Ejercicios Compartidos",
+    "followers": "Seguidores",
+    "followingCount": "Siguiendo",
+    "emptyExercisesTitle": "Aún No Hay Ejercicios Compartidos",
+    "emptyExercisesDescription": "Este entrenador todavía no compartió ningún ejercicio con la comunidad."
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",
