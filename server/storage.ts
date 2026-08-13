@@ -5,6 +5,7 @@ import {
   exerciseSteps,
   exerciseLikes,
   exerciseComments,
+  exerciseSaves,
   playLikes,
   playComments,
   playSaves,
@@ -143,7 +144,7 @@ export interface IStorage {
   // likedByMe are computed against exerciseLikes for the requesting account,
   // publishedBy against the sharing account's public name, and
   // followingOnly narrows the list to accounts the requester follows.
-  getCommunityExercises(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean }): Promise<(Exercise & { likeCount: number; likedByMe: boolean; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  getCommunityExercises(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(Exercise & { likeCount: number; likedByMe: boolean; savedByMe: boolean; publishedBy: { accountId: number; publicName: string | null } })[]>;
   // Copies a shared exercise into the importing account as a brand-new,
   // private row (fresh id, isFavorite/shareToken/sharedToCommunity all
   // reset) — importing never mutates or links back to the original.
@@ -152,6 +153,10 @@ export interface IStorage {
   // exercises currently shared to the community (false if not found/shared).
   likeExercise(exerciseId: number, accountId: number): Promise<boolean>;
   unlikeExercise(exerciseId: number, accountId: number): Promise<void>;
+  // "Guardado" — a private bookmark, distinct from liking. Also only works
+  // on a currently-shared exercise.
+  saveExercise(exerciseId: number, accountId: number): Promise<boolean>;
+  unsaveExercise(exerciseId: number, accountId: number): Promise<void>;
   // Idempotent — following twice is a no-op. False if the target account
   // doesn't exist or hasn't set a public name (not followable).
   followCoach(followerAccountId: number, followingAccountId: number): Promise<boolean>;
@@ -611,7 +616,7 @@ export class DatabaseStorage implements IStorage {
     return exercise || undefined;
   }
 
-  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
     let shared = await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
     if (shared.length === 0) return [];
 
@@ -622,6 +627,13 @@ export class DatabaseStorage implements IStorage {
         .where(eq(coachFollows.followerAccountId, accountId));
       const followingAccountIds = new Set(followingRows.map((row) => row.followingAccountId));
       shared = shared.filter((exercise) => followingAccountIds.has(exercise.accountId));
+      if (shared.length === 0) return [];
+    }
+
+    if (opts.savedOnly) {
+      const savedRows = await db.select({ exerciseId: exerciseSaves.exerciseId }).from(exerciseSaves).where(eq(exerciseSaves.accountId, accountId));
+      const savedExerciseIds = new Set(savedRows.map((row) => row.exerciseId));
+      shared = shared.filter((exercise) => savedExerciseIds.has(exercise.id));
       if (shared.length === 0) return [];
     }
 
@@ -638,6 +650,12 @@ export class DatabaseStorage implements IStorage {
       .from(exerciseLikes)
       .where(and(inArray(exerciseLikes.exerciseId, exerciseIds), eq(exerciseLikes.accountId, accountId)));
     const likedExerciseIds = new Set(likedRows.map((row) => row.exerciseId));
+
+    const savedRowsForViewer = await db
+      .select({ exerciseId: exerciseSaves.exerciseId })
+      .from(exerciseSaves)
+      .where(and(inArray(exerciseSaves.exerciseId, exerciseIds), eq(exerciseSaves.accountId, accountId)));
+    const savedExerciseIdsForViewer = new Set(savedRowsForViewer.map((row) => row.exerciseId));
 
     const commentCounts = await db
       .select({ exerciseId: exerciseComments.exerciseId, count: sql<number>`count(*)::int` })
@@ -657,6 +675,7 @@ export class DatabaseStorage implements IStorage {
       ...exercise,
       likeCount: countByExerciseId.get(exercise.id) ?? 0,
       likedByMe: likedExerciseIds.has(exercise.id),
+      savedByMe: savedExerciseIdsForViewer.has(exercise.id),
       commentCount: commentCountByExerciseId.get(exercise.id) ?? 0,
       publishedBy: {
         accountId: exercise.accountId,
@@ -688,6 +707,18 @@ export class DatabaseStorage implements IStorage {
 
   async unlikeExercise(exerciseId: number, accountId: number): Promise<void> {
     await db.delete(exerciseLikes).where(and(eq(exerciseLikes.exerciseId, exerciseId), eq(exerciseLikes.accountId, accountId)));
+  }
+
+  async saveExercise(exerciseId: number, accountId: number): Promise<boolean> {
+    const [exercise] = await db.select().from(exercises).where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
+    if (!exercise) return false;
+
+    await db.insert(exerciseSaves).values({ exerciseId, accountId }).onConflictDoNothing();
+    return true;
+  }
+
+  async unsaveExercise(exerciseId: number, accountId: number): Promise<void> {
+    await db.delete(exerciseSaves).where(and(eq(exerciseSaves.exerciseId, exerciseId), eq(exerciseSaves.accountId, accountId)));
   }
 
   async followCoach(followerAccountId: number, followingAccountId: number): Promise<boolean> {

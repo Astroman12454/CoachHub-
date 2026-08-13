@@ -959,6 +959,30 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/exercises/${exercise.id}`);
   });
 
+  test("community exercises page — saves a shared drill and shows it under the Saved tab", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Saved Drill", description: "Shared for save testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Saved Drill");
+
+    await page.click('button[aria-label="Save E2E Saved Drill"]');
+    await expect(page.locator('button[aria-label="Unsave E2E Saved Drill"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button:has-text("Saved")');
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Saved Drill");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("exercise share page (public, no session)", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");

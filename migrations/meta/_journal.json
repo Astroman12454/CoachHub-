@@ -71,6 +71,13 @@
       "when": 1786639486630,
       "tag": "0009_giant_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786642253669,
+      "tag": "0010_wide_mysterio",
+      "breakpoints": true
     }
   ]
 }

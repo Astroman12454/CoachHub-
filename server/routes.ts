@@ -570,9 +570,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const sort = req.query.sort === "popular" ? "popular" : "recent";
       const followingOnly = req.query.following === "true";
-      const shared = await storage.getCommunityExercises(accountId, { sort, followingOnly });
-      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, commentCount, publishedBy }) =>
-        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, commentCount, publishedBy })
+      const savedOnly = req.query.saved === "true";
+      const shared = await storage.getCommunityExercises(accountId, { sort, followingOnly, savedOnly });
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community exercises" });
@@ -605,6 +606,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to unlike exercise" });
+    }
+  });
+
+  // "Guardado" — a private bookmark, distinct from liking (see exerciseSaves
+  // in shared/schema.ts). Free on every plan, same as liking.
+  app.post("/api/community-exercises/:id/save", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const saved = await storage.saveExercise(id, accountId);
+      if (!saved) {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save exercise" });
+    }
+  });
+
+  app.delete("/api/community-exercises/:id/save", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unsaveExercise(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unsave exercise" });
     }
   });
 
