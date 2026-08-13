@@ -7,6 +7,7 @@ import TopBar from "@/components/TopBar";
 import ExerciseCard from "@/components/ExerciseCard";
 import ExerciseForm from "@/components/ExerciseForm";
 import ExerciseShareDialog from "@/components/ExerciseShareDialog";
+import SetPublicNameDialog from "@/components/SetPublicNameDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
@@ -17,7 +18,7 @@ import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { apiRequest, extractErrorMessage, extractErrorCode } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import { EXERCISE_PHASES } from "@shared/schema";
 import type { Exercise } from "@shared/schema";
@@ -49,6 +50,9 @@ export default function ExerciseLibrary() {
   const [duplicatingExercise, setDuplicatingExercise] = useState<Exercise | null>(null);
   const [sharingExercise, setSharingExercise] = useState<Exercise | null>(null);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
+  // Set while a publish attempt is waiting on the coach to choose a public
+  // name for the first time — retried automatically once they save one.
+  const [pendingPublishId, setPendingPublishId] = useState<number | null>(null);
 
   const { data: exercises = [], isLoading, isError, refetch } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
@@ -105,9 +109,13 @@ export default function ExerciseLibrary() {
 
       return { previousExercises, queryKey };
     },
-    onError: (error, _variables, context) => {
+    onError: (error, variables, context) => {
       if (context) {
         queryClient.setQueryData(context.queryKey, context.previousExercises);
+      }
+      if (extractErrorCode(error) === "PUBLIC_NAME_REQUIRED") {
+        setPendingPublishId(variables.id);
+        return;
       }
       toast({
         title: t("exerciseLibrary.couldntUpdateCommunityShare"),
@@ -405,6 +413,17 @@ export default function ExerciseLibrary() {
         title={t("exerciseLibrary.deleteConfirmTitle")}
         description={t("exerciseLibrary.deleteConfirmDescription", { name: exerciseToDelete?.name })}
         onConfirm={confirmDeleteExercise}
+      />
+
+      <SetPublicNameDialog
+        open={pendingPublishId !== null}
+        onOpenChange={(open) => !open && setPendingPublishId(null)}
+        onSuccess={() => {
+          if (pendingPublishId !== null) {
+            toggleCommunityShareMutation.mutate({ id: pendingPublishId, shared: true });
+          }
+          setPendingPublishId(null);
+        }}
       />
     </div>
   );

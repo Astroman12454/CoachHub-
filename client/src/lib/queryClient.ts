@@ -49,6 +49,21 @@ export function extractErrorMessage(error: unknown): string | null {
   }
 }
 
+// A machine-readable companion to extractErrorMessage — for the rare error
+// a caller needs to branch on (e.g. "open the set-public-name dialog"
+// instead of just showing a toast) rather than only display.
+export function extractErrorCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart === -1) return null;
+  try {
+    const parsed = JSON.parse(error.message.slice(jsonStart));
+    return typeof parsed?.code === "string" ? parsed.code : null;
+  } catch {
+    return null;
+  }
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

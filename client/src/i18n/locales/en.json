@@ -1054,6 +1054,13 @@
     "couldntRename": "Couldn't rename team",
     "triggerAriaLabel": "Rename {{name}}"
   },
+  "setPublicNameDialog": {
+    "title": "Choose a public name",
+    "description": "Shown on exercises you publish to the community, and to coaches you follow or who follow you. Never your email or team name — you can change it anytime in Coach Settings.",
+    "label": "Public name",
+    "placeholder": "e.g., Coach Alex",
+    "couldntSave": "Couldn't save your public name"
+  },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
     "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."
@@ -1078,6 +1085,11 @@
       "red": "Red",
       "teal": "Teal"
     },
+    "publicProfile": "Public Profile",
+    "publicName": "Public Name",
+    "publicNameDescription": "Shown on exercises you publish to the community, and to coaches you follow or who follow you. Never your email or team name.",
+    "publicNameSaved": "Public name saved",
+    "couldntSavePublicName": "Couldn't save your public name",
     "preferencesSaved": "Preferences saved",
     "couldntSavePreferences": "Couldn't save preferences",
     "exportBackup": "Export Backup",

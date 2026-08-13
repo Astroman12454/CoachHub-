@@ -1054,6 +1054,13 @@
     "couldntRename": "No se pudo renombrar el equipo",
     "triggerAriaLabel": "Renombrar {{name}}"
   },
+  "setPublicNameDialog": {
+    "title": "Elegí un nombre público",
+    "description": "Se muestra en los ejercicios que publiques en la comunidad, y a los entrenadores que sigas o te sigan. Nunca tu email ni el nombre del equipo — podés cambiarlo cuando quieras desde Configuración del Entrenador.",
+    "label": "Nombre público",
+    "placeholder": "ej., Entrenador Alex",
+    "couldntSave": "No se pudo guardar tu nombre público"
+  },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
     "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
@@ -1078,6 +1085,11 @@
       "red": "Rojo",
       "teal": "Verde Azulado"
     },
+    "publicProfile": "Perfil Público",
+    "publicName": "Nombre Público",
+    "publicNameDescription": "Se muestra en los ejercicios que publiques en la comunidad, y a los entrenadores que sigas o te sigan. Nunca tu email ni el nombre del equipo.",
+    "publicNameSaved": "Nombre público guardado",
+    "couldntSavePublicName": "No se pudo guardar tu nombre público",
     "preferencesSaved": "Preferencias guardadas",
     "couldntSavePreferences": "No se pudieron guardar las preferencias",
     "exportBackup": "Exportar Copia de Seguridad",

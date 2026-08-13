@@ -76,6 +76,7 @@ export interface IStorage {
   getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined>;
   setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void>;
   setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void>;
+  setAccountPublicName(id: number, publicName: string): Promise<Account | undefined>;
   setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void>;
   getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined>;
   resetPassword(id: number, passwordHash: string): Promise<void>;
@@ -303,6 +304,11 @@ export class DatabaseStorage implements IStorage {
 
   async setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void> {
     await db.update(accounts).set({ plan, stripeSubscriptionId }).where(eq(accounts.id, id));
+  }
+
+  async setAccountPublicName(id: number, publicName: string): Promise<Account | undefined> {
+    const [account] = await db.update(accounts).set({ publicName }).where(eq(accounts.id, id)).returning();
+    return account || undefined;
   }
 
   async setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void> {

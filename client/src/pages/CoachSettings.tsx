@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { UserPlus, X, Mail, Clock, Check, Download, Loader2 } from "lucide-react";
+import { UserPlus, X, Mail, Clock, Check, Download, Loader2, User } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,19 +38,24 @@ export default function CoachSettings() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { teams, currentTeamId } = useAuth();
+  const { account, teams, currentTeamId } = useAuth();
   const currentTeam = teams.find((team) => team.id === currentTeamId);
   const [email, setEmail] = useState("");
   const [removeTarget, setRemoveTarget] = useState<CoachMember | null>(null);
   const [defaultDuration, setDefaultDuration] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [themeColor, setThemeColor] = useState<TeamThemeColor | null>(null);
+  const [publicName, setPublicName] = useState<string>("");
 
   useEffect(() => {
     setDefaultDuration(currentTeam?.defaultSessionDuration ? String(currentTeam.defaultSessionDuration) : "");
     setLogoUrl(currentTeam?.logoUrl ?? "");
     setThemeColor((currentTeam?.themeColor as TeamThemeColor | null) ?? null);
   }, [currentTeam?.id, currentTeam?.defaultSessionDuration, currentTeam?.logoUrl, currentTeam?.themeColor]);
+
+  useEffect(() => {
+    setPublicName(account?.publicName ?? "");
+  }, [account?.publicName]);
 
   const { data, isLoading } = useQuery<CoachesResponse>({ queryKey: ["/api/coaches"] });
 
@@ -68,6 +73,21 @@ export default function CoachSettings() {
     onError: (error) => {
       toast({
         title: t("coachSettings.couldntSavePreferences"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const savePublicNameMutation = useMutation({
+    mutationFn: async () => apiRequest("PUT", "/api/account/public-name", { publicName: publicName.trim() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [SESSION_QUERY_KEY] });
+      toast({ title: t("coachSettings.publicNameSaved") });
+    },
+    onError: (error) => {
+      toast({
+        title: t("coachSettings.couldntSavePublicName"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -240,6 +260,39 @@ export default function CoachSettings() {
               className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
             >
               {savePreferencesMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("coachSettings.publicProfile")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <label htmlFor="public-name" className="text-sm font-medium text-foreground mb-2 block">
+                {t("coachSettings.publicName")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.publicNameDescription")}</p>
+              <Input
+                id="public-name"
+                value={publicName}
+                onChange={(e) => setPublicName(e.target.value)}
+                placeholder={t("setPublicNameDialog.placeholder")}
+                maxLength={40}
+                className="max-w-sm"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => savePublicNameMutation.mutate()}
+              disabled={savePublicNameMutation.isPending || publicName.trim().length < 2}
+              className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
+            >
+              {savePublicNameMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </CardContent>
         </Card>
