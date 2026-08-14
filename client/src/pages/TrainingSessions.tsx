@@ -168,7 +168,12 @@ export default function TrainingSessions() {
                     <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground truncate">
                       {session.name}
                     </CardTitle>
-                    <div className="flex items-start justify-between gap-2">
+                    {/* flex-wrap: five icon buttons (bell, export, duplicate,
+                        edit, delete) don't all fit next to the date/time on
+                        a narrow phone — without wrap they were crowding right
+                        up against "17:00" instead of dropping to their own
+                        line below it. */}
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div className="flex items-center text-sm text-muted-foreground gap-3 min-w-0">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
@@ -179,7 +184,7 @@ export default function TrainingSessions() {
                           {session.time}
                         </span>
                       </div>
-                    <div className="flex items-center space-x-1 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       {session.status !== "completed" && session.status !== "cancelled" && (
                         <Button
                           variant="ghost"

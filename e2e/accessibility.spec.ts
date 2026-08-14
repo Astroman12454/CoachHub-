@@ -2122,6 +2122,28 @@ test.describe("accessibility (axe)", () => {
       expect(summarize(results.violations)).toEqual([]);
     });
 
+    // Regression check for a real bug found on-device: the date/time row and
+    // the five icon buttons (notify, export, duplicate, edit, delete) shared
+    // one non-wrapping row, so at this width they crowded together — the
+    // clock icon's "17:00" ran right into the bell button next to it.
+    test("training sessions — date/time doesn't overlap the action icons", async ({ page }) => {
+      await login(page);
+      await page.goto("/training-sessions");
+      await page.waitForLoadState("networkidle");
+
+      // Not `.fade-in` alone — Layout's own page-entrance wrapper (App.tsx)
+      // uses that same class, and as an ancestor of everything it'd win
+      // `.first()` over the session cards themselves.
+      const firstCard = page.locator('[class*="hover:border-basketball-orange"]').first();
+      const timeBox = await firstCard.locator("span", { hasText: /^\d{1,2}:\d{2}$/ }).first().boundingBox();
+      const bellBox = await firstCard.getByRole("button", { name: /^Notify players about/ }).boundingBox();
+      expect(timeBox).toBeTruthy();
+      expect(bellBox).toBeTruthy();
+      // No horizontal overlap between the two boxes.
+      const noOverlap = timeBox!.x + timeBox!.width <= bellBox!.x || bellBox!.x + bellBox!.width <= timeBox!.x;
+      expect(noOverlap).toBe(true);
+    });
+
     // A long player name grows the identity block to two or three lines at
     // this width — regression check for a real bug found on-device: the
     // header used to keep the name and the Report/Rate buttons on one
