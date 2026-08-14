@@ -98,6 +98,11 @@ export interface IStorage {
   setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void>;
   getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined>;
   resetPassword(id: number, passwordHash: string): Promise<void>;
+  // Every table with an accountId/teamId/etc. chain back to accounts.id is
+  // declared onDelete: cascade in the schema, so this one delete is enough
+  // to remove all of this coach's data (teams, players, sessions, plays,
+  // exercises, social activity, everything) — see shared/schema.ts.
+  deleteAccount(id: number): Promise<void>;
 
   // Club plan multi-coach seats. resolveEffectiveAccountId is the one
   // primitive nearly everything else builds on: for a coach who accepted an
@@ -414,6 +419,10 @@ export class DatabaseStorage implements IStorage {
 
   async resetPassword(id: number, passwordHash: string): Promise<void> {
     await db.update(accounts).set({ passwordHash, resetTokenHash: null, resetTokenExpiresAt: null }).where(eq(accounts.id, id));
+  }
+
+  async deleteAccount(id: number): Promise<void> {
+    await db.delete(accounts).where(eq(accounts.id, id));
   }
 
   async getOwnerAccountIdForMember(memberAccountId: number): Promise<number | null> {

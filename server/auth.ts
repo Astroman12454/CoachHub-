@@ -6,9 +6,10 @@ import rateLimit from "express-rate-limit";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { seedDefaultExercises } from "./seed";
-import { insertAccountSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "@shared/schema";
+import { insertAccountSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, deleteAccountSchema } from "@shared/schema";
 import { pool } from "./db";
 import { isEmailConfigured, sendPasswordResetEmail } from "./email";
+import { getStripe, isStripeConfigured } from "./stripe";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 
@@ -216,6 +217,60 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req: Request, res: Response) => {
     req.session.destroy(() => {
       res.json({ authenticated: false });
+    });
+  });
+
+  // Self-service deletion (replaces the old "email us and wait" process —
+  // see Privacy/Terms/Support). Password re-entry gates it since it's
+  // irreversible. Every table that hangs off accounts.id cascades at the DB
+  // level (see IStorage.deleteAccount), so a coach's teams, players,
+  // sessions, plays, exercises, and social activity all disappear with it —
+  // the only thing outside that chain is the live Stripe subscription and,
+  // for a Club owner, coaches still seated on their club (blocked below so
+  // that doesn't silently strand them).
+  app.delete("/api/account", async (req: Request, res: Response) => {
+    // This route (like /api/session/team above) is registered inside
+    // setupAuth, which runs before server/index.ts wires up the blanket
+    // requireAuth middleware for the rest of /api/* — so it needs its own
+    // check rather than assuming req.session.accountId is set.
+    if (!req.session.accountId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const parsed = deleteAccountSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Enter your password to confirm" });
+    }
+
+    const accountId = req.session.accountId;
+    const account = await storage.getAccountById(accountId);
+    if (!account) return res.status(404).json({ message: "Account not found" });
+
+    // 403, not 401: a 401 from anywhere but /api/session makes the client
+    // treat it as an expired session and bounce to the login screen (see
+    // throwIfResNotOk in queryClient.ts) — misleading here, since a wrong
+    // password means the account is untouched, not logged out.
+    const isValid = await bcrypt.compare(parsed.data.password, account.passwordHash);
+    if (!isValid) {
+      return res.status(403).json({ message: "Incorrect password" });
+    }
+
+    const members = await storage.getAccountMemberships(accountId);
+    if (members.length > 0) {
+      return res.status(409).json({ message: "Remove the coaches on your club before deleting your account." });
+    }
+
+    if (account.stripeSubscriptionId && isStripeConfigured()) {
+      try {
+        await getStripe().subscriptions.cancel(account.stripeSubscriptionId);
+      } catch {
+        return res.status(500).json({ message: "Couldn't cancel your subscription. Please try again or contact support." });
+      }
+    }
+
+    await storage.deleteAccount(accountId);
+    req.session.destroy(() => {
+      res.json({ deleted: true });
     });
   });
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Activity, Pencil } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Activity, Pencil, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -198,6 +198,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <LanguageToggle />
         <ThemeToggle />
+        <Link
+          href="/settings/account"
+          onClick={onNavigate}
+          className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
+          aria-label={t("sidebar.accountSettings")}
+          title={t("sidebar.accountSettings")}
+        >
+          <Settings className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+        </Link>
         <button
           type="button"
           onClick={logout}

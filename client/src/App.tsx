@@ -42,6 +42,7 @@ const ExerciseShare = lazy(() => import("@/pages/ExerciseShare"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const CoachSettings = lazy(() => import("@/pages/CoachSettings"));
+const AccountSettings = lazy(() => import("@/pages/AccountSettings"));
 
 function PageLoadingFallback() {
   return (
@@ -49,6 +50,25 @@ function PageLoadingFallback() {
       <div className="w-10 h-10 border-4 border-muted border-t-basketball-orange rounded-full animate-spin"></div>
     </div>
   );
+}
+
+// Wraps a page component for use as a wouter <Route component={...}>. Must
+// be called at module scope, not inline inside Router()'s JSX: wouter treats
+// a changed `component` function reference as a changed component *type* and
+// remounts that whole subtree from scratch — so an inline `component={() =>
+// <Layout><X /></Layout>}` gets a fresh closure (and therefore a full
+// Layout+page remount, wiping any local state like an open dialog) on every
+// single re-render of Router, not just on actual navigation. A name defined
+// once up here stays the same reference across renders, so React just
+// updates the existing instance like normal.
+function withLayout<P extends object>(PageComponent: React.ComponentType<P>) {
+  return function RouteWithLayout(props: P) {
+    return (
+      <Layout>
+        <PageComponent {...props} />
+      </Layout>
+    );
+  };
 }
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -62,11 +82,12 @@ function Layout({ children }: { children: React.ReactNode }) {
             no fixed positioning, no manually-tuned bottom padding to keep
             in sync with the bar's height. */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Layout itself remounts on every route change (each route maps
-              to a distinct component reference), so a plain entrance
-              animation here already fires once per navigation —
-              no location-tracking needed for a page that "arrives" instead
-              of just appearing. */}
+          {/* Layout remounts on an actual route change (each route maps to
+              its own stable component reference — see withLayout above), so
+              a plain entrance animation here already fires once per real
+              navigation and stays put across unrelated re-renders — no
+              location-tracking needed for a page that "arrives" instead of
+              just appearing. */}
           <div className="flex-1 overflow-hidden fade-in">
             <ErrorBoundary>
               <Suspense fallback={<PageLoadingFallback />}>
@@ -81,45 +102,91 @@ function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const DashboardRoute = withLayout(Dashboard);
+const TrainingSessionsRoute = withLayout(TrainingSessions);
+const GamesRoute = withLayout(Games);
+const PlaybookRoute = withLayout(Playbook);
+const CommunityPlaysRoute = withLayout(CommunityPlays);
+const PlayEditorRoute = withLayout(PlayEditor);
+const ExerciseLibraryRoute = withLayout(ExerciseLibrary);
+const CommunityExercisesRoute = withLayout(CommunityExercises);
+const CoachProfileRoute = withLayout(CoachProfile);
+const ExerciseDiagramEditorRoute = withLayout(ExerciseDiagramEditor);
+const PhysicalTestsRoute = withLayout(PhysicalTests);
+const CommunityPhysicalTestsRoute = withLayout(CommunityPhysicalTests);
+const PlayersRoute = withLayout(Players);
+const PlayerProfileRoute = withLayout(PlayerProfile);
+const WeeklyScheduleRoute = withLayout(WeeklySchedule);
+const CoachSettingsRoute = withLayout(CoachSettings);
+const AccountSettingsRoute = withLayout(AccountSettings);
+// BillingStatus takes a fixed `status` prop per route rather than one read
+// from the URL, so it gets its own two stable wrappers instead of routing
+// through withLayout's generic prop passthrough.
+const BillingSuccessRoute = () => <Layout><BillingStatus status="success" /></Layout>;
+const BillingCancelRoute = () => <Layout><BillingStatus status="cancel" /></Layout>;
+// Deliberately outside <Layout> — no sidebar, no chrome. A coach running a
+// practice needs the full screen for the timer, not a nav rail eating a
+// fifth of it.
+const TrainingModeRoute = () => (
+  <ErrorBoundary>
+    <Suspense fallback={<PageLoadingFallback />}>
+      <TrainingMode />
+    </Suspense>
+  </ErrorBoundary>
+);
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <Layout><Dashboard /></Layout>} />
-      <Route path="/dashboard" component={() => <Layout><Dashboard /></Layout>} />
-      <Route path="/training-sessions" component={() => <Layout><TrainingSessions /></Layout>} />
-      {/* Deliberately outside <Layout> — no sidebar, no chrome. A coach
-          running a practice needs the full screen for the timer, not a
-          nav rail eating a fifth of it. */}
-      <Route
-        path="/training-sessions/:id/live"
-        component={() => (
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <TrainingMode />
-            </Suspense>
-          </ErrorBoundary>
-        )}
-      />
-      <Route path="/games" component={() => <Layout><Games /></Layout>} />
-      <Route path="/playbook" component={() => <Layout><Playbook /></Layout>} />
-      <Route path="/playbook/community" component={() => <Layout><CommunityPlays /></Layout>} />
-      <Route path="/playbook/:id" component={() => <Layout><PlayEditor /></Layout>} />
-      <Route path="/exercise-library" component={() => <Layout><ExerciseLibrary /></Layout>} />
-      <Route path="/exercise-library/community" component={() => <Layout><CommunityExercises /></Layout>} />
-      <Route path="/coaches/:accountId" component={() => <Layout><CoachProfile /></Layout>} />
-      <Route path="/exercise-library/:id/diagram" component={() => <Layout><ExerciseDiagramEditor /></Layout>} />
-      <Route path="/physical-tests" component={() => <Layout><PhysicalTests /></Layout>} />
-      <Route path="/physical-tests/community" component={() => <Layout><CommunityPhysicalTests /></Layout>} />
-      <Route path="/players" component={() => <Layout><Players /></Layout>} />
-      <Route path="/players/:id" component={() => <Layout><PlayerProfile /></Layout>} />
-      <Route path="/weekly-schedule" component={() => <Layout><WeeklySchedule /></Layout>} />
-      <Route path="/settings/coaches" component={() => <Layout><CoachSettings /></Layout>} />
-      <Route path="/billing/success" component={() => <Layout><BillingStatus status="success" /></Layout>} />
-      <Route path="/billing/cancel" component={() => <Layout><BillingStatus status="cancel" /></Layout>} />
+      <Route path="/" component={DashboardRoute} />
+      <Route path="/dashboard" component={DashboardRoute} />
+      <Route path="/training-sessions" component={TrainingSessionsRoute} />
+      <Route path="/training-sessions/:id/live" component={TrainingModeRoute} />
+      <Route path="/games" component={GamesRoute} />
+      <Route path="/playbook" component={PlaybookRoute} />
+      <Route path="/playbook/community" component={CommunityPlaysRoute} />
+      <Route path="/playbook/:id" component={PlayEditorRoute} />
+      <Route path="/exercise-library" component={ExerciseLibraryRoute} />
+      <Route path="/exercise-library/community" component={CommunityExercisesRoute} />
+      <Route path="/coaches/:accountId" component={CoachProfileRoute} />
+      <Route path="/exercise-library/:id/diagram" component={ExerciseDiagramEditorRoute} />
+      <Route path="/physical-tests" component={PhysicalTestsRoute} />
+      <Route path="/physical-tests/community" component={CommunityPhysicalTestsRoute} />
+      <Route path="/players" component={PlayersRoute} />
+      <Route path="/players/:id" component={PlayerProfileRoute} />
+      <Route path="/weekly-schedule" component={WeeklyScheduleRoute} />
+      <Route path="/settings/coaches" component={CoachSettingsRoute} />
+      <Route path="/settings/account" component={AccountSettingsRoute} />
+      <Route path="/billing/success" component={BillingSuccessRoute} />
+      <Route path="/billing/cancel" component={BillingCancelRoute} />
       <Route component={NotFound} />
     </Switch>
   );
 }
+
+// Same reasoning as TrainingModeRoute/withLayout above: a stable reference
+// per lazy public page, not an inline closure recreated on every render of
+// App (which AuthProvider's own state changes cause plenty of).
+const ResetPasswordRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <ResetPassword />
+  </Suspense>
+);
+const AcceptInviteRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <AcceptInvite />
+  </Suspense>
+);
+const PortalRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <Portal />
+  </Suspense>
+);
+const ExerciseShareRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <ExerciseShare />
+  </Suspense>
+);
 
 function AuthGate() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -153,38 +220,10 @@ function App() {
                 <Route path="/terms" component={Terms} />
                 <Route path="/support" component={Support} />
                 <Route path="/pricing" component={Pricing} />
-                <Route
-                  path="/reset-password"
-                  component={() => (
-                    <Suspense fallback={<PageLoadingFallback />}>
-                      <ResetPassword />
-                    </Suspense>
-                  )}
-                />
-                <Route
-                  path="/accept-invite"
-                  component={() => (
-                    <Suspense fallback={<PageLoadingFallback />}>
-                      <AcceptInvite />
-                    </Suspense>
-                  )}
-                />
-                <Route
-                  path="/portal/:token"
-                  component={() => (
-                    <Suspense fallback={<PageLoadingFallback />}>
-                      <Portal />
-                    </Suspense>
-                  )}
-                />
-                <Route
-                  path="/exercise/:token"
-                  component={() => (
-                    <Suspense fallback={<PageLoadingFallback />}>
-                      <ExerciseShare />
-                    </Suspense>
-                  )}
-                />
+                <Route path="/reset-password" component={ResetPasswordRoute} />
+                <Route path="/accept-invite" component={AcceptInviteRoute} />
+                <Route path="/portal/:token" component={PortalRoute} />
+                <Route path="/exercise/:token" component={ExerciseShareRoute} />
                 <Route component={AuthGate} />
               </Switch>
             </TooltipProvider>

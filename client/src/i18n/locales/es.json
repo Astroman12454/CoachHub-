@@ -50,7 +50,8 @@
     "selectTeam": "Seleccionar equipo",
     "newTeam": "Nuevo Equipo",
     "navigation": "Navegación",
-    "mainNavigation": "Principal"
+    "mainNavigation": "Principal",
+    "accountSettings": "Configuración de la cuenta"
   },
   "bottomNav": {
     "label": "Navegación rápida",
@@ -1192,6 +1193,18 @@
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
     "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
   },
+  "accountSettings": {
+    "title": "Cuenta",
+    "dangerZone": "Zona de Peligro",
+    "deleteAccountDescription": "Elimina permanentemente tu cuenta, equipos, jugadores, sesiones, jugadas, ejercicios y todo lo demás asociado. No se puede deshacer.",
+    "deleteAccount": "Eliminar mi cuenta"
+  },
+  "deleteAccountDialog": {
+    "title": "¿Eliminar tu cuenta?",
+    "description": "Esto borra permanentemente tu cuenta y todo lo que contiene — equipos, jugadores, sesiones, jugadas, ejercicios — y cancela cualquier suscripción activa. No hay vuelta atrás. Ingresá tu contraseña para confirmar.",
+    "passwordLabel": "Contraseña",
+    "confirm": "Eliminar definitivamente"
+  },
   "coachSettings": {
     "title": "Gestionar Entrenadores",
     "subtitle": "Invitá a otros entrenadores a los equipos de tu club.",
@@ -1342,7 +1355,7 @@
       },
       "retention": {
         "heading": "6. Cuánto tiempo conservamos tus datos",
-        "body": "Conservamos tus datos mientras tu cuenta esté activa. Si nos pides que eliminemos tu cuenta, borraremos tus datos de cuenta, equipo, jugadores, sesiones y referencia de facturación en un plazo de 30 días, salvo que estemos legalmente obligados a conservar registros durante más tiempo (por ejemplo, obligaciones fiscales vinculadas a los pagos)."
+        "body": "Conservamos tus datos mientras tu cuenta esté activa. Podés eliminar tu cuenta vos mismo en cualquier momento desde Configuración → Cuenta, lo que borra de inmediato y de forma permanente tus datos de cuenta, equipo, jugadores y sesiones, salvo que estemos legalmente obligados a conservar registros durante más tiempo (por ejemplo, obligaciones fiscales vinculadas a los pagos). Si no podés acceder a tu cuenta, escribinos y la eliminaremos por vos."
       },
       "security": {
         "heading": "7. Seguridad",
@@ -1350,7 +1363,7 @@
       },
       "rights": {
         "heading": "8. Tus derechos",
-        "bodyPrefix": "Conforme al RGPD puedes solicitar el acceso, rectificación, supresión o portabilidad de tus datos, y puedes oponerte o pedirnos que limitemos ciertos tratamientos. Para ejercer cualquiera de estos derechos, escribe a",
+        "bodyPrefix": "Conforme al RGPD puedes solicitar el acceso, rectificación, supresión o portabilidad de tus datos, y puedes oponerte o pedirnos que limitemos ciertos tratamientos. Podés eliminar tu cuenta vos mismo desde Configuración → Cuenta en cualquier momento. Para cualquier otra cosa, escribe a",
         "bodyMiddle": ". También tienes derecho a presentar una reclamación ante la Agencia Española de Protección de Datos (",
         "bodySuffix": ")."
       },
@@ -1411,7 +1424,7 @@
       },
       "termination": {
         "heading": "8. Suspensión y cancelación",
-        "body": "Puedes dejar de usar el servicio y eliminar tu cuenta en cualquier momento escribiéndonos. Podemos suspender o cancelar cuentas que incumplan estos términos, con aviso previo cuando sea razonablemente posible."
+        "body": "Puedes dejar de usar el servicio y eliminar tu cuenta en cualquier momento desde Configuración → Cuenta. Podemos suspender o cancelar cuentas que incumplan estos términos, con aviso previo cuando sea razonablemente posible."
       },
       "changes": {
         "heading": "9. Cambios en estos términos",
@@ -1433,7 +1446,7 @@
     "commonQuestions": "Preguntas frecuentes",
     "faqItems": [
       { "bold": "¿Cómo mejoro o cancelo mi plan?", "text": "Abre el menú lateral en la aplicación y toca la insignia de tu plan — eso te lleva al checkout o portal de facturación de Stripe, donde puedes mejorar tu plan, cambiar los datos de pago o cancelar cuando quieras." },
-      { "bold": "¿Cómo elimino mi cuenta?", "text": "Escríbenos desde el correo de tu cuenta y la eliminaremos, junto con tus datos de equipo, jugadores y sesiones, en un plazo de 30 días." },
+      { "bold": "¿Cómo elimino mi cuenta?", "text": "Abrí el menú lateral, tocá el ícono de engranaje abajo, y elegí \"Eliminar mi cuenta.\" Es inmediato y permanente. ¿No podés entrar? Escribinos y la eliminaremos por vos." },
       { "bold": "¿Qué incluye el plan gratis?", "text": "1 equipo, hasta 15 jugadores, y la biblioteca de ejercicios integrada completa." }
     ]
   }
