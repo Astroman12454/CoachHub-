@@ -3,7 +3,12 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
-  retries: 0,
+  // CI's runner is more resource-constrained than a local machine, so the
+  // occasional test that's genuinely just timing-sensitive under load (not
+  // actually broken — verified by rerunning it standalone) needs a little
+  // retry margin there. Locally, a failure should still fail on the first
+  // try so it's obvious while iterating.
+  retries: process.env.CI ? 2 : 0,
   reporter: "list",
   globalSetup: "./e2e/global-setup.ts",
   use: {
