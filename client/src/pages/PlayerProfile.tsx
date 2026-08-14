@@ -221,71 +221,81 @@ export default function PlayerProfile() {
   return (
     <div className="flex flex-col h-full">
       <header className="bg-card border-b border-border px-4 py-4 lg:px-7 lg:py-5">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={openMobile}
-            className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
-            aria-label={t("common.openNavigationMenu")}
-          >
-            <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
-          </button>
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/players")} aria-label={t("playerProfile.backToPlayers")}>
-            <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-          </Button>
-          <div className="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0 rounded-full bg-basketball-orange/10 border-2 border-basketball-orange/20 flex items-center justify-center font-display font-bold text-basketball-orange text-lg">
-            {player.jerseyNumber != null
-              ? `#${player.jerseyNumber}`
-              : player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight flex items-center gap-2">
-                {player.name}
-                {player.isCaptain === 1 && (
-                  <Crown className="w-5 h-5 text-basketball-orange shrink-0" strokeWidth={2} role="img" aria-label={t("players.captainBadge")} />
-                )}
-              </h2>
-              <Badge
-                variant={player.isActive === 1 ? "default" : "secondary"}
-                className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
-              >
-                {player.isActive === 1 ? t("players.active") : t("players.inactive")}
-              </Badge>
-              {hasActiveInjury && (
-                <Badge className="bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40">
-                  <HeartPulse className="w-3 h-3 mr-1" strokeWidth={1.75} aria-hidden="true" />
-                  {t("playerProfile.injured")}
-                </Badge>
-              )}
+        {/* Two rows on mobile, one on desktop (lg:flex-row) — same pattern
+            TopBar uses. A long player name can wrap the identity block onto
+            multiple lines; keeping it stacked above the action buttons
+            (rather than sharing one non-wrapping row) means that growth
+            pushes the buttons down instead of the buttons sitting on top of
+            the wrapped text. */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={openMobile}
+              className="lg:hidden w-11 h-11 flex-shrink-0 basketball-orange rounded-md flex items-center justify-center"
+              aria-label={t("common.openNavigationMenu")}
+            >
+              <Menu className="w-4 h-4 text-white" strokeWidth={1.75} aria-hidden="true" />
+            </button>
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/players")} aria-label={t("playerProfile.backToPlayers")}>
+              <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+            </Button>
+            <div className="w-12 h-12 lg:w-14 lg:h-14 flex-shrink-0 rounded-full bg-basketball-orange/10 border-2 border-basketball-orange/20 flex items-center justify-center font-display font-bold text-basketball-orange text-lg">
+              {player.jerseyNumber != null
+                ? `#${player.jerseyNumber}`
+                : player.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {[
-                player.position,
-                player.birthDate ? t("players.ageValue", { count: calculateAge(player.birthDate) ?? 0 }) : null,
-                player.height ? t("players.heightValue", { count: player.height }) : null,
-                player.dominantHand ? t(`playerForm.dominantHandOptions.${player.dominantHand}`) : null,
-              ].filter(Boolean).join(" · ")}
-            </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-display font-bold uppercase tracking-tight text-2xl lg:text-3xl text-foreground leading-tight flex items-center gap-2">
+                  {player.name}
+                  {player.isCaptain === 1 && (
+                    <Crown className="w-5 h-5 text-basketball-orange shrink-0" strokeWidth={2} role="img" aria-label={t("players.captainBadge")} />
+                  )}
+                </h2>
+                <Badge
+                  variant={player.isActive === 1 ? "default" : "secondary"}
+                  className={player.isActive === 1 ? "bg-success-tint text-success" : ""}
+                >
+                  {player.isActive === 1 ? t("players.active") : t("players.inactive")}
+                </Badge>
+                {hasActiveInjury && (
+                  <Badge className="bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/40">
+                    <HeartPulse className="w-3 h-3 mr-1" strokeWidth={1.75} aria-hidden="true" />
+                    {t("playerProfile.injured")}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {[
+                  player.position,
+                  player.birthDate ? t("players.ageValue", { count: calculateAge(player.birthDate) ?? 0 }) : null,
+                  player.height ? t("players.heightValue", { count: player.height }) : null,
+                  player.dominantHand ? t(`playerForm.dominantHandOptions.${player.dominantHand}`) : null,
+                ].filter(Boolean).join(" · ")}
+              </p>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleExportSeasonReport}
-            disabled={isExportingReport || !development || !attendanceStats}
-            className="whitespace-nowrap"
-          >
-            {isExportingReport ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <FileDown className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            )}
-            <span className="hidden sm:inline">{t("playerProfile.seasonReport")}</span>
-            <span className="sm:hidden">{t("playerProfile.report")}</span>
-          </Button>
-          <Button onClick={() => setIsRateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
-            <Star className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-            <span className="hidden sm:inline">{t("playerProfile.ratePlayer")}</span>
-            <span className="sm:hidden">{t("playerProfile.rate")}</span>
-          </Button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={handleExportSeasonReport}
+              disabled={isExportingReport || !development || !attendanceStats}
+              className="whitespace-nowrap"
+            >
+              {isExportingReport ? (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <FileDown className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+              )}
+              <span className="hidden sm:inline">{t("playerProfile.seasonReport")}</span>
+              <span className="sm:hidden">{t("playerProfile.report")}</span>
+            </Button>
+            <Button onClick={() => setIsRateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
+              <Star className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+              <span className="hidden sm:inline">{t("playerProfile.ratePlayer")}</span>
+              <span className="sm:hidden">{t("playerProfile.rate")}</span>
+            </Button>
+          </div>
         </div>
       </header>
 
