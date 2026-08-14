@@ -42,7 +42,8 @@
     "exerciseLibrary": "Biblioteca de Ejercicios",
     "physicalTests": "Pruebas Físicas",
     "players": "Jugadores",
-    "coaches": "Entrenadores"
+    "coaches": "Entrenadores",
+    "account": "Cuenta"
   },
   "sidebar": {
     "tagline": "Entrenamiento de Baloncesto",
@@ -50,8 +51,7 @@
     "selectTeam": "Seleccionar equipo",
     "newTeam": "Nuevo Equipo",
     "navigation": "Navegación",
-    "mainNavigation": "Principal",
-    "accountSettings": "Configuración de la cuenta"
+    "mainNavigation": "Principal"
   },
   "bottomNav": {
     "label": "Navegación rápida",
