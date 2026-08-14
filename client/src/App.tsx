@@ -12,6 +12,7 @@ import Support from "@/pages/Support";
 import Pricing from "@/pages/Pricing";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/Sidebar";
+import BottomTabBar from "@/components/BottomTabBar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { SidebarProvider } from "@/hooks/use-sidebar";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
@@ -55,16 +56,25 @@ function Layout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex h-screen bg-background">
         <Sidebar />
-        {/* Layout itself remounts on every route change (each route maps to
-            a distinct component reference), so a plain entrance animation
-            here already fires once per navigation — no location-tracking
-            needed for a page that "arrives" instead of just appearing. */}
-        <div className="flex-1 overflow-hidden fade-in">
-          <ErrorBoundary>
-            <Suspense fallback={<PageLoadingFallback />}>
-              {children}
-            </Suspense>
-          </ErrorBoundary>
+        {/* A column, not a bare div: BottomTabBar (mobile-only) takes its
+            natural height as a normal flex sibling below the page content,
+            so the content area shrinks to fit above it automatically —
+            no fixed positioning, no manually-tuned bottom padding to keep
+            in sync with the bar's height. */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Layout itself remounts on every route change (each route maps
+              to a distinct component reference), so a plain entrance
+              animation here already fires once per navigation —
+              no location-tracking needed for a page that "arrives" instead
+              of just appearing. */}
+          <div className="flex-1 overflow-hidden fade-in">
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoadingFallback />}>
+                {children}
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+          <BottomTabBar />
         </div>
       </div>
     </SidebarProvider>
