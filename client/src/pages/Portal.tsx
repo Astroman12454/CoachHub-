@@ -42,7 +42,9 @@ export default function Portal() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-background p-4 lg:p-8">
+      // pt-[max(...)] reserves space under iOS's black-translucent status bar
+      // if a parent/player adds this shared link to their home screen.
+      <main className="min-h-screen bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] lg:p-8 lg:pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="max-w-2xl mx-auto space-y-4">
           <Skeleton className="h-20" />
           <Skeleton className="h-40" />
@@ -55,7 +57,9 @@ export default function Portal() {
   if (isError || !data) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-        <div className="absolute top-4 right-4 text-foreground">
+        {/* top-[max(...)] reserves space under iOS's black-translucent
+            status bar when this app is added to the home screen. */}
+        <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 text-foreground">
           <LanguageToggle />
         </div>
         <div className="w-full max-w-sm">
@@ -79,7 +83,9 @@ export default function Portal() {
     : [];
 
   return (
-    <main className="min-h-screen bg-background p-4 lg:p-8">
+    // pt-[max(...)] reserves space under iOS's black-translucent status bar
+    // if a parent/player adds this shared link to their home screen.
+    <main className="min-h-screen bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] lg:p-8 lg:pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="max-w-2xl mx-auto space-y-6">
         <header className="flex items-start justify-between gap-3 flex-wrap">
           <div>

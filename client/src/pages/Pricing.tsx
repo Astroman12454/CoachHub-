@@ -48,7 +48,9 @@ export default function Pricing() {
 
   return (
     <main className="min-h-screen bg-rail p-4 py-10">
-      <div className="absolute top-4 right-4 text-foreground">
+      {/* top-[max(...)] reserves space under iOS's black-translucent status
+          bar when this app is added to the home screen. */}
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 text-foreground">
         <LanguageToggle />
       </div>
       <div className="w-full max-w-5xl mx-auto fade-in">

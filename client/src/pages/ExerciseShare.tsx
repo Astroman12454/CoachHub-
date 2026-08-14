@@ -41,7 +41,7 @@ export default function ExerciseShare() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-background p-4 lg:p-8">
+      <main className="min-h-screen bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] lg:p-8 lg:pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="max-w-xl mx-auto space-y-4">
           <Skeleton className="h-10 w-40" />
           <Skeleton className="h-64" />
@@ -53,7 +53,9 @@ export default function ExerciseShare() {
   if (isError || !data) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4 relative">
-        <div className="absolute top-4 right-4 text-foreground">
+        {/* top-[max(...)] reserves space under iOS's black-translucent
+            status bar when this app is added to the home screen. */}
+        <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 text-foreground">
           <LanguageToggle />
         </div>
         <div className="w-full max-w-sm">
@@ -74,7 +76,7 @@ export default function ExerciseShare() {
   const localized = localizedExerciseText(data, i18n.language);
 
   return (
-    <main className="min-h-screen bg-background p-4 lg:p-8">
+    <main className="min-h-screen bg-background p-4 pt-[max(1rem,env(safe-area-inset-top))] lg:p-8 lg:pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="max-w-xl mx-auto space-y-4">
         <div className="flex justify-end text-foreground">
           <LanguageToggle />

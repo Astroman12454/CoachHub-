@@ -28,7 +28,9 @@ export default function ResetPassword() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-rail p-4 relative">
-      <div className="absolute top-4 right-4">
+      {/* top-[max(...)] reserves space under iOS's black-translucent status
+          bar when this app is added to the home screen. */}
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4">
         <LanguageToggle />
       </div>
       <div className="w-full max-w-sm bg-card rounded-lg shadow-2xl p-8 fade-in">

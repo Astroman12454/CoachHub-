@@ -291,7 +291,12 @@ export default function TrainingMode() {
     // the muted-control treatment this screen's own header already uses.
     return (
       <div className="min-h-screen bg-rail flex flex-col court-texture" aria-hidden="true">
-        <header className="flex items-center justify-between gap-2 p-4 border-b border-rail-border">
+        {/* pt-[max(...)] reserves space under iOS's black-translucent status
+            bar when this app is added to the home screen — see TopBar.tsx.
+            Matters more here than most pages: this screen is deliberately
+            chrome-free (no Sidebar/TopBar), so this header is the only thing
+            standing between the exit/finish controls and the status bar. */}
+        <header className="flex items-center justify-between gap-2 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 border-b border-rail-border">
           <div className="w-10 h-10 rounded-md bg-white/10 animate-pulse flex-shrink-0" />
           <div className="flex-1 flex flex-col items-center gap-1.5">
             <div className="h-4 w-40 rounded bg-white/10 animate-pulse" />
