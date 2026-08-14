@@ -59,7 +59,14 @@ export default function TopBar({
 
   return (
     <>
-      <header className="bg-card border-b border-border px-4 py-4 lg:px-7 lg:py-5">
+      {/* pt-[max(...)] instead of a plain py-4: on an iPhone with this app
+          added to the home screen, the black-translucent status bar (see
+          index.html) draws over the page instead of pushing it down, so the
+          header needs to reserve that space itself — same idea as
+          BottomTabBar's safe-area-inset-bottom padding, just for the top.
+          max() keeps the normal 1rem/1.25rem padding on everything else
+          (desktop, browsers, non-notched phones), where the inset is 0. */}
+      <header className="bg-card border-b border-border px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 lg:px-7 lg:pt-[max(1.25rem,env(safe-area-inset-top))] lg:pb-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-center gap-3">
             <button

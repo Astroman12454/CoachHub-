@@ -138,7 +138,9 @@ export default function PlayEditor() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="bg-card border-b border-border px-4 py-3 flex flex-col gap-2">
+      {/* pt-[max(...)] reserves space under iOS's black-translucent status
+          bar when this app is added to the home screen — see TopBar.tsx. */}
+      <header className="bg-card border-b border-border px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 flex flex-col gap-2">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={openMobile}

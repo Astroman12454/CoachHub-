@@ -220,7 +220,9 @@ export default function PlayerProfile() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="bg-card border-b border-border px-4 py-4 lg:px-7 lg:py-5">
+      {/* pt-[max(...)] reserves space under iOS's black-translucent status
+          bar when this app is added to the home screen — see TopBar.tsx. */}
+      <header className="bg-card border-b border-border px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 lg:px-7 lg:pt-[max(1.25rem,env(safe-area-inset-top))] lg:pb-5">
         {/* Two rows on mobile, one on desktop (lg:flex-row) — same pattern
             TopBar uses. A long player name can wrap the identity block onto
             multiple lines; keeping it stacked above the action buttons

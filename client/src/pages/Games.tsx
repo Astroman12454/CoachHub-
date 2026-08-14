@@ -95,8 +95,10 @@ export default function Games() {
     }
   };
 
+  // pt-[max(...)] reserves space under iOS's black-translucent status bar
+  // when this app is added to the home screen — see TopBar.tsx.
   const header = (
-    <header className="bg-card border-b border-border px-4 py-4 lg:px-7 lg:py-5">
+    <header className="bg-card border-b border-border px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-4 lg:px-7 lg:pt-[max(1.25rem,env(safe-area-inset-top))] lg:pb-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-3">
           <button

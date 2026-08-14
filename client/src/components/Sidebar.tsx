@@ -139,7 +139,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     // theme — a stable brand anchor, same pattern as Linear/Vercel-style
     // dashboards, instead of the old solid-orange-everywhere sidebar.
     <nav aria-label={t("sidebar.mainNavigation")} className="bg-rail text-rail-foreground flex flex-col h-full w-full min-w-0">
-      <div className="p-5 border-b border-rail-border flex items-center gap-3">
+      {/* pt-[max(...)] reserves space under iOS's black-translucent status
+          bar for the mobile drawer (a full-height sheet, unlike the desktop
+          rail) when this app is added to the home screen — see TopBar.tsx.
+          A no-op on desktop, where the inset is always 0. */}
+      <div className="px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-5 border-b border-rail-border flex items-center gap-3">
         <div className="w-9 h-9 flex-shrink-0 rounded-md basketball-orange flex items-center justify-center">
           <BrandMark className="w-5 h-5 text-white" />
         </div>
