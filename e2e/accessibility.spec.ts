@@ -90,6 +90,7 @@ test.describe("accessibility (axe)", () => {
       await page.waitForLoadState("networkidle");
       await page.fill("#email", `e2e-new-coach-${Date.now()}@coachhub.test`);
       await page.fill("#password", "e2e-test-password-123");
+      await page.check("#age-confirmation");
       await page.click('button:has-text("Create Account")');
 
       await page.waitForSelector("text=Welcome to CoachHub!");

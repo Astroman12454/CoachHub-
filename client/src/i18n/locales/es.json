@@ -65,7 +65,7 @@
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "createAnAccount": "Crear una cuenta",
     "logInAction": "Iniciar sesión",
-    "agreeToTermsPrefix": "Al crear una cuenta aceptas nuestros",
+    "ageConfirmationPrefix": "Soy mayor de edad (18+) y estoy creando esta cuenta como el entrenador o miembro del staff que gestiona esta plantilla (no como jugador). Acepto nuestros",
     "and": "y",
     "termsOfUse": "Términos de Uso",
     "privacyPolicy": "Política de Privacidad",
