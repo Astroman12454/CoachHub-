@@ -48,11 +48,9 @@ async function playerWithSubscription(agent: request.Agent, app: express.Express
   return player.body as { id: number; name: string };
 }
 
-function fullRatings(overrides: Partial<Record<string, number>> = {}) {
-  return {
-    shooting: 5, dribbling: 5, defense: 5, passing: 5, conditioning: 5,
-    ...overrides,
-  };
+// A timed evaluation test: worstValue > bestValue (slower = worse).
+function sprintTest(overrides: Partial<Record<string, unknown>> = {}) {
+  return { name: "Sprint", type: "time", unit: "seconds", worstValue: 15, bestValue: 5, ...overrides };
 }
 
 describe("proactive parent-mode notifications", () => {
@@ -68,39 +66,42 @@ describe("proactive parent-mode notifications", () => {
     sendNotification.mockReset().mockResolvedValue(undefined);
   });
 
-  it("pushes to the player's own subscribers when a rating improves, mentioning the category and the before/after", async () => {
+  it("pushes to the player's own subscribers when an evaluation score improves, mentioning the test and the before/after score", async () => {
     const agent = await signedInAgent(app);
     const player = await playerWithSubscription(agent, app, "Riley");
+    const test = await agent.post("/api/evaluation-tests").send(sprintTest());
 
-    await agent.post(`/api/players/${player.id}/skill-ratings`).send(fullRatings({ shooting: 4 }));
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({ date: "2026-08-01", results: [{ playerId: player.id, value: 10 }] }); // score 51
     sendNotification.mockClear();
-    await agent.post(`/api/players/${player.id}/skill-ratings`).send(fullRatings({ shooting: 7 }));
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({ date: "2026-08-08", results: [{ playerId: player.id, value: 8 }] }); // score 70
 
     expect(sendNotification).toHaveBeenCalledTimes(1);
     const [subscriptionArg, payloadArg] = sendNotification.mock.calls[0];
     expect(subscriptionArg.endpoint).toBe(`https://push.example.com/${player.id}`);
     const payload = JSON.parse(payloadArg);
-    expect(payload.body).toContain("Shooting 4→7");
+    expect(payload.body).toContain("Sprint 51→70");
   });
 
-  it("does not push when nothing improved (an equal or lower rating)", async () => {
+  it("does not push when nothing improved (an equal or worse score)", async () => {
     const agent = await signedInAgent(app);
     const player = await playerWithSubscription(agent, app, "Morgan");
+    const test = await agent.post("/api/evaluation-tests").send(sprintTest());
 
-    await agent.post(`/api/players/${player.id}/skill-ratings`).send(fullRatings({ shooting: 6 }));
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({ date: "2026-08-01", results: [{ playerId: player.id, value: 10 }] });
     sendNotification.mockClear();
-    await agent.post(`/api/players/${player.id}/skill-ratings`).send(fullRatings({ shooting: 6 }));
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({ date: "2026-08-08", results: [{ playerId: player.id, value: 10 }] });
     expect(sendNotification).not.toHaveBeenCalled();
 
-    await agent.post(`/api/players/${player.id}/skill-ratings`).send(fullRatings({ shooting: 3 }));
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({ date: "2026-08-15", results: [{ playerId: player.id, value: 12 }] }); // slower — worse score
     expect(sendNotification).not.toHaveBeenCalled();
   });
 
-  it("does not push on a player's very first rating — there's nothing to compare it against", async () => {
+  it("does not push on a player's very first result — there's nothing to compare it against", async () => {
     const agent = await signedInAgent(app);
     const player = await playerWithSubscription(agent, app, "Alex");
+    const test = await agent.post("/api/evaluation-tests").send(sprintTest());
 
-    await agent.post(`/api/players/${player.id}/skill-ratings`).send(fullRatings());
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({ date: "2026-08-01", results: [{ playerId: player.id, value: 10 }] });
     expect(sendNotification).not.toHaveBeenCalled();
   });
 

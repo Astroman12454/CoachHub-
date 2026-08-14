@@ -23,7 +23,6 @@ import {
   createGameWithStatsSchema,
   createPlaySchema,
   pushSubscriptionSchema,
-  skillRatingInputSchema,
   createPlayerNoteSchema,
   createPlayerInjurySchema,
   recoverInjurySchema,
@@ -33,6 +32,9 @@ import {
   generateSessionsFromSlotsSchema,
   insertPhysicalTestSchema,
   recordPhysicalTestResultsSchema,
+  insertEvaluationTestSchema,
+  evaluationTestFieldsSchema,
+  recordEvaluationTestResultsSchema,
   setPublicNameSchema,
   createExerciseCommentSchema,
   FREE_PLAN_PLAYER_LIMIT,
@@ -47,6 +49,7 @@ import {
   canGenerateAiSessionPlan,
   canImportBoxScore,
 } from "@shared/entitlements";
+import { computeEvaluationScore } from "@shared/evaluationScore";
 
 const ACCEPTED_BOX_SCORE_TYPES = new Set([
   "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",
@@ -256,15 +259,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Team not found" });
       }
 
-      const [players, teamSessions, teamGames, teamPlays, teamPhysicalTests] = await Promise.all([
+      const [players, teamSessions, teamGames, teamPlays, teamPhysicalTests, teamEvaluationTests] = await Promise.all([
         storage.getAllPlayers(id),
         storage.getAllTrainingSessions(id),
         storage.getAllGames(id),
         storage.getAllPlays(id),
         storage.getAllPhysicalTests(accountId),
+        storage.getAllEvaluationTests(accountId),
       ]);
 
-      const [attendanceBySession, gamesWithStats, playsWithSteps, physicalTestHistory] = await Promise.all([
+      const [attendanceBySession, gamesWithStats, playsWithSteps, physicalTestHistory, evaluationTestHistory] = await Promise.all([
         Promise.all(teamSessions.map((s) => storage.getAttendanceBySession(s.id))),
         Promise.all(teamGames.map(async (g) => ({ ...g, stats: await storage.getGameStats(g.id) }))),
         Promise.all(teamPlays.map(async (p) => ({ ...p, steps: await storage.getPlaySteps(p.id) }))),
@@ -272,6 +276,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           playerId: p.id,
           playerName: p.name,
           history: await storage.getPhysicalTestResultsForPlayer(p.id),
+        }))),
+        Promise.all(players.map(async (p) => ({
+          playerId: p.id,
+          playerName: p.name,
+          history: await storage.getEvaluationTestResultsForPlayer(p.id),
         }))),
       ]);
 
@@ -285,6 +294,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         plays: playsWithSteps,
         physicalTests: teamPhysicalTests,
         physicalTestHistory,
+        evaluationTests: teamEvaluationTests,
+        evaluationTestHistory,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to export team data" });
@@ -1122,6 +1133,329 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Evaluation tests — general player evaluation (physical and skill
+  // tests alike), scored automatically 1-100 (see computeEvaluationScore).
+  // Same route shape as physical tests above, available on every plan.
+  app.get("/api/evaluation-tests", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const tests = await storage.getAllEvaluationTests(accountId);
+      res.json(tests);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch evaluation tests" });
+    }
+  });
+
+  app.post("/api/evaluation-tests", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const testData = insertEvaluationTestSchema.parse(req.body);
+      const test = await storage.createEvaluationTest(accountId, testData);
+      res.status(201).json(test);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid evaluation test data" });
+    }
+  });
+
+  app.put("/api/evaluation-tests/:id", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const id = parseId(req, res);
+      if (id === null) return;
+      const updateData = evaluationTestFieldsSchema.partial().parse(req.body);
+      const test = await storage.updateEvaluationTest(id, accountId, updateData);
+
+      if (!test) {
+        return res.status(404).json({ message: "Evaluation test not found" });
+      }
+
+      res.json(test);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid evaluation test data" });
+    }
+  });
+
+  app.delete("/api/evaluation-tests/:id", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const id = parseId(req, res);
+      if (id === null) return;
+      const deleted = await storage.deleteEvaluationTest(id, accountId);
+
+      if (!deleted) {
+        return res.status(404).json({ message: "Evaluation test not found" });
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete evaluation test" });
+    }
+  });
+
+  const setEvaluationTestCommunityShareSchema = z.object({ shared: z.boolean() });
+
+  app.put("/api/evaluation-tests/:id/share-community", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { shared } = setEvaluationTestCommunityShareSchema.parse(req.body);
+
+      const existing = await storage.getEvaluationTestById(id, accountId);
+      if (!existing) {
+        return res.status(404).json({ message: "Evaluation test not found" });
+      }
+      if (shared) {
+        const account = await storage.getAccountById(accountId);
+        if (!account?.publicName) {
+          return res.status(409).json({ message: "Set a public name before publishing to the community.", code: "PUBLIC_NAME_REQUIRED" });
+        }
+      }
+      const test = await storage.setEvaluationTestCommunityShare(id, accountId, shared);
+      if (!test) {
+        return res.status(404).json({ message: "Evaluation test not found" });
+      }
+      res.json(test);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  app.get("/api/community-evaluation-tests", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const sort = req.query.sort === "popular" ? "popular" : "recent";
+      const followingOnly = req.query.following === "true";
+      const savedOnly = req.query.saved === "true";
+      const shared = await storage.getCommunityEvaluationTests(accountId, { sort, followingOnly, savedOnly });
+      res.json(shared.map(({ id, name, type, unit, worstValue, bestValue, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
+        ({ id, name, type, unit, worstValue, bestValue, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
+      ));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch community evaluation tests" });
+    }
+  });
+
+  app.post("/api/community-evaluation-tests/:id/like", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const liked = await storage.likeEvaluationTest(id, accountId);
+      if (!liked) {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to like evaluation test" });
+    }
+  });
+
+  app.delete("/api/community-evaluation-tests/:id/like", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unlikeEvaluationTest(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unlike evaluation test" });
+    }
+  });
+
+  app.post("/api/community-evaluation-tests/:id/save", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const saved = await storage.saveEvaluationTest(id, accountId);
+      if (!saved) {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save evaluation test" });
+    }
+  });
+
+  app.delete("/api/community-evaluation-tests/:id/save", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unsaveEvaluationTest(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unsave evaluation test" });
+    }
+  });
+
+  app.get("/api/community-evaluation-tests/:id/comments", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const comments = await storage.getEvaluationTestComments(id, accountId);
+      if (!comments) {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/community-evaluation-tests/:id/comments", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (!account?.publicName) {
+        return res.status(409).json({ message: "Set a public name before commenting.", code: "PUBLIC_NAME_REQUIRED" });
+      }
+
+      const { body } = createExerciseCommentSchema.parse(req.body);
+      const comment = await storage.createEvaluationTestComment(id, accountId, body);
+      if (!comment) {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid comment" });
+    }
+  });
+
+  app.delete("/api/community-evaluation-tests/:id/comments/:commentId", async (req, res) => {
+    try {
+      const commentId = parseId(req, res, "commentId");
+      if (commentId === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const deleted = await storage.deleteEvaluationTestComment(commentId, accountId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  app.post("/api/community-evaluation-tests/:id/import", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const imported = await storage.importCommunityEvaluationTest(id, accountId);
+      if (!imported) {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.status(201).json(imported);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to import evaluation test" });
+    }
+  });
+
+  // Results can be a whole active roster recorded in one batch, or a single
+  // {playerId, value} entry — the same endpoint backs both the team-wide
+  // "Record results" dialog and the player profile's quick single-test add.
+  app.post("/api/evaluation-tests/:id/results", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const test = await storage.getEvaluationTestById(id, accountId);
+      if (!test) {
+        return res.status(404).json({ message: "Evaluation test not found" });
+      }
+
+      const { date, results } = recordEvaluationTestResultsSchema.parse(req.body);
+      const teamPlayers = await storage.getAllPlayers(req.session.currentTeamId!);
+      const teamPlayerIds = new Set(teamPlayers.map((p) => p.id));
+      const invalidPlayerId = results.find((r) => !teamPlayerIds.has(r.playerId));
+      if (invalidPlayerId) {
+        return res.status(400).json({ message: "One or more players don't belong to the current team." });
+      }
+
+      // Snapshot each player's best-ever value AND current score before
+      // inserting, so we can tell who beat their personal record and (for
+      // the proactive push below) whose score actually went up.
+      const lowerIsBetter = test.bestValue < test.worstValue;
+      const previousBests = await storage.getBestEvaluationTestValues(id, results.map((r) => r.playerId), test.worstValue, test.bestValue);
+      const saved = await storage.recordEvaluationTestResults(id, date, results);
+      const newRecordPlayerIds = results
+        .filter((r) => {
+          const prevBest = previousBests[r.playerId];
+          if (prevBest === undefined) return false;
+          return lowerIsBetter ? r.value < prevBest : r.value > prevBest;
+        })
+        .map((r) => r.playerId);
+
+      // "Proactive parent mode": push straight to whoever's subscribed to a
+      // player's own portal the moment their score on this test goes up —
+      // same best-effort, no-digest behavior the old skill-rating push had.
+      if (isPushConfigured()) {
+        for (const r of results) {
+          const prevBest = previousBests[r.playerId];
+          if (prevBest === undefined) continue;
+          const prevScore = computeEvaluationScore(prevBest, test.worstValue, test.bestValue);
+          const newScore = computeEvaluationScore(r.value, test.worstValue, test.bestValue);
+          if (newScore <= prevScore) continue;
+          try {
+            const player = teamPlayers.find((p) => p.id === r.playerId);
+            await notifyPlayer(r.playerId, {
+              title: `${player?.name ?? "Player"}'s progress`,
+              body: `Nice improvement: ${test.name} ${prevScore}→${newScore}`,
+            });
+          } catch {
+            // Best-effort — a push failure shouldn't fail the results save.
+          }
+        }
+      }
+
+      res.status(201).json({ results: saved, newRecordPlayerIds });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid evaluation test results" });
+    }
+  });
+
+  app.get("/api/evaluation-tests/:id/latest", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const latest = await storage.getLatestEvaluationTestResultsForTeam(id, req.session.currentTeamId!);
+      res.json(latest);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest results" });
+    }
+  });
+
+  app.get("/api/players/:id/evaluation-results", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!player) {
+        return res.status(404).json({ message: "Player not found" });
+      }
+      const history = await storage.getEvaluationTestResultsForPlayer(id);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch evaluation results" });
+    }
+  });
+
+  // Roster-wide latest score per player per test — feeds the scrimmage team
+  // balancer, which needs every player's snapshot at once.
+  app.get("/api/players/evaluation-scores", requireTeam, async (req, res) => {
+    try {
+      const scores = await storage.getCurrentEvaluationScoresForTeam(req.session.currentTeamId!);
+      res.json(scores);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch evaluation scores" });
+    }
+  });
+
   // Training Session routes — scoped by the session's current team.
   app.get("/api/training-sessions", requireTeam, async (req, res) => {
     try {
@@ -1513,22 +1847,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Player development — skill ratings (radar chart) and freeform coach
-  // notes, both gated on the player actually belonging to the current team
-  // before touching storage.
-  // Roster-wide current ratings — feeds the scrimmage team balancer on the
-  // client, which needs every player's snapshot at once rather than one
-  // /development round trip per player.
-  app.get("/api/players/skill-ratings", requireTeam, async (req, res) => {
-    try {
-      const ratings = await storage.getCurrentSkillRatingsForTeam(req.session.currentTeamId!);
-      res.json(ratings);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch skill ratings" });
-    }
-  });
-
-  app.get("/api/players/:id/development", requireTeam, async (req, res) => {
+  // Freeform coach notes on a player, gated on the player actually
+  // belonging to the current team.
+  app.get("/api/players/:id/notes", requireTeam, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
@@ -1536,48 +1857,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!player) {
         return res.status(404).json({ message: "Player not found" });
       }
-      const development = await storage.getPlayerDevelopment(id);
-      res.json(development);
+      const notes = await storage.getPlayerNotes(id);
+      res.json(notes);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch player development" });
-    }
-  });
-
-  app.post("/api/players/:id/skill-ratings", requireTeam, async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
-      if (!player) {
-        return res.status(404).json({ message: "Player not found" });
-      }
-      const ratings = skillRatingInputSchema.parse(req.body);
-      const before = (await storage.getPlayerDevelopment(id)).current;
-      await storage.createSkillRating(id, ratings);
-      const development = await storage.getPlayerDevelopment(id);
-
-      // "Proactive parent mode": push straight to whoever's subscribed to
-      // THIS player's portal (not the whole team) the moment a rating goes
-      // up — no digest, no coach action beyond the rating itself.
-      if (isPushConfigured() && before) {
-        const improved = Object.entries(ratings).filter(
-          ([category, rating]) => typeof before[category] === "number" && rating > before[category],
-        );
-        if (improved.length > 0) {
-          const summary = improved
-            .map(([category, rating]) => `${category.charAt(0).toUpperCase()}${category.slice(1)} ${before[category]}→${rating}`)
-            .join(", ");
-          try {
-            await notifyPlayer(id, { title: `${player.name}'s progress`, body: `Nice improvement: ${summary}` });
-          } catch {
-            // Best-effort — a push failure shouldn't fail the rating save.
-          }
-        }
-      }
-
-      res.status(201).json(development);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid skill rating data" });
+      res.status(500).json({ message: "Failed to fetch notes" });
     }
   });
 

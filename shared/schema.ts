@@ -217,19 +217,20 @@ export type CreateExerciseComment = z.infer<typeof createExerciseCommentSchema>;
 
 // "like"/"comment" (no suffix) mean an exercise, kept as-is for backward
 // compatibility with rows already written before plays/physical tests
-// joined the community — "like_play"/"comment_play" and
-// "like_physical_test"/"comment_physical_test" are their equivalents,
+// joined the community — "like_play"/"comment_play",
+// "like_physical_test"/"comment_physical_test", and
+// "like_evaluation_test"/"comment_evaluation_test" are their equivalents,
 // following the same _suffix convention rather than renaming the original two.
-export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play", "like_physical_test", "comment_physical_test"] as const;
+export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play", "like_physical_test", "comment_physical_test", "like_evaluation_test", "comment_evaluation_test"] as const;
 export type NotificationType = typeof NOTIFICATION_TYPES[number];
 
 // The in-app bell-icon feed for the social layer above — a coach was
-// followed, or one of their published exercises/plays/physical tests got a
-// like or a comment. Distinct from server/notify.ts (push/email session
-// reminders sent to a whole team); this is per-account, unread-tracked.
-// exerciseId/playId/physicalTestId are only meaningful for their matching
-// type (all null for "follow"); actorAccountId is always the coach who took
-// the action, never the recipient.
+// followed, or one of their published exercises/plays/physical tests/
+// evaluation tests got a like or a comment. Distinct from server/notify.ts
+// (push/email session reminders sent to a whole team); this is per-account,
+// unread-tracked. exerciseId/playId/physicalTestId/evaluationTestId are
+// only meaningful for their matching type (all null for "follow");
+// actorAccountId is always the coach who took the action, never the recipient.
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
@@ -238,6 +239,7 @@ export const notifications = pgTable("notifications", {
   exerciseId: integer("exercise_id").references(() => exercises.id, { onDelete: "cascade" }),
   playId: integer("play_id").references(() => plays.id, { onDelete: "cascade" }),
   physicalTestId: integer("physical_test_id").references(() => physicalTests.id, { onDelete: "cascade" }),
+  evaluationTestId: integer("evaluation_test_id").references(() => evaluationTests.id, { onDelete: "cascade" }),
   read: integer("read").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -368,19 +370,6 @@ export const pushSubscriptionSchema = z.object({
 });
 export type PushSubscriptionInput = z.infer<typeof pushSubscriptionSchema>;
 
-// One row per skill per evaluation — a coach rating a player submits all 5
-// categories at once (see skillRatingInputSchema below), inserted together
-// in a single multi-row statement so they share the exact same ratedAt and
-// can be grouped back into one "evaluation" by that timestamp without a
-// separate grouping id.
-export const skillRatings = pgTable("skill_ratings", {
-  id: serial("id").primaryKey(),
-  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
-  category: text("category").notNull(), // shooting | dribbling | defense | passing | conditioning
-  rating: integer("rating").notNull(), // 1-10
-  ratedAt: timestamp("rated_at").defaultNow(),
-});
-
 // A reusable physical-test template ("Sprint 3x court", measured in seconds)
 // — scoped by accountId like exercises, so a coach defines it once and runs
 // it with any of their teams. lowerIsBetter distinguishes timed tests (lower
@@ -436,6 +425,73 @@ export const physicalTestSaves = pgTable("physical_test_saves", {
 export const physicalTestResults = pgTable("physical_test_results", {
   id: serial("id").primaryKey(),
   testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  value: real("value").notNull(),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const EVALUATION_TEST_TYPES = ["time", "count"] as const;
+export type EvaluationTestType = (typeof EVALUATION_TEST_TYPES)[number];
+
+// A coach-defined test the app scores automatically on a 1-100 scale —
+// general player evaluation (physical AND skill, e.g. a timed sprint or
+// free throws made in a minute), not a sub-type of physicalTests. worstValue
+// is the raw result that scores 1, bestValue the one that scores 100 (see
+// computeEvaluationScore in shared/evaluationScore.ts); which one is
+// numerically larger encodes direction, so there's no separate
+// lowerIsBetter flag like physicalTests has. type is UI-only (icon/label
+// for "time" vs "count"), the score formula doesn't need it.
+export const evaluationTests = pgTable("evaluation_tests", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  type: text("type").notNull().$type<EvaluationTestType>(),
+  unit: text("unit").notNull(), // free text, e.g. "seconds", "makes"
+  worstValue: real("worst_value").notNull(),
+  bestValue: real("best_value").notNull(),
+  description: text("description"),
+  // 1 when a coach has opted this test into the cross-account community
+  // library — same scoping model as physicalTests.sharedToCommunity.
+  sharedToCommunity: integer("shared_to_community").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Same like/comment/save trio pattern as physicalTests — see its comments
+// above for why these stay separate explicit tables rather than one
+// polymorphic one.
+export const evaluationTestLikes = pgTable("evaluation_test_likes", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  testAccountUnique: unique().on(table.testId, table.accountId),
+}));
+
+export const evaluationTestComments = pgTable("evaluation_test_comments", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const evaluationTestSaves = pgTable("evaluation_test_saves", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  testAccountUnique: unique().on(table.testId, table.accountId),
+}));
+
+// One player's result on one occasion a test was run — recorded in bulk
+// (the whole active roster at once) or as a single quick entry from the
+// player's own profile, same shape either way.
+export const evaluationTestResults = pgTable("evaluation_test_results", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
   playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
   value: real("value").notNull(),
   date: text("date").notNull(),
@@ -625,19 +681,6 @@ export const EXERCISE_CATEGORIES = [
   "conditioning",
 ] as const;
 
-// Reuses the exercise library's own categories as the skill axes, so a
-// player's development profile lines up with what practices actually train.
-export const SKILL_CATEGORIES = EXERCISE_CATEGORIES;
-
-export const skillRatingInputSchema = z.object({
-  shooting: z.number().int().min(1).max(10),
-  dribbling: z.number().int().min(1).max(10),
-  defense: z.number().int().min(1).max(10),
-  passing: z.number().int().min(1).max(10),
-  conditioning: z.number().int().min(1).max(10),
-});
-export type SkillRatingInput = z.infer<typeof skillRatingInputSchema>;
-
 export const createPlayerNoteSchema = z.object({
   content: z.string().min(1, "Note can't be empty").max(2000),
 });
@@ -758,6 +801,38 @@ export const insertPhysicalTestSchema = createInsertSchema(physicalTests).omit({
 // in one sitting — a single date plus one value per player, inserted as a
 // batch instead of one request per player.
 export const recordPhysicalTestResultsSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  results: z.array(z.object({
+    playerId: z.number().int(),
+    value: z.number(),
+  })).min(1, "At least one result is required"),
+});
+
+// Split from insertEvaluationTestSchema below so routes.ts can call
+// .partial() on it for updates — ZodEffects (what .refine() returns)
+// doesn't support .partial().
+export const evaluationTestFieldsSchema = createInsertSchema(evaluationTests).omit({
+  id: true,
+  accountId: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Test name is required"),
+  type: z.enum(EVALUATION_TEST_TYPES),
+  unit: z.string().min(1, "Unit is required").max(20, "Unit is too long"),
+  worstValue: z.number(),
+  bestValue: z.number(),
+  description: z.string().max(500).nullable().optional(),
+});
+
+export const insertEvaluationTestSchema = evaluationTestFieldsSchema.refine((data) => data.worstValue !== data.bestValue, {
+  message: "The best and worst reference values must be different",
+  path: ["bestValue"],
+});
+
+// Same batch shape as recordPhysicalTestResultsSchema — a single result
+// entry (results: [{playerId, value}], length 1) is also how the profile's
+// quick single-player add reuses this same endpoint.
+export const recordEvaluationTestResultsSchema = z.object({
   date: z.string().min(1, "Date is required"),
   results: z.array(z.object({
     playerId: z.number().int(),
@@ -935,6 +1010,8 @@ export interface NotificationView {
   playName: string | null;
   physicalTestId: number | null;
   physicalTestName: string | null;
+  evaluationTestId: number | null;
+  evaluationTestName: string | null;
   read: boolean;
   createdAt: string | null;
 }
@@ -992,6 +1069,17 @@ export interface PhysicalTestCommentView {
   canDelete: boolean;
 }
 
+// Same shape again, for an evaluation test's comment thread.
+export interface EvaluationTestCommentView {
+  id: number;
+  testId: number;
+  accountId: number;
+  publicName: string | null;
+  body: string;
+  createdAt: string | null;
+  canDelete: boolean;
+}
+
 export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;
 export type PhysicalTest = typeof physicalTests.$inferSelect;
 export type PhysicalTestResult = typeof physicalTestResults.$inferSelect;
@@ -1015,6 +1103,32 @@ export interface PlayerPhysicalTestHistory {
   results: { value: number; date: string }[];
 }
 
+export type InsertEvaluationTest = z.infer<typeof insertEvaluationTestSchema>;
+export type EvaluationTest = typeof evaluationTests.$inferSelect;
+export type EvaluationTestResult = typeof evaluationTestResults.$inferSelect;
+export type RecordEvaluationTestResults = z.infer<typeof recordEvaluationTestResultsSchema>;
+
+// Same shape as RecordPhysicalTestResultsResponse — newRecordPlayerIds is
+// every player whose submitted value beat their own prior best on this test
+// (direction derived from bestValue vs worstValue).
+export interface RecordEvaluationTestResultsResponse {
+  results: EvaluationTestResult[];
+  newRecordPlayerIds: number[];
+}
+
+// One player's full history for one evaluation test template, newest-first
+// — worstValue/bestValue travel with it so the client can compute each
+// result's 1-100 score (see computeEvaluationScore) without a second fetch.
+export interface PlayerEvaluationTestHistory {
+  testId: number;
+  testName: string;
+  type: EvaluationTestType;
+  unit: string;
+  worstValue: number;
+  bestValue: number;
+  results: { value: number; date: string }[];
+}
+
 export type InsertTrainingSession = z.infer<typeof insertTrainingSessionSchema>;
 export type TrainingSession = typeof trainingSessions.$inferSelect;
 
@@ -1027,19 +1141,9 @@ export type RecurringPracticeSlot = typeof recurringPracticeSlots.$inferSelect;
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
 export type Player = typeof players.$inferSelect;
 
-export type SkillRating = typeof skillRatings.$inferSelect;
 export type PlayerNote = typeof playerNotes.$inferSelect;
 export type PlayerInjury = typeof playerInjuries.$inferSelect;
 export type DrillAttempt = typeof drillAttempts.$inferSelect;
-
-// A player's development profile: current standing (latest rating per
-// category, null until the coach rates them at least once), every past
-// evaluation for the trend view, and the coach's running notes.
-export interface PlayerDevelopment {
-  current: Record<string, number> | null;
-  history: { category: string; rating: number; ratedAt: string }[];
-  notes: PlayerNote[];
-}
 
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type Attendance = typeof attendance.$inferSelect;

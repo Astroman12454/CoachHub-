@@ -32,7 +32,7 @@ describe("balanceTeams", () => {
     expect(Math.abs(teamA.averageScore - teamB.averageScore)).toBeLessThan(2);
   });
 
-  it("treats a player with no ratings as a neutral mid-scale score instead of zero", () => {
+  it("treats a player with no scores as a neutral mid-scale score instead of zero", () => {
     const players = roster(2);
     const ratings: Record<number, Record<string, number>> = {
       1: { shooting: 10, dribbling: 10, defense: 10, passing: 10, conditioning: 10 },
@@ -41,7 +41,7 @@ describe("balanceTeams", () => {
 
     const teams = balanceTeams(players, ratings, 2);
     const unratedTeam = teams.find((t) => t.players.some((p) => p.id === 2))!;
-    expect(unratedTeam.averageScore).toBe(5);
+    expect(unratedTeam.averageScore).toBe(50);
   });
 
   it("handles a roster that doesn't divide evenly across teams", () => {

@@ -107,6 +107,14 @@ export default async function globalSetup(config: FullConfig) {
     });
   }
 
+  const evaluationTestsRes = await page.request.get("/api/evaluation-tests");
+  const evaluationTests = await evaluationTestsRes.json();
+  if (evaluationTests.length === 0) {
+    await page.request.post("/api/evaluation-tests", {
+      data: { name: "E2E Evaluation Sprint", type: "time", unit: "seconds", worstValue: 15, bestValue: 5, description: "3 sprints across the court, scored 1-100" },
+    });
+  }
+
   // Publishing to the community now requires a public name set — do this
   // once here rather than in every test that shares an exercise, same
   // reasoning as the rest of this file's idempotent setup.

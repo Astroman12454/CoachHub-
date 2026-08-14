@@ -33,6 +33,8 @@ const CoachProfile = lazy(() => import("@/pages/CoachProfile"));
 const ExerciseDiagramEditor = lazy(() => import("@/pages/ExerciseDiagramEditor"));
 const PhysicalTests = lazy(() => import("@/pages/PhysicalTests"));
 const CommunityPhysicalTests = lazy(() => import("@/pages/CommunityPhysicalTests"));
+const Evaluations = lazy(() => import("@/pages/Evaluations"));
+const CommunityEvaluations = lazy(() => import("@/pages/CommunityEvaluations"));
 const Players = lazy(() => import("@/pages/Players"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
@@ -114,6 +116,8 @@ const CoachProfileRoute = withLayout(CoachProfile);
 const ExerciseDiagramEditorRoute = withLayout(ExerciseDiagramEditor);
 const PhysicalTestsRoute = withLayout(PhysicalTests);
 const CommunityPhysicalTestsRoute = withLayout(CommunityPhysicalTests);
+const EvaluationsRoute = withLayout(Evaluations);
+const CommunityEvaluationsRoute = withLayout(CommunityEvaluations);
 const PlayersRoute = withLayout(Players);
 const PlayerProfileRoute = withLayout(PlayerProfile);
 const WeeklyScheduleRoute = withLayout(WeeklySchedule);
@@ -152,6 +156,8 @@ function Router() {
       <Route path="/exercise-library/:id/diagram" component={ExerciseDiagramEditorRoute} />
       <Route path="/physical-tests" component={PhysicalTestsRoute} />
       <Route path="/physical-tests/community" component={CommunityPhysicalTestsRoute} />
+      <Route path="/evaluations" component={EvaluationsRoute} />
+      <Route path="/evaluations/community" component={CommunityEvaluationsRoute} />
       <Route path="/players" component={PlayersRoute} />
       <Route path="/players/:id" component={PlayerProfileRoute} />
       <Route path="/weekly-schedule" component={WeeklyScheduleRoute} />

@@ -41,6 +41,7 @@
     "playbook": "Jugadas",
     "exerciseLibrary": "Biblioteca de Ejercicios",
     "physicalTests": "Pruebas Físicas",
+    "evaluations": "Evaluaciones",
     "players": "Jugadores",
     "coaches": "Entrenadores",
     "account": "Cuenta"
@@ -382,8 +383,8 @@
     "couldntLoadPlayer": "No se pudo cargar este jugador",
     "couldntLoadPlayerDescription": "Puede que haya sido eliminado, o algo salió mal al cargar su perfil.",
     "backToPlayers": "Volver a jugadores",
-    "ratePlayer": "Valorar Jugador",
-    "rate": "Valorar",
+    "addResult": "Añadir Resultado",
+    "addResultShort": "Añadir",
     "seasonReport": "Informe de Temporada",
     "report": "Informe",
     "couldntExportReport": "No se pudo exportar el informe de temporada",
@@ -394,10 +395,9 @@
     "gamesPlayed": "Partidos Jugados",
     "seasonPoints": "Puntos de Temporada",
     "seasonAssists": "Asistencias de Temporada",
-    "skillDevelopment": "Desarrollo de Habilidades",
-    "noRatingsYet": "Aún no hay valoraciones — toca \"Valorar Jugador\" para empezar a seguir su desarrollo.",
-    "ratingHistory": "Historial de Valoraciones",
-    "noEvaluationsYet": "Aún no hay evaluaciones registradas.",
+    "evaluations": "Evaluaciones",
+    "overallScoreOutOf100": "Puntuación global (sobre 100)",
+    "noEvaluationsYet": "Aún no hay resultados de evaluación registrados — toca \"Añadir Resultado\" para empezar a seguirlos.",
     "date": "Fecha",
     "coachNotes": "Notas del Entrenador",
     "notePlaceholder": "Observaciones, objetivos, cosas en las que trabajar…",
@@ -479,18 +479,23 @@
     "captain": "Capitán",
     "adding": "Añadiendo..."
   },
-  "ratePlayerDialog": {
-    "ratingSaved": "Valoración guardada",
-    "ratingSavedDescription": "Se actualizó el perfil de desarrollo del jugador.",
-    "couldntSaveRating": "No se pudo guardar la valoración",
-    "rateTitle": "Valorar a {{name}}",
-    "player": "Jugador",
-    "dialogDescription": "Puntúa cada habilidad del 1 al 10. Esto añade una nueva instantánea a su historial de desarrollo — no sobrescribe valoraciones anteriores.",
-    "savingEllipsis": "Guardando…",
-    "saveRating": "Guardar Valoración"
+  "evaluationScoreChart": {
+    "ariaLabel": "Gráfico de evolución de puntuación: de {{first}} a {{last}} sobre 100, tendencia {{trend}}",
+    "scoreLabel": "{{score}} ({{value}} {{unit}})"
   },
-  "skillRadarChart": {
-    "ariaLabel": "Gráfico de radar de habilidades"
+  "quickAddEvaluationResult": {
+    "title": "Añadir Resultado de Evaluación",
+    "description": "Registra un único resultado para {{name}} en un test.",
+    "test": "Test",
+    "testPlaceholder": "Selecciona un test",
+    "noTests": "Aún no hay tests de evaluación — crea uno desde la página de Evaluaciones.",
+    "value": "Valor",
+    "valueWithUnit": "Valor ({{unit}})",
+    "scorePreview": "Puntuación: {{score}} / 100",
+    "save": "Guardar Resultado",
+    "savedTitle": "Resultado guardado",
+    "savedDescription": "Se actualizó el historial de evaluación del jugador.",
+    "couldntSave": "No se pudo guardar el resultado"
   },
   "physicalTestChart": {
     "ariaLabel": "Gráfico de evolución: de {{first}} a {{last}} {{unit}}, tendencia {{trend}}",
@@ -503,7 +508,7 @@
   "scrimmageBalancer": {
     "openButton": "Equilibrar Equipos",
     "title": "Equilibrar Equipos de Scrimmage",
-    "description": "Divide el plantel activo de hoy en equipos parejos según las calificaciones de habilidad actuales. Nada de esto se guarda.",
+    "description": "Divide el plantel activo de hoy en equipos parejos según las puntuaciones de evaluación actuales. Nada de esto se guarda.",
     "numberOfTeams": "Cantidad de equipos",
     "includePlayers_one": "Incluir jugadores ({{count}} seleccionado)",
     "includePlayers_other": "Incluir jugadores ({{count}} seleccionados)",
@@ -512,8 +517,8 @@
     "shuffleAgain": "Mezclar de Nuevo",
     "notEnoughPlayers": "Selecciona al menos tantos jugadores como equipos.",
     "teamLabel": "Equipo {{number}}",
-    "averageScore": "Habilidad prom.: {{score}}",
-    "unrated": "(sin calificar)",
+    "averageScore": "Puntuación prom.: {{score}}",
+    "unrated": "(sin puntuar)",
     "moveTo": "Mover a {{name}} al equipo"
   },
   "playerPortalDialog": {
@@ -863,6 +868,27 @@
     "unsave": "Quitar de guardadas {{name}}",
     "viewComments": "Ver comentarios de {{name}}"
   },
+  "communityEvaluations": {
+    "title": "Evaluaciones de la Comunidad",
+    "subtitle": "Explora e importa tests de evaluación que otros entrenadores compartieron públicamente",
+    "backToTests": "Volver a evaluaciones",
+    "emptyTitle": "Aún No Hay Tests de Evaluación de la Comunidad",
+    "emptyDescription": "Ningún entrenador compartió un test de evaluación con la comunidad todavía — comparte uno de los tuyos desde Evaluaciones.",
+    "emptyFollowingDescription": "Sigue a un entrenador desde su perfil para ver aquí sus tests de evaluación compartidos.",
+    "emptySavedTitle": "Aún No Hay Tests de Evaluación Guardados",
+    "emptySavedDescription": "Guarda un test de evaluación de la comunidad para encontrarlo aquí más tarde.",
+    "imported": "Test de evaluación importado",
+    "importedDescription": "\"{{name}}\" se añadió a tus tests de evaluación.",
+    "couldntImport": "No se pudo importar el test de evaluación",
+    "importName": "Importar {{name}}",
+    "couldntUpdateLike": "No se pudo actualizar el me gusta",
+    "couldntUpdateSave": "No se pudo actualizar el test guardado",
+    "like": "Me gusta {{name}}",
+    "unlike": "Ya no me gusta {{name}}",
+    "save": "Guardar {{name}}",
+    "unsave": "Quitar de guardadas {{name}}",
+    "viewComments": "Ver comentarios de {{name}}"
+  },
   "coachProfile": {
     "title": "Perfil del Entrenador",
     "subtitle": "Perfil público y ejercicios compartidos",
@@ -887,7 +913,9 @@
     "likePlayText": "A {{name}} le gustó tu jugada \"{{play}}\"",
     "commentPlayText": "{{name}} comentó en tu jugada \"{{play}}\"",
     "likePhysicalTestText": "A {{name}} le gustó tu prueba física \"{{test}}\"",
-    "commentPhysicalTestText": "{{name}} comentó en tu prueba física \"{{test}}\""
+    "commentPhysicalTestText": "{{name}} comentó en tu prueba física \"{{test}}\"",
+    "likeEvaluationTestText": "A {{name}} le gustó tu test de evaluación \"{{test}}\"",
+    "commentEvaluationTestText": "{{name}} comentó en tu test de evaluación \"{{test}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",
@@ -998,6 +1026,63 @@
     "failedToCreate": "No se pudo crear la prueba"
   },
   "recordTestResultsDialog": {
+    "title": "Registrar Resultados — {{name}}",
+    "description": "Ingresá el resultado de cada jugador activo en {{unit}}. Dejá un jugador en blanco para omitirlo.",
+    "date": "Fecha",
+    "noActivePlayers": "Todavía no hay jugadores activos en este equipo.",
+    "filledCount": "{{count}}/{{total}} cargados",
+    "save": "Guardar Resultados",
+    "savedTitle": "Resultados guardados",
+    "savedDescription": "Se registraron los resultados del equipo.",
+    "couldntSave": "No se pudieron guardar los resultados",
+    "newRecordTitle": "¡Nuevo récord personal!",
+    "newRecordDescription_one": "{{names}} acaba de superar su mejor marca personal.",
+    "newRecordDescription_other": "{{names}} acaban de superar su mejor marca personal."
+  },
+  "evaluations": {
+    "subtitle": "Puntuá a tu plantel automáticamente — pruebas físicas y técnicas, del 1 al 100",
+    "searchPlaceholder": "Buscar tests...",
+    "addTest": "Agregar Test",
+    "recordResults": "Registrar Resultados",
+    "editTestFor": "Editar {{name}}",
+    "deleteTestFor": "Eliminar {{name}}",
+    "emptyTitle": "Todavía No Hay Tests de Evaluación",
+    "emptyFilterDescription": "Ningún test coincide con tu búsqueda.",
+    "emptyDescription": "Creá un test (un sprint cronometrado, o tiros libres encestados en un minuto) y la app puntuará cada resultado del 1 al 100.",
+    "addFirstTest": "Agregar Primer Test",
+    "failedToDelete": "No se pudo eliminar el test",
+    "deletedToast": "\"{{name}}\" eliminado.",
+    "deleteConfirmTitle": "¿Eliminar este test?",
+    "deleteConfirmDescription": "Esto eliminará permanentemente \"{{name}}\" y todos los resultados registrados para él. No se puede deshacer.",
+    "community": "Comunidad",
+    "addToCommunity": "Añadir {{name}} a la comunidad",
+    "removeFromCommunity": "Quitar {{name}} de la comunidad",
+    "couldntUpdateCommunityShare": "No se pudo actualizar el estado en la comunidad"
+  },
+  "evaluationTestForm": {
+    "editTest": "Editar Test de Evaluación",
+    "createNewTest": "Crear Nuevo Test de Evaluación",
+    "dialogDescription": "Definí el nombre del test, el tipo, la unidad, y el rango de referencia que usa la app para puntuar los resultados del 1 al 100.",
+    "testName": "Nombre del Test",
+    "testNamePlaceholder": "ej., Sprint 3x Cancha, Tiros Libres en 60s",
+    "type": "Tipo",
+    "type_time": "Cronometrado",
+    "type_count": "Aciertos",
+    "unit": "Unidad",
+    "unitPlaceholder": "ej., segundos, aciertos",
+    "worstValue": "Peor resultado (= 1 punto)",
+    "worstValueDescription": "El resultado que debería valer 1 sobre 100.",
+    "bestValue": "Mejor resultado (= 100 puntos)",
+    "bestValueDescription": "El resultado que debería valer 100 sobre 100.",
+    "descriptionOptional": "Descripción (Opcional)",
+    "descriptionPlaceholder": "Cómo administrar este test...",
+    "createTest": "Crear Test",
+    "updatedSuccessfully": "Test actualizado correctamente",
+    "createdSuccessfully": "Test creado correctamente",
+    "failedToUpdate": "No se pudo actualizar el test",
+    "failedToCreate": "No se pudo crear el test"
+  },
+  "recordEvaluationResultsDialog": {
     "title": "Registrar Resultados — {{name}}",
     "description": "Ingresá el resultado de cada jugador activo en {{unit}}. Dejá un jugador en blanco para omitirlo.",
     "date": "Fecha",
