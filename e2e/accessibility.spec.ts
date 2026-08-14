@@ -1353,6 +1353,106 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  test("evaluations", async ({ page }) => {
+    await login(page);
+    await page.goto("/evaluations");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Evaluation Sprint");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("evaluations — create test form open", async ({ page }) => {
+    await login(page);
+    await page.goto("/evaluations");
+    await page.click('button:has-text("Add Test")');
+    await page.waitForSelector("text=Create New Evaluation Test");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("community evaluations page — likes, saves, and comments a shared test", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/evaluation-tests", {
+      data: { name: "E2E Community Evaluation", type: "time", unit: "seconds", worstValue: 15, bestValue: 5, description: "Shared for community testing" },
+    });
+    const test = await create.json();
+    await page.request.put(`/api/evaluation-tests/${test.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/evaluations/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Community Evaluation");
+
+    await page.click('button[aria-label="Like E2E Community Evaluation"]');
+    await expect(page.locator('button[aria-label="Unlike E2E Community Evaluation"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button[aria-label="Save E2E Community Evaluation"]');
+    await expect(page.locator('button[aria-label="Unsave E2E Community Evaluation"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.click('button[aria-label="View comments on E2E Community Evaluation"]');
+    await page.fill('textarea[aria-label="Add a comment…"]', "Solid test!");
+    await page.click('button:has-text("Post")');
+    await page.waitForSelector("text=Solid test!");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/evaluation-tests/${test.id}`);
+  });
+
+  test("evaluations — record results dialog open", async ({ page }) => {
+    await login(page);
+    await page.goto("/evaluations");
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Record Results")');
+    await page.waitForSelector("text=Record Results — E2E Evaluation Sprint");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("player profile — evaluation score chart", async ({ page }) => {
+    await login(page);
+    const playerRes = await page.request.post("/api/players", { data: { name: "E2E Evaluation Chart Player", isActive: 1 } });
+    const player = await playerRes.json();
+    const testsRes = await page.request.get("/api/evaluation-tests");
+    const tests = await testsRes.json();
+    const sprintTest = tests.find((t: { name: string }) => t.name === "E2E Evaluation Sprint");
+    await page.request.post(`/api/evaluation-tests/${sprintTest.id}/results`, {
+      data: { date: "2026-01-01", results: [{ playerId: player.id, value: 10.0 }] },
+    });
+    await page.request.post(`/api/evaluation-tests/${sprintTest.id}/results`, {
+      data: { date: "2026-02-01", results: [{ playerId: player.id, value: 9.5 }] },
+    });
+
+    await page.goto(`/players/${player.id}`);
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("E2E Evaluation Sprint")');
+    await page.waitForSelector('svg[aria-label^="Score trend chart"]');
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
+  test("player profile — quick-add evaluation result", async ({ page }) => {
+    await login(page);
+    const playerRes = await page.request.post("/api/players", { data: { name: "E2E Quick Add Player", isActive: 1 } });
+    const player = await playerRes.json();
+
+    await page.goto(`/players/${player.id}`);
+    await page.waitForLoadState("networkidle");
+    await page.click('button:has-text("Add Result")');
+    await page.waitForSelector("text=Add Evaluation Result");
+    await page.locator("#quick-add-test").click();
+    await page.getByRole("option", { name: "E2E Evaluation Sprint" }).click();
+    await page.fill("#quick-add-value", "9.5");
+    await page.click('button:has-text("Save Result")');
+    await page.waitForSelector("text=Result saved");
+    await page.waitForSelector("text=E2E Evaluation Sprint");
+    // Same pre-existing Radix Toast a11y issue disabled in the physical
+    // tests "new personal record" test above — not introduced by this
+    // feature, just triggered here by the same visible toast.
+    const results = await scan(page, { disableRules: ["aria-hidden-focus", "list", "aria-allowed-role"] });
+    expect(summarize(results.violations)).toEqual([]);
+  });
+
   test("players", async ({ page }) => {
     await login(page);
     await page.goto("/players");
@@ -1456,20 +1556,20 @@ test.describe("accessibility (axe)", () => {
     await page.goto("/players");
     await page.waitForLoadState("networkidle");
     await page.locator('[role="button"][aria-label^="View "]').first().click();
-    await page.waitForSelector("text=Rate Player");
+    await page.waitForSelector("text=Add Result");
     await page.waitForLoadState("networkidle");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
 
-  test("player profile — rate player dialog open", async ({ page }) => {
+  test("player profile — add evaluation result dialog open", async ({ page }) => {
     await login(page);
     await page.goto("/players");
     await page.waitForLoadState("networkidle");
     await page.locator('[role="button"][aria-label^="View "]').first().click();
-    await page.waitForSelector("text=Rate Player");
-    await page.click('button:has-text("Rate Player")');
-    await page.waitForSelector("text=Score each skill");
+    await page.waitForSelector("text=Add Result");
+    await page.click('button:has-text("Add Result")');
+    await page.waitForSelector("text=Add Evaluation Result");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -1479,7 +1579,7 @@ test.describe("accessibility (axe)", () => {
     await page.goto("/players");
     await page.waitForLoadState("networkidle");
     await page.locator('[role="button"][aria-label^="View "]').first().click();
-    await page.waitForSelector("text=Rate Player");
+    await page.waitForSelector("text=Add Result");
     const downloadPromise = page.waitForEvent("download");
     await page.click('button:has-text("Season Report")');
     const download = await downloadPromise;
@@ -1491,7 +1591,7 @@ test.describe("accessibility (axe)", () => {
     await page.goto("/players");
     await page.waitForLoadState("networkidle");
     await page.locator('[role="button"][aria-label^="View "]').first().click();
-    await page.waitForSelector("text=Rate Player");
+    await page.waitForSelector("text=Add Result");
     await page.fill('input[aria-label="Injury description"]', "Sprained ankle");
     await page.click('button:has-text("Report Injury")');
     await page.waitForSelector("text=Sprained ankle");
@@ -2190,7 +2290,7 @@ test.describe("accessibility (axe)", () => {
 
     // A long player name grows the identity block to two or three lines at
     // this width — regression check for a real bug found on-device: the
-    // header used to keep the name and the Report/Rate buttons on one
+    // header used to keep the name and the Report/Add action buttons on one
     // non-wrapping row, so a tall wrapped name put the buttons right on top
     // of it. Axe's color-contrast rule doesn't catch geometric overlap like
     // this, so the check here is an explicit bounding-box comparison.
@@ -2204,11 +2304,11 @@ test.describe("accessibility (axe)", () => {
       await page.waitForLoadState("networkidle");
 
       const nameBox = await page.locator("h2").first().boundingBox();
-      const rateBox = await page.getByRole("button", { name: /^Rate$/ }).boundingBox();
+      const addBox = await page.getByRole("button", { name: /^Add$/ }).boundingBox();
       expect(nameBox).toBeTruthy();
-      expect(rateBox).toBeTruthy();
+      expect(addBox).toBeTruthy();
       // No vertical overlap between the two boxes.
-      const noOverlap = nameBox!.y + nameBox!.height <= rateBox!.y || rateBox!.y + rateBox!.height <= nameBox!.y;
+      const noOverlap = nameBox!.y + nameBox!.height <= addBox!.y || addBox!.y + addBox!.height <= nameBox!.y;
       expect(noOverlap).toBe(true);
 
       // Same pre-existing, out-of-scope gap noted on the bottom-nav tests

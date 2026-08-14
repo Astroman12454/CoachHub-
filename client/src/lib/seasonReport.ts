@@ -1,11 +1,16 @@
-import type { PlayerDevelopment, DrillAttempt } from "@shared/schema";
-import { SKILL_CATEGORIES } from "@shared/schema";
+import type { PlayerEvaluationTestHistory, DrillAttempt } from "@shared/schema";
+import { computeEvaluationScore } from "@shared/evaluationScore";
 
-export interface SkillProgressRow {
-  category: string;
+export interface EvaluationProgressRow {
+  testId: number;
+  testName: string;
+  unit: string;
   first: number;
   latest: number;
   delta: number;
+  firstScore: number;
+  latestScore: number;
+  scoreDelta: number;
 }
 
 export interface DrillSummaryRow {
@@ -16,7 +21,7 @@ export interface DrillSummaryRow {
 }
 
 export interface SeasonReportSummary {
-  skillProgress: SkillProgressRow[];
+  evaluationProgress: EvaluationProgressRow[];
   overallShooting: { made: number; total: number; pct: number } | null;
   topDrills: DrillSummaryRow[];
 }
@@ -25,26 +30,29 @@ export interface SeasonReportSummary {
 // — kept separate from the jsPDF rendering so the numbers themselves are
 // unit-testable without mocking a PDF library.
 export function buildSeasonReportSummary(
-  development: PlayerDevelopment,
+  evaluationHistory: PlayerEvaluationTestHistory[],
   drillAttempts: DrillAttempt[],
 ): SeasonReportSummary {
-  // development.history is newest-first (see server/storage.ts's
-  // getPlayerDevelopment), so the last row seen per category as we iterate
-  // forward is the oldest — exactly the "first" rating we want.
-  const latestByCategory = new Map<string, number>();
-  const firstByCategory = new Map<string, number>();
-  for (const row of development.history) {
-    if (!latestByCategory.has(row.category)) latestByCategory.set(row.category, row.rating);
-    firstByCategory.set(row.category, row.rating);
-  }
-
-  const skillProgress: SkillProgressRow[] = SKILL_CATEGORIES
-    .filter((category) => latestByCategory.has(category))
-    .map((category) => {
-      const first = firstByCategory.get(category)!;
-      const latest = latestByCategory.get(category)!;
-      return { category, first, latest, delta: latest - first };
-    });
+  // Each test's results are newest-first (see server/storage.ts's
+  // getEvaluationTestResultsForPlayer), so the first entry is the latest
+  // result and the last entry is the oldest ("first") one.
+  const evaluationProgress: EvaluationProgressRow[] = evaluationHistory.map((test) => {
+    const latest = test.results[0].value;
+    const first = test.results[test.results.length - 1].value;
+    const latestScore = computeEvaluationScore(latest, test.worstValue, test.bestValue);
+    const firstScore = computeEvaluationScore(first, test.worstValue, test.bestValue);
+    return {
+      testId: test.testId,
+      testName: test.testName,
+      unit: test.unit,
+      first,
+      latest,
+      delta: latest - first,
+      firstScore,
+      latestScore,
+      scoreDelta: latestScore - firstScore,
+    };
+  });
 
   const shotTotals = drillAttempts.reduce(
     (acc, a) => ({ made: acc.made + a.made, total: acc.total + 1 }),
@@ -66,5 +74,5 @@ export function buildSeasonReportSummary(
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 
-  return { skillProgress, overallShooting, topDrills };
+  return { evaluationProgress, overallShooting, topDrills };
 }

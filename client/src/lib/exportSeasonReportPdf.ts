@@ -1,13 +1,5 @@
-import type { Player, PlayerDevelopment, PlayerGameStatsSummary, DrillAttempt } from "@shared/schema";
+import type { Player, PlayerEvaluationTestHistory, PlayerGameStatsSummary, DrillAttempt } from "@shared/schema";
 import { buildSeasonReportSummary } from "./seasonReport";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  shooting: "Shooting",
-  dribbling: "Dribbling",
-  defense: "Defense",
-  passing: "Passing",
-  conditioning: "Conditioning",
-};
 
 function deltaLabel(delta: number): string {
   if (delta > 0) return `+${delta}`;
@@ -21,7 +13,7 @@ function deltaLabel(delta: number): string {
 export async function exportSeasonReportPdf(
   player: Player,
   attendanceStats: { total: number; present: number; rate: number },
-  development: PlayerDevelopment,
+  evaluationHistory: PlayerEvaluationTestHistory[],
   gameStats: PlayerGameStatsSummary | undefined,
   drillAttempts: DrillAttempt[],
 ): Promise<void> {
@@ -77,21 +69,24 @@ export async function exportSeasonReportPdf(
   );
   y += 26;
 
-  const { skillProgress, overallShooting, topDrills } = buildSeasonReportSummary(development, drillAttempts);
+  const { evaluationProgress, overallShooting, topDrills } = buildSeasonReportSummary(evaluationHistory, drillAttempts);
 
-  sectionHeading("Skill Development");
-  if (skillProgress.length === 0) {
+  sectionHeading("Evaluations");
+  if (evaluationProgress.length === 0) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10.5);
-    doc.text("No skill ratings recorded yet.", marginX, y);
+    doc.text("No evaluation results recorded yet.", marginX, y);
     y += 26;
   } else {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10.5);
-    for (const row of skillProgress) {
+    for (const row of evaluationProgress) {
       ensureSpace(16);
-      const label = CATEGORY_LABELS[row.category] ?? row.category;
-      doc.text(`${label}:  ${row.first} → ${row.latest} (${deltaLabel(row.delta)})`, marginX, y);
+      doc.text(
+        `${row.testName}:  Score ${row.firstScore} → ${row.latestScore} (${deltaLabel(row.scoreDelta)})   [${row.first} → ${row.latest} ${row.unit}]`,
+        marginX,
+        y,
+      );
       y += 16;
     }
     y += 10;

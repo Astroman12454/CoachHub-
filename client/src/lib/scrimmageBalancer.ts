@@ -1,8 +1,8 @@
 // Pure computation, no persistence — the same pattern as seasonReport.ts.
 // Splits a roster into N scrimmage teams that are as evenly matched as
-// possible, using each player's current skill ratings.
+// possible, using each player's current evaluation scores (1-100).
 
-const DEFAULT_SCORE = 5; // neutral mid-scale score for a player with no ratings yet
+const DEFAULT_SCORE = 50; // neutral mid-scale score for a player with no evaluation results yet
 
 export interface BalancerPlayer {
   id: number;

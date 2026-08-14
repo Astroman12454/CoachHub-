@@ -41,6 +41,7 @@
     "playbook": "Playbook",
     "exerciseLibrary": "Exercise Library",
     "physicalTests": "Physical Tests",
+    "evaluations": "Evaluations",
     "players": "Players",
     "coaches": "Coaches",
     "account": "Account"
@@ -382,8 +383,8 @@
     "couldntLoadPlayer": "Couldn't load this player",
     "couldntLoadPlayerDescription": "They may have been removed, or something went wrong loading their profile.",
     "backToPlayers": "Back to players",
-    "ratePlayer": "Rate Player",
-    "rate": "Rate",
+    "addResult": "Add Result",
+    "addResultShort": "Add",
     "seasonReport": "Season Report",
     "report": "Report",
     "couldntExportReport": "Couldn't export the season report",
@@ -394,10 +395,9 @@
     "gamesPlayed": "Games Played",
     "seasonPoints": "Season Points",
     "seasonAssists": "Season Assists",
-    "skillDevelopment": "Skill Development",
-    "noRatingsYet": "No ratings yet — tap \"Rate Player\" to start tracking development.",
-    "ratingHistory": "Rating History",
-    "noEvaluationsYet": "No evaluations recorded yet.",
+    "evaluations": "Evaluations",
+    "overallScoreOutOf100": "Overall score (out of 100)",
+    "noEvaluationsYet": "No evaluation results recorded yet — tap \"Add Result\" to start tracking.",
     "date": "Date",
     "coachNotes": "Coach Notes",
     "notePlaceholder": "Observations, goals, things to work on…",
@@ -479,18 +479,23 @@
     "captain": "Captain",
     "adding": "Adding..."
   },
-  "ratePlayerDialog": {
-    "ratingSaved": "Rating saved",
-    "ratingSavedDescription": "The player's development profile is updated.",
-    "couldntSaveRating": "Couldn't save rating",
-    "rateTitle": "Rate {{name}}",
-    "player": "Player",
-    "dialogDescription": "Score each skill from 1 to 10. This adds a new snapshot to their development history — it doesn't overwrite past ratings.",
-    "savingEllipsis": "Saving…",
-    "saveRating": "Save Rating"
+  "evaluationScoreChart": {
+    "ariaLabel": "Score trend chart: from {{first}} to {{last}} out of 100, trending {{trend}}",
+    "scoreLabel": "{{score}} ({{value}} {{unit}})"
   },
-  "skillRadarChart": {
-    "ariaLabel": "Skill radar chart"
+  "quickAddEvaluationResult": {
+    "title": "Add Evaluation Result",
+    "description": "Record a single result for {{name}} on one test.",
+    "test": "Test",
+    "testPlaceholder": "Select a test",
+    "noTests": "No evaluation tests yet — create one from the Evaluations page.",
+    "value": "Value",
+    "valueWithUnit": "Value ({{unit}})",
+    "scorePreview": "Score: {{score}} / 100",
+    "save": "Save Result",
+    "savedTitle": "Result saved",
+    "savedDescription": "The player's evaluation history is updated.",
+    "couldntSave": "Couldn't save result"
   },
   "physicalTestChart": {
     "ariaLabel": "Trend chart: from {{first}} to {{last}} {{unit}}, trending {{trend}}",
@@ -503,7 +508,7 @@
   "scrimmageBalancer": {
     "openButton": "Balance Teams",
     "title": "Balance Scrimmage Teams",
-    "description": "Split today's active roster into evenly matched teams based on current skill ratings. Nothing here is saved.",
+    "description": "Split today's active roster into evenly matched teams based on current evaluation scores. Nothing here is saved.",
     "numberOfTeams": "Number of teams",
     "includePlayers_one": "Include players ({{count}} selected)",
     "includePlayers_other": "Include players ({{count}} selected)",
@@ -512,8 +517,8 @@
     "shuffleAgain": "Shuffle Again",
     "notEnoughPlayers": "Select at least as many players as teams.",
     "teamLabel": "Team {{number}}",
-    "averageScore": "Avg. skill: {{score}}",
-    "unrated": "(unrated)",
+    "averageScore": "Avg. score: {{score}}",
+    "unrated": "(unscored)",
     "moveTo": "Move {{name}} to team"
   },
   "playerPortalDialog": {
@@ -863,6 +868,27 @@
     "unsave": "Unsave {{name}}",
     "viewComments": "View comments on {{name}}"
   },
+  "communityEvaluations": {
+    "title": "Community Evaluations",
+    "subtitle": "Browse and import evaluation tests other coaches have shared publicly",
+    "backToTests": "Back to evaluations",
+    "emptyTitle": "No Community Evaluation Tests Yet",
+    "emptyDescription": "No coach has shared an evaluation test to the community yet — share one of your own from Evaluations.",
+    "emptyFollowingDescription": "Follow a coach from their profile to see their shared evaluation tests here.",
+    "emptySavedTitle": "No Saved Evaluation Tests Yet",
+    "emptySavedDescription": "Bookmark an evaluation test from the community to find it here later.",
+    "imported": "Evaluation test imported",
+    "importedDescription": "\"{{name}}\" was added to your evaluation tests.",
+    "couldntImport": "Couldn't import evaluation test",
+    "importName": "Import {{name}}",
+    "couldntUpdateLike": "Couldn't update like",
+    "couldntUpdateSave": "Couldn't update saved evaluation test",
+    "like": "Like {{name}}",
+    "unlike": "Unlike {{name}}",
+    "save": "Save {{name}}",
+    "unsave": "Unsave {{name}}",
+    "viewComments": "View comments on {{name}}"
+  },
   "coachProfile": {
     "title": "Coach Profile",
     "subtitle": "Public profile and shared exercises",
@@ -887,7 +913,9 @@
     "likePlayText": "{{name}} liked your play \"{{play}}\"",
     "commentPlayText": "{{name}} commented on your play \"{{play}}\"",
     "likePhysicalTestText": "{{name}} liked your physical test \"{{test}}\"",
-    "commentPhysicalTestText": "{{name}} commented on your physical test \"{{test}}\""
+    "commentPhysicalTestText": "{{name}} commented on your physical test \"{{test}}\"",
+    "likeEvaluationTestText": "{{name}} liked your evaluation test \"{{test}}\"",
+    "commentEvaluationTestText": "{{name}} commented on your evaluation test \"{{test}}\""
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",
@@ -998,6 +1026,63 @@
     "failedToCreate": "Failed to create test"
   },
   "recordTestResultsDialog": {
+    "title": "Record Results — {{name}}",
+    "description": "Enter each active player's result in {{unit}}. Leave a player blank to skip them.",
+    "date": "Date",
+    "noActivePlayers": "No active players on this team yet.",
+    "filledCount": "{{count}}/{{total}} entered",
+    "save": "Save Results",
+    "savedTitle": "Results saved",
+    "savedDescription": "The team's results were recorded.",
+    "couldntSave": "Couldn't save results",
+    "newRecordTitle": "New personal record!",
+    "newRecordDescription_one": "{{names}} just beat their personal best.",
+    "newRecordDescription_other": "{{names}} just beat their personal bests."
+  },
+  "evaluations": {
+    "subtitle": "Score your roster automatically — physical and skill tests alike, 1 to 100",
+    "searchPlaceholder": "Search tests...",
+    "addTest": "Add Test",
+    "recordResults": "Record Results",
+    "editTestFor": "Edit {{name}}",
+    "deleteTestFor": "Delete {{name}}",
+    "emptyTitle": "No Evaluation Tests Yet",
+    "emptyFilterDescription": "No tests match your search.",
+    "emptyDescription": "Create a test (a timed sprint, or free throws made in a minute) and the app will score every result 1-100.",
+    "addFirstTest": "Add First Test",
+    "failedToDelete": "Failed to delete test",
+    "deletedToast": "\"{{name}}\" deleted.",
+    "deleteConfirmTitle": "Delete this test?",
+    "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and every recorded result for it. This can't be undone.",
+    "community": "Community",
+    "addToCommunity": "Add {{name}} to the community",
+    "removeFromCommunity": "Remove {{name}} from the community",
+    "couldntUpdateCommunityShare": "Couldn't update community share"
+  },
+  "evaluationTestForm": {
+    "editTest": "Edit Evaluation Test",
+    "createNewTest": "Create New Evaluation Test",
+    "dialogDescription": "Set the test's name, type, unit, and the reference range the app uses to score results 1-100.",
+    "testName": "Test Name",
+    "testNamePlaceholder": "e.g., Sprint 3x Court, Free Throws in 60s",
+    "type": "Type",
+    "type_time": "Timed",
+    "type_count": "Count",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g., seconds, makes",
+    "worstValue": "Worst result (= 1 point)",
+    "worstValueDescription": "The result that should score 1 out of 100.",
+    "bestValue": "Best result (= 100 points)",
+    "bestValueDescription": "The result that should score 100 out of 100.",
+    "descriptionOptional": "Description (Optional)",
+    "descriptionPlaceholder": "How to administer this test...",
+    "createTest": "Create Test",
+    "updatedSuccessfully": "Test updated successfully",
+    "createdSuccessfully": "Test created successfully",
+    "failedToUpdate": "Failed to update test",
+    "failedToCreate": "Failed to create test"
+  },
+  "recordEvaluationResultsDialog": {
     "title": "Record Results — {{name}}",
     "description": "Enter each active player's result in {{unit}}. Leave a player blank to skip them.",
     "date": "Date",

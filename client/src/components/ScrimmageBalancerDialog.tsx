@@ -20,15 +20,15 @@ interface TeamAssignment {
   playerId: number;
   name: string;
   score: number;
-  hasRatings: boolean;
+  hasScore: boolean;
 }
 
 const TEAM_COUNT_OPTIONS = [2, 3, 4];
 
 // Splits the active roster into evenly matched scrimmage teams using each
-// player's current skill ratings — a quick "who scrimmages with whom today"
-// tool, not a persisted roster. Nothing here is saved; closing the dialog
-// discards the split.
+// player's current evaluation scores (1-100) — a quick "who scrimmages with
+// whom today" tool, not a persisted roster. Nothing here is saved; closing
+// the dialog discards the split.
 export default function ScrimmageBalancerDialog({ open, onOpenChange, players }: ScrimmageBalancerDialogProps) {
   const { t } = useTranslation();
   const restoreFocus = useDialogFocusReturn(open);
@@ -36,8 +36,8 @@ export default function ScrimmageBalancerDialog({ open, onOpenChange, players }:
   const [includedIds, setIncludedIds] = useState<Set<number>>(new Set());
   const [teams, setTeams] = useState<TeamAssignment[][] | null>(null);
 
-  const { data: ratings = {} } = useQuery<Record<number, Record<string, number>>>({
-    queryKey: ["/api/players/skill-ratings"],
+  const { data: scores = {} } = useQuery<Record<number, Record<number, number>>>({
+    queryKey: ["/api/players/evaluation-scores"],
     enabled: open,
   });
 
@@ -72,14 +72,14 @@ export default function ScrimmageBalancerDialog({ open, onOpenChange, players }:
     const roster: BalancerPlayer[] = activePlayers
       .filter((p) => includedIds.has(p.id))
       .map((p) => ({ id: p.id, name: p.name }));
-    const balanced = balanceTeams(roster, ratings, numTeams, { randomizeTies });
+    const balanced = balanceTeams(roster, scores, numTeams, { randomizeTies });
     setTeams(
       balanced.map((team) =>
         team.players.map((p) => ({
           playerId: p.id,
           name: p.name,
-          score: computeOverallScore(ratings[p.id]),
-          hasRatings: p.id in ratings,
+          score: computeOverallScore(scores[p.id]),
+          hasScore: p.id in scores,
         }))
       )
     );
@@ -195,7 +195,7 @@ export default function ScrimmageBalancerDialog({ open, onOpenChange, players }:
                         <li key={p.playerId} className="flex items-center justify-between gap-2 text-sm">
                           <span className="truncate">
                             {p.name}
-                            {!p.hasRatings && (
+                            {!p.hasScore && (
                               <span className="text-muted-foreground"> {t("scrimmageBalancer.unrated")}</span>
                             )}
                           </span>

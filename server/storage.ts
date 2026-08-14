@@ -12,6 +12,9 @@ import {
   physicalTestLikes,
   physicalTestComments,
   physicalTestSaves,
+  evaluationTestLikes,
+  evaluationTestComments,
+  evaluationTestSaves,
   coachFollows,
   notifications,
   trainingSessions,
@@ -22,7 +25,6 @@ import {
   plays,
   playSteps,
   pushSubscriptions,
-  skillRatings,
   playerNotes,
   playerInjuries,
   drillAttempts,
@@ -32,6 +34,8 @@ import {
   accountMemberships,
   physicalTests,
   physicalTestResults,
+  evaluationTests,
+  evaluationTestResults,
   type Account,
   type Team,
   type InsertTeam,
@@ -53,13 +57,11 @@ import {
   type PlayStep,
   type CreatePlay,
   type PortalData,
-  type SkillRatingInput,
   type PlayerNote,
   type PlayerInjury,
   type CreatePlayerInjury,
   type DrillAttempt,
   type LogDrillAttempt,
-  type PlayerDevelopment,
   type PlayPracticeStats,
   type InsertSessionTemplate,
   type SessionTemplate,
@@ -73,6 +75,10 @@ import {
   type InsertPhysicalTest,
   type PhysicalTestResult,
   type PlayerPhysicalTestHistory,
+  type EvaluationTest,
+  type InsertEvaluationTest,
+  type EvaluationTestResult,
+  type PlayerEvaluationTestHistory,
   type CoachProfile,
   type NotificationView,
   type NotificationType,
@@ -80,7 +86,9 @@ import {
   type ExerciseCommentView,
   type PlayCommentView,
   type PhysicalTestCommentView,
+  type EvaluationTestCommentView,
 } from "@shared/schema";
+import { computeEvaluationScore } from "@shared/evaluationScore";
 import { db } from "./db";
 import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
 import crypto from "crypto";
@@ -176,7 +184,7 @@ export interface IStorage {
   // Callers don't create these directly; likeExercise/followCoach/
   // createExerciseComment do it internally, only for a genuinely new like/
   // follow/comment and never for self.
-  createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play"; actorAccountId: number; exerciseId?: number; playId?: number }): Promise<void>;
+  createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test" | "like_evaluation_test" | "comment_evaluation_test"; actorAccountId: number; exerciseId?: number; playId?: number; physicalTestId?: number; evaluationTestId?: number }): Promise<void>;
   getNotifications(accountId: number, limit?: number): Promise<NotificationView[]>;
   getUnreadNotificationCount(accountId: number): Promise<number>;
   markNotificationRead(id: number, accountId: number): Promise<void>;
@@ -222,6 +230,19 @@ export interface IStorage {
   createPhysicalTestComment(testId: number, accountId: number, body: string): Promise<PhysicalTestCommentView | undefined>;
   getPhysicalTestComments(testId: number, viewerAccountId: number): Promise<PhysicalTestCommentView[] | undefined>;
   deletePhysicalTestComment(commentId: number, accountId: number): Promise<boolean>;
+
+  // Evaluation test community — general player evaluation (physical and
+  // skill tests alike), same shape as the physical test community above.
+  setEvaluationTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<EvaluationTest | undefined>;
+  getCommunityEvaluationTests(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  importCommunityEvaluationTest(id: number, accountId: number): Promise<EvaluationTest | undefined>;
+  likeEvaluationTest(testId: number, accountId: number): Promise<boolean>;
+  unlikeEvaluationTest(testId: number, accountId: number): Promise<void>;
+  saveEvaluationTest(testId: number, accountId: number): Promise<boolean>;
+  unsaveEvaluationTest(testId: number, accountId: number): Promise<void>;
+  createEvaluationTestComment(testId: number, accountId: number, body: string): Promise<EvaluationTestCommentView | undefined>;
+  getEvaluationTestComments(testId: number, viewerAccountId: number): Promise<EvaluationTestCommentView[] | undefined>;
+  deleteEvaluationTestComment(commentId: number, accountId: number): Promise<boolean>;
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -246,6 +267,27 @@ export interface IStorage {
   // no prior result is left out of the map entirely, since there's no
   // record for them to beat yet.
   getBestPhysicalTestValues(testId: number, playerIds: number[], lowerIsBetter: boolean): Promise<Record<number, number>>;
+
+  // Evaluation test methods — general player evaluation (physical and
+  // skill), scored 1-100 (see computeEvaluationScore). Same shape as the
+  // physical test methods above: templates scoped by account, results
+  // recorded per player/date, either in bulk or one at a time (a single
+  // result array is also how the profile's quick single-player add works).
+  getAllEvaluationTests(accountId: number): Promise<EvaluationTest[]>;
+  getEvaluationTestById(id: number, accountId: number): Promise<EvaluationTest | undefined>;
+  createEvaluationTest(accountId: number, test: InsertEvaluationTest): Promise<EvaluationTest>;
+  updateEvaluationTest(id: number, accountId: number, test: Partial<InsertEvaluationTest>): Promise<EvaluationTest | undefined>;
+  deleteEvaluationTest(id: number, accountId: number): Promise<boolean>;
+  recordEvaluationTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<EvaluationTestResult[]>;
+  getLatestEvaluationTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>>;
+  getEvaluationTestResultsForPlayer(playerId: number): Promise<PlayerEvaluationTestHistory[]>;
+  // Each player's best-ever value for this test before a new result is
+  // recorded — direction derived from bestValue vs worstValue, same
+  // personal-record semantics as getBestPhysicalTestValues.
+  getBestEvaluationTestValues(testId: number, playerIds: number[], worstValue: number, bestValue: number): Promise<Record<number, number>>;
+  // Roster-wide latest score per player per test — feeds the scrimmage team
+  // balancer (replaces the old getCurrentSkillRatingsForTeam).
+  getCurrentEvaluationScoresForTeam(teamId: number): Promise<Record<number, Record<number, number>>>;
 
   // Training Session methods (scoped by team)
   getAllTrainingSessions(teamId: number): Promise<TrainingSession[]>;
@@ -300,16 +342,12 @@ export interface IStorage {
     monthly: { month: string; present: number; absent: number }[];
   }>;
 
-  // Player development methods — skill ratings and freeform notes, both
-  // scoped by playerId (callers verify team ownership via getPlayerById
-  // first, same as the attendance methods above).
-  createSkillRating(playerId: number, ratings: SkillRatingInput): Promise<void>;
+  // Freeform coach notes on a player, scoped by playerId (callers verify
+  // team ownership via getPlayerById first, same as the attendance methods
+  // above).
+  getPlayerNotes(playerId: number): Promise<PlayerNote[]>;
   createPlayerNote(playerId: number, content: string): Promise<PlayerNote>;
   deletePlayerNote(id: number, teamId: number): Promise<boolean>;
-  getPlayerDevelopment(playerId: number): Promise<PlayerDevelopment>;
-  // Roster-wide current ratings — feeds the scrimmage team balancer, so it
-  // doesn't need one getPlayerDevelopment round trip per player.
-  getCurrentSkillRatingsForTeam(teamId: number): Promise<Record<number, Record<string, number>>>;
 
   // Injury tracking — history lives on the player (getPlayerInjuries);
   // getActiveInjuriesForTeam is the roster-wide cross-reference used for the
@@ -831,7 +869,7 @@ export class DatabaseStorage implements IStorage {
       .slice(0, limit);
   }
 
-  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test"; actorAccountId: number; exerciseId?: number; playId?: number; physicalTestId?: number }): Promise<void> {
+  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test" | "like_evaluation_test" | "comment_evaluation_test"; actorAccountId: number; exerciseId?: number; playId?: number; physicalTestId?: number; evaluationTestId?: number }): Promise<void> {
     await db.insert(notifications).values({
       accountId: data.accountId,
       type: data.type,
@@ -839,6 +877,7 @@ export class DatabaseStorage implements IStorage {
       exerciseId: data.exerciseId ?? null,
       playId: data.playId ?? null,
       physicalTestId: data.physicalTestId ?? null,
+      evaluationTestId: data.evaluationTestId ?? null,
     });
   }
 
@@ -855,6 +894,8 @@ export class DatabaseStorage implements IStorage {
         playName: plays.name,
         physicalTestId: notifications.physicalTestId,
         physicalTestName: physicalTests.name,
+        evaluationTestId: notifications.evaluationTestId,
+        evaluationTestName: evaluationTests.name,
         read: notifications.read,
         createdAt: notifications.createdAt,
       })
@@ -863,6 +904,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(exercises, eq(notifications.exerciseId, exercises.id))
       .leftJoin(plays, eq(notifications.playId, plays.id))
       .leftJoin(physicalTests, eq(notifications.physicalTestId, physicalTests.id))
+      .leftJoin(evaluationTests, eq(notifications.evaluationTestId, evaluationTests.id))
       .where(eq(notifications.accountId, accountId))
       .orderBy(desc(notifications.id))
       .limit(limit);
@@ -878,6 +920,8 @@ export class DatabaseStorage implements IStorage {
       playName: row.playName,
       physicalTestId: row.physicalTestId,
       physicalTestName: row.physicalTestName,
+      evaluationTestId: row.evaluationTestId,
+      evaluationTestName: row.evaluationTestName,
       read: row.read === 1,
       createdAt: row.createdAt ? row.createdAt.toISOString() : null,
     }));
@@ -1394,6 +1438,197 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async setEvaluationTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<EvaluationTest | undefined> {
+    const [test] = await db
+      .update(evaluationTests)
+      .set({ sharedToCommunity: shared ? 1 : 0 })
+      .where(and(eq(evaluationTests.id, id), eq(evaluationTests.accountId, accountId)))
+      .returning();
+    return test || undefined;
+  }
+
+  async getCommunityEvaluationTests(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+    let shared = await db.select().from(evaluationTests).where(eq(evaluationTests.sharedToCommunity, 1));
+    if (shared.length === 0) return [];
+
+    if (opts.followingOnly) {
+      const followingRows = await db
+        .select({ followingAccountId: coachFollows.followingAccountId })
+        .from(coachFollows)
+        .where(eq(coachFollows.followerAccountId, accountId));
+      const followingAccountIds = new Set(followingRows.map((row) => row.followingAccountId));
+      shared = shared.filter((test) => followingAccountIds.has(test.accountId));
+    }
+
+    if (opts.savedOnly) {
+      const savedRows = await db.select({ testId: evaluationTestSaves.testId }).from(evaluationTestSaves).where(eq(evaluationTestSaves.accountId, accountId));
+      const savedTestIds = new Set(savedRows.map((row) => row.testId));
+      shared = shared.filter((test) => savedTestIds.has(test.id));
+    }
+
+    if (shared.length === 0) return [];
+
+    const testIds = shared.map((test) => test.id);
+    const likeCounts = await db
+      .select({ testId: evaluationTestLikes.testId, count: sql<number>`count(*)::int` })
+      .from(evaluationTestLikes)
+      .where(inArray(evaluationTestLikes.testId, testIds))
+      .groupBy(evaluationTestLikes.testId);
+    const likeCountByTestId = new Map(likeCounts.map((row) => [row.testId, row.count]));
+
+    const likedRows = await db
+      .select({ testId: evaluationTestLikes.testId })
+      .from(evaluationTestLikes)
+      .where(and(inArray(evaluationTestLikes.testId, testIds), eq(evaluationTestLikes.accountId, accountId)));
+    const likedTestIds = new Set(likedRows.map((row) => row.testId));
+
+    const savedRowsForViewer = await db
+      .select({ testId: evaluationTestSaves.testId })
+      .from(evaluationTestSaves)
+      .where(and(inArray(evaluationTestSaves.testId, testIds), eq(evaluationTestSaves.accountId, accountId)));
+    const savedTestIdsForViewer = new Set(savedRowsForViewer.map((row) => row.testId));
+
+    const commentCounts = await db
+      .select({ testId: evaluationTestComments.testId, count: sql<number>`count(*)::int` })
+      .from(evaluationTestComments)
+      .where(inArray(evaluationTestComments.testId, testIds))
+      .groupBy(evaluationTestComments.testId);
+    const commentCountByTestId = new Map(commentCounts.map((row) => [row.testId, row.count]));
+
+    const publisherIds = Array.from(new Set(shared.map((test) => test.accountId)));
+    const publishers = await db
+      .select({ id: accounts.id, publicName: accounts.publicName })
+      .from(accounts)
+      .where(inArray(accounts.id, publisherIds));
+    const publisherById = new Map(publishers.map((publisher) => [publisher.id, publisher]));
+
+    const withExtras = shared.map((test) => ({
+      ...test,
+      likeCount: likeCountByTestId.get(test.id) ?? 0,
+      likedByMe: likedTestIds.has(test.id),
+      savedByMe: savedTestIdsForViewer.has(test.id),
+      commentCount: commentCountByTestId.get(test.id) ?? 0,
+      publishedBy: {
+        accountId: test.accountId,
+        publicName: publisherById.get(test.accountId)?.publicName ?? null,
+      },
+    }));
+
+    return opts.sort === "popular"
+      ? withExtras.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
+      : withExtras.sort((a, b) => b.id - a.id);
+  }
+
+  async importCommunityEvaluationTest(id: number, accountId: number): Promise<EvaluationTest | undefined> {
+    const [source] = await db.select().from(evaluationTests).where(and(eq(evaluationTests.id, id), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!source) return undefined;
+
+    const [imported] = await db
+      .insert(evaluationTests)
+      .values({
+        accountId,
+        name: source.name,
+        type: source.type,
+        unit: source.unit,
+        worstValue: source.worstValue,
+        bestValue: source.bestValue,
+        description: source.description,
+      })
+      .returning();
+    return imported;
+  }
+
+  async likeEvaluationTest(testId: number, accountId: number): Promise<boolean> {
+    const [test] = await db.select().from(evaluationTests).where(and(eq(evaluationTests.id, testId), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!test) return false;
+
+    const inserted = await db.insert(evaluationTestLikes).values({ testId, accountId }).onConflictDoNothing().returning();
+    if (inserted.length > 0 && test.accountId !== accountId) {
+      await this.createNotification({ accountId: test.accountId, type: "like_evaluation_test", actorAccountId: accountId, evaluationTestId: testId });
+    }
+    return true;
+  }
+
+  async unlikeEvaluationTest(testId: number, accountId: number): Promise<void> {
+    await db.delete(evaluationTestLikes).where(and(eq(evaluationTestLikes.testId, testId), eq(evaluationTestLikes.accountId, accountId)));
+  }
+
+  async saveEvaluationTest(testId: number, accountId: number): Promise<boolean> {
+    const [test] = await db.select().from(evaluationTests).where(and(eq(evaluationTests.id, testId), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!test) return false;
+
+    await db.insert(evaluationTestSaves).values({ testId, accountId }).onConflictDoNothing();
+    return true;
+  }
+
+  async unsaveEvaluationTest(testId: number, accountId: number): Promise<void> {
+    await db.delete(evaluationTestSaves).where(and(eq(evaluationTestSaves.testId, testId), eq(evaluationTestSaves.accountId, accountId)));
+  }
+
+  async createEvaluationTestComment(testId: number, accountId: number, body: string): Promise<EvaluationTestCommentView | undefined> {
+    const [test] = await db.select().from(evaluationTests).where(and(eq(evaluationTests.id, testId), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!test) return undefined;
+
+    const [comment] = await db.insert(evaluationTestComments).values({ testId, accountId, body }).returning();
+
+    if (test.accountId !== accountId) {
+      await this.createNotification({ accountId: test.accountId, type: "comment_evaluation_test", actorAccountId: accountId, evaluationTestId: testId });
+    }
+
+    const [author] = await db.select({ publicName: accounts.publicName }).from(accounts).where(eq(accounts.id, accountId));
+
+    return {
+      id: comment.id,
+      testId: comment.testId,
+      accountId: comment.accountId,
+      publicName: author?.publicName ?? null,
+      body: comment.body,
+      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
+      canDelete: true,
+    };
+  }
+
+  async getEvaluationTestComments(testId: number, viewerAccountId: number): Promise<EvaluationTestCommentView[] | undefined> {
+    const [test] = await db.select().from(evaluationTests).where(and(eq(evaluationTests.id, testId), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!test) return undefined;
+
+    const rows = await db
+      .select({
+        id: evaluationTestComments.id,
+        testId: evaluationTestComments.testId,
+        accountId: evaluationTestComments.accountId,
+        publicName: accounts.publicName,
+        body: evaluationTestComments.body,
+        createdAt: evaluationTestComments.createdAt,
+      })
+      .from(evaluationTestComments)
+      .leftJoin(accounts, eq(accounts.id, evaluationTestComments.accountId))
+      .where(eq(evaluationTestComments.testId, testId))
+      .orderBy(asc(evaluationTestComments.id));
+
+    return rows.map((r) => ({
+      id: r.id,
+      testId: r.testId,
+      accountId: r.accountId,
+      publicName: r.publicName,
+      body: r.body,
+      createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+      canDelete: r.accountId === viewerAccountId || test.accountId === viewerAccountId,
+    }));
+  }
+
+  async deleteEvaluationTestComment(commentId: number, accountId: number): Promise<boolean> {
+    const [comment] = await db.select().from(evaluationTestComments).where(eq(evaluationTestComments.id, commentId));
+    if (!comment) return false;
+
+    const [test] = await db.select().from(evaluationTests).where(eq(evaluationTests.id, comment.testId));
+    const canDelete = comment.accountId === accountId || test?.accountId === accountId;
+    if (!canDelete) return false;
+
+    const result = await db.delete(evaluationTestComments).where(eq(evaluationTestComments.id, commentId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {
     return await db.transaction(async (tx) => {
       const [source] = await tx
@@ -1582,6 +1817,149 @@ export class DatabaseStorage implements IStorage {
       group.results.push({ value: row.value, date: row.date });
     }
     return Array.from(byTest.values());
+  }
+
+  // Evaluation test methods — same shape as the physical test methods
+  // above, generalized to a coach-defined 1-100 score (see
+  // computeEvaluationScore) instead of only a raw value.
+  async getAllEvaluationTests(accountId: number): Promise<EvaluationTest[]> {
+    return await db.select().from(evaluationTests).where(eq(evaluationTests.accountId, accountId));
+  }
+
+  async getEvaluationTestById(id: number, accountId: number): Promise<EvaluationTest | undefined> {
+    const [test] = await db
+      .select()
+      .from(evaluationTests)
+      .where(and(eq(evaluationTests.id, id), eq(evaluationTests.accountId, accountId)));
+    return test || undefined;
+  }
+
+  async createEvaluationTest(accountId: number, insertTest: InsertEvaluationTest): Promise<EvaluationTest> {
+    const [test] = await db
+      .insert(evaluationTests)
+      .values({ ...insertTest, accountId, description: insertTest.description || null })
+      .returning();
+    return test;
+  }
+
+  async updateEvaluationTest(id: number, accountId: number, updateData: Partial<InsertEvaluationTest>): Promise<EvaluationTest | undefined> {
+    const [test] = await db
+      .update(evaluationTests)
+      .set(updateData)
+      .where(and(eq(evaluationTests.id, id), eq(evaluationTests.accountId, accountId)))
+      .returning();
+    return test || undefined;
+  }
+
+  async deleteEvaluationTest(id: number, accountId: number): Promise<boolean> {
+    const result = await db
+      .delete(evaluationTests)
+      .where(and(eq(evaluationTests.id, id), eq(evaluationTests.accountId, accountId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async recordEvaluationTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<EvaluationTestResult[]> {
+    return await db
+      .insert(evaluationTestResults)
+      .values(results.map((r) => ({ testId, playerId: r.playerId, value: r.value, date })))
+      .returning();
+  }
+
+  async getBestEvaluationTestValues(testId: number, playerIds: number[], worstValue: number, bestValue: number): Promise<Record<number, number>> {
+    if (playerIds.length === 0) return {};
+    const lowerIsBetter = bestValue < worstValue;
+    const rows = await db
+      .select({ playerId: evaluationTestResults.playerId, value: evaluationTestResults.value })
+      .from(evaluationTestResults)
+      .where(and(eq(evaluationTestResults.testId, testId), inArray(evaluationTestResults.playerId, playerIds)));
+
+    const bests: Record<number, number> = {};
+    for (const row of rows) {
+      const current = bests[row.playerId];
+      if (current === undefined || (lowerIsBetter ? row.value < current : row.value > current)) {
+        bests[row.playerId] = row.value;
+      }
+    }
+    return bests;
+  }
+
+  async getLatestEvaluationTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>> {
+    const rows = await db
+      .select({ playerId: evaluationTestResults.playerId, value: evaluationTestResults.value, date: evaluationTestResults.date })
+      .from(evaluationTestResults)
+      .innerJoin(players, eq(evaluationTestResults.playerId, players.id))
+      .where(and(eq(evaluationTestResults.testId, testId), eq(players.teamId, teamId)))
+      .orderBy(desc(evaluationTestResults.date), desc(evaluationTestResults.createdAt));
+
+    // Rows are newest-first, so the first time a player is seen is their
+    // latest result.
+    const latest: Record<number, { value: number; date: string }> = {};
+    for (const row of rows) {
+      if (!(row.playerId in latest)) latest[row.playerId] = { value: row.value, date: row.date };
+    }
+    return latest;
+  }
+
+  async getEvaluationTestResultsForPlayer(playerId: number): Promise<PlayerEvaluationTestHistory[]> {
+    const rows = await db
+      .select({
+        testId: evaluationTests.id,
+        testName: evaluationTests.name,
+        type: evaluationTests.type,
+        unit: evaluationTests.unit,
+        worstValue: evaluationTests.worstValue,
+        bestValue: evaluationTests.bestValue,
+        value: evaluationTestResults.value,
+        date: evaluationTestResults.date,
+      })
+      .from(evaluationTestResults)
+      .innerJoin(evaluationTests, eq(evaluationTestResults.testId, evaluationTests.id))
+      .where(eq(evaluationTestResults.playerId, playerId))
+      .orderBy(desc(evaluationTestResults.date), desc(evaluationTestResults.createdAt));
+
+    const byTest = new Map<number, PlayerEvaluationTestHistory>();
+    for (const row of rows) {
+      let group = byTest.get(row.testId);
+      if (!group) {
+        group = { testId: row.testId, testName: row.testName, type: row.type, unit: row.unit, worstValue: row.worstValue, bestValue: row.bestValue, results: [] };
+        byTest.set(row.testId, group);
+      }
+      group.results.push({ value: row.value, date: row.date });
+    }
+    return Array.from(byTest.values());
+  }
+
+  // Roster-wide latest score per player per test, for the scrimmage
+  // balancer — mirrors getLatestEvaluationTestResultsForTeam but across
+  // every test the account has, and returns the computed 1-100 score
+  // instead of the raw value.
+  async getCurrentEvaluationScoresForTeam(teamId: number): Promise<Record<number, Record<number, number>>> {
+    const rows = await db
+      .select({
+        playerId: evaluationTestResults.playerId,
+        testId: evaluationTestResults.testId,
+        value: evaluationTestResults.value,
+        worstValue: evaluationTests.worstValue,
+        bestValue: evaluationTests.bestValue,
+      })
+      .from(evaluationTestResults)
+      .innerJoin(players, eq(evaluationTestResults.playerId, players.id))
+      .innerJoin(evaluationTests, eq(evaluationTestResults.testId, evaluationTests.id))
+      .where(eq(players.teamId, teamId))
+      .orderBy(desc(evaluationTestResults.date), desc(evaluationTestResults.createdAt));
+
+    // Rows are newest-first, so the first (player, test) pair seen is that
+    // player's latest result for that test.
+    const current: Record<number, Record<number, number>> = {};
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const key = `${row.playerId}:${row.testId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const playerCurrent = current[row.playerId] ?? (current[row.playerId] = {});
+      playerCurrent[row.testId] = computeEvaluationScore(row.value, row.worstValue, row.bestValue);
+    }
+    return current;
   }
 
   // Training Session methods
@@ -1978,13 +2356,8 @@ export class DatabaseStorage implements IStorage {
     return { total, present, absent, rate, totalHoursTrained, monthly };
   }
 
-  // A rating is always all 5 categories submitted together (see
-  // skillRatingInputSchema) and inserted in one multi-row statement, so they
-  // share a single ratedAt — that shared timestamp is what groups them back
-  // into one "evaluation" for the history view, no separate id needed.
-  async createSkillRating(playerId: number, ratings: SkillRatingInput): Promise<void> {
-    const entries = Object.entries(ratings) as [string, number][];
-    await db.insert(skillRatings).values(entries.map(([category, rating]) => ({ playerId, category, rating })));
+  async getPlayerNotes(playerId: number): Promise<PlayerNote[]> {
+    return await db.select().from(playerNotes).where(eq(playerNotes.playerId, playerId)).orderBy(desc(playerNotes.createdAt));
   }
 
   async createPlayerNote(playerId: number, content: string): Promise<PlayerNote> {
@@ -2003,44 +2376,6 @@ export class DatabaseStorage implements IStorage {
 
     const result = await db.delete(playerNotes).where(eq(playerNotes.id, id));
     return (result.rowCount ?? 0) > 0;
-  }
-
-  async getPlayerDevelopment(playerId: number): Promise<PlayerDevelopment> {
-    const [ratingRows, notes] = await Promise.all([
-      db.select().from(skillRatings).where(eq(skillRatings.playerId, playerId)).orderBy(desc(skillRatings.ratedAt)),
-      db.select().from(playerNotes).where(eq(playerNotes.playerId, playerId)).orderBy(desc(playerNotes.createdAt)),
-    ]);
-
-    // Rows are newest-first, so the first time a category is seen is its
-    // latest rating — cheaper than a DISTINCT ON query for roster-sized data.
-    const current: Record<string, number> = {};
-    for (const row of ratingRows) {
-      if (!(row.category in current)) current[row.category] = row.rating;
-    }
-
-    return {
-      current: ratingRows.length > 0 ? current : null,
-      history: ratingRows.map((r) => ({ category: r.category, rating: r.rating, ratedAt: (r.ratedAt ?? new Date()).toISOString() })),
-      notes,
-    };
-  }
-
-  async getCurrentSkillRatingsForTeam(teamId: number): Promise<Record<number, Record<string, number>>> {
-    const rows = await db
-      .select({ playerId: skillRatings.playerId, category: skillRatings.category, rating: skillRatings.rating })
-      .from(skillRatings)
-      .innerJoin(players, eq(skillRatings.playerId, players.id))
-      .where(eq(players.teamId, teamId))
-      .orderBy(desc(skillRatings.ratedAt));
-
-    // Same newest-first-wins reduction as getPlayerDevelopment, just grouped
-    // by player instead of scoped to one.
-    const current: Record<number, Record<string, number>> = {};
-    for (const row of rows) {
-      const playerCurrent = current[row.playerId] ?? (current[row.playerId] = {});
-      if (!(row.category in playerCurrent)) playerCurrent[row.category] = row.rating;
-    }
-    return current;
   }
 
   async getPlayerInjuries(playerId: number): Promise<PlayerInjury[]> {

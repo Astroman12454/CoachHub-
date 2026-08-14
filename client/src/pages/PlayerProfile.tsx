@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, FileDown, Loader2, Activity, Crown, Phone, Clock, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Star, Plus, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, Gauge, FileDown, Loader2, Activity, Crown, Phone, Clock, Calendar, Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
-import SkillRadarChart from "@/components/SkillRadarChart";
 import ShotChart from "@/components/ShotChart";
-import RatePlayerDialog from "@/components/RatePlayerDialog";
+import QuickAddEvaluationResultDialog from "@/components/QuickAddEvaluationResultDialog";
+import EvaluationScoreChart from "@/components/EvaluationScoreChart";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,9 +21,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
 import { calculateAge, formatPlainDate } from "@/lib/time";
+import { computeEvaluationScore } from "@shared/evaluationScore";
 import PhysicalTestChart from "@/components/PhysicalTestChart";
-import { SKILL_CATEGORIES } from "@shared/schema";
-import type { Player, PlayerDevelopment, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerPhysicalTestHistory } from "@shared/schema";
+import type { Player, PlayerNote, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerPhysicalTestHistory, PlayerEvaluationTestHistory } from "@shared/schema";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -41,20 +41,6 @@ function formatMonthLabel(month: string): string {
   return new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
-// Groups the flat rating history back into per-evaluation rows (see
-// createSkillRating — all 5 categories in one submission share one ratedAt),
-// newest first, for a compact "what changed over time" table.
-function groupHistory(history: PlayerDevelopment["history"]): { ratedAt: string; ratings: Record<string, number> }[] {
-  const byTimestamp = new Map<string, Record<string, number>>();
-  for (const row of history) {
-    if (!byTimestamp.has(row.ratedAt)) byTimestamp.set(row.ratedAt, {});
-    byTimestamp.get(row.ratedAt)![row.category] = row.rating;
-  }
-  return Array.from(byTimestamp.entries())
-    .map(([ratedAt, ratings]) => ({ ratedAt, ratings }))
-    .sort((a, b) => new Date(b.ratedAt).getTime() - new Date(a.ratedAt).getTime());
-}
-
 export default function PlayerProfile() {
   const { t } = useTranslation();
   const params = useParams<{ id: string }>();
@@ -64,7 +50,7 @@ export default function PlayerProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [isRateOpen, setIsRateOpen] = useState(false);
+  const [isAddResultOpen, setIsAddResultOpen] = useState(false);
   const [isExportingReport, setIsExportingReport] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
   const [noteToDelete, setNoteToDelete] = useState<number | null>(null);
@@ -75,8 +61,8 @@ export default function PlayerProfile() {
   const { data: players = [], isLoading: isLoadingPlayers } = useQuery<Player[]>({ queryKey: ["/api/players"] });
   const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId]);
 
-  const { data: development, isLoading: isLoadingDev, isError, refetch } = useQuery<PlayerDevelopment>({
-    queryKey: [`/api/players/${playerId}/development`],
+  const { data: evaluationHistory = [], isLoading: isLoadingDev, isError, refetch } = useQuery<PlayerEvaluationTestHistory[]>({
+    queryKey: [`/api/players/${playerId}/evaluation-results`],
     enabled: !isNaN(playerId),
   });
 
@@ -109,6 +95,16 @@ export default function PlayerProfile() {
 
   const [expandedDrill, setExpandedDrill] = useState<string | null>(null);
   const [expandedTest, setExpandedTest] = useState<number | null>(null);
+  const [expandedEvaluationTest, setExpandedEvaluationTest] = useState<number | null>(null);
+
+  // Overall standing: the average of each test's latest score, rounded —
+  // same idea as the roster-wide scrimmage-balancer average, just for one
+  // player. Undefined until the player has at least one evaluation result.
+  const overallScore = useMemo(() => {
+    if (evaluationHistory.length === 0) return null;
+    const latestScores = evaluationHistory.map((test) => computeEvaluationScore(test.results[0].value, test.worstValue, test.bestValue));
+    return Math.round(latestScores.reduce((sum, score) => sum + score, 0) / latestScores.length);
+  }, [evaluationHistory]);
   const drillSummary = useMemo(() => {
     const byDrill = new Map<string, { made: number; total: number; shots: { id: number; x: number; y: number; made: number }[] }>();
     for (const attempt of drillAttempts) {
@@ -126,10 +122,10 @@ export default function PlayerProfile() {
   }, [drillAttempts]);
 
   const handleExportSeasonReport = async () => {
-    if (!player || !development || !attendanceStats || isExportingReport) return;
+    if (!player || !attendanceStats || isExportingReport) return;
     setIsExportingReport(true);
     try {
-      await exportSeasonReportPdf(player, attendanceStats, development, gameStats, drillAttempts);
+      await exportSeasonReportPdf(player, attendanceStats, evaluationHistory, gameStats, drillAttempts);
     } catch (error) {
       toast({ title: t("playerProfile.couldntExportReport"), description: t("common.tryAgain"), variant: "destructive" });
     } finally {
@@ -141,7 +137,7 @@ export default function PlayerProfile() {
     mutationFn: async () => apiRequest("POST", `/api/players/${playerId}/notes`, { content: noteDraft.trim() }),
     onSuccess: () => {
       setNoteDraft("");
-      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/notes`] });
     },
     onError: (error) => {
       toast({ title: t("playerProfile.couldntAddNote"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
@@ -155,7 +151,6 @@ export default function PlayerProfile() {
   const { requestDelete: requestDeleteNote, isPendingDelete: isNotePendingDelete } = useDeleteWithUndo({
     endpoint: `/api/players/${playerId}/notes`,
     errorMessage: t("playerProfile.couldntDeleteNote"),
-    extraInvalidateKeys: [`/api/players/${playerId}/development`],
   });
 
   const reportInjuryMutation = useMutation({
@@ -190,7 +185,10 @@ export default function PlayerProfile() {
     extraInvalidateKeys: ["/api/players/injuries"],
   });
 
-  const historyGroups = useMemo(() => (development ? groupHistory(development.history) : []), [development]);
+  const { data: notes = [] } = useQuery<PlayerNote[]>({
+    queryKey: [`/api/players/${playerId}/notes`],
+    enabled: !isNaN(playerId),
+  });
 
   if (isLoadingPlayers || isLoadingDev) {
     return (
@@ -281,7 +279,7 @@ export default function PlayerProfile() {
             <Button
               variant="outline"
               onClick={handleExportSeasonReport}
-              disabled={isExportingReport || !development || !attendanceStats}
+              disabled={isExportingReport || !attendanceStats}
               className="whitespace-nowrap"
             >
               {isExportingReport ? (
@@ -292,10 +290,10 @@ export default function PlayerProfile() {
               <span className="hidden sm:inline">{t("playerProfile.seasonReport")}</span>
               <span className="sm:hidden">{t("playerProfile.report")}</span>
             </Button>
-            <Button onClick={() => setIsRateOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
-              <Star className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
-              <span className="hidden sm:inline">{t("playerProfile.ratePlayer")}</span>
-              <span className="sm:hidden">{t("playerProfile.rate")}</span>
+            <Button onClick={() => setIsAddResultOpen(true)} className="basketball-orange basketball-orange-hover text-white whitespace-nowrap">
+              <Plus className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+              <span className="hidden sm:inline">{t("playerProfile.addResult")}</span>
+              <span className="sm:hidden">{t("playerProfile.addResultShort")}</span>
             </Button>
           </div>
         </div>
@@ -310,57 +308,64 @@ export default function PlayerProfile() {
           <StatCard label={t("playerProfile.seasonAssists")} value={gameStats?.assists ?? 0} icon={MessageSquarePlus} color="violet" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{t("playerProfile.skillDevelopment")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SkillRadarChart ratings={development?.current ?? null} />
-              {!development?.current && (
-                <p className="text-sm text-muted-foreground text-center mt-2">
-                  {t("playerProfile.noRatingsYet")}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{t("playerProfile.ratingHistory")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {historyGroups.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("playerProfile.noEvaluationsYet")}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-muted-foreground">
-                        <th className="pb-2 pr-3 font-medium">{t("playerProfile.date")}</th>
-                        {SKILL_CATEGORIES.map((cat) => (
-                          <th key={cat} className="pb-2 pr-3 font-medium text-center">{t(`categories.exercise.${cat}`, cat).slice(0, 3)}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historyGroups.map((row) => (
-                        <tr key={row.ratedAt} className="border-t border-border">
-                          <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">{formatDateTime(row.ratedAt)}</td>
-                          {SKILL_CATEGORIES.map((cat) => (
-                            <td key={cat} className="py-2 pr-3 text-center tabular-nums font-medium text-foreground">
-                              {row.ratings[cat] ?? "–"}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Gauge className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("playerProfile.evaluations")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {evaluationHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("playerProfile.noEvaluationsYet")}</p>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-2 mb-4 pb-4 border-b border-border">
+                  <span className="font-display font-bold text-4xl text-basketball-orange tabular-nums">{overallScore}</span>
+                  <span className="text-sm text-muted-foreground">{t("playerProfile.overallScoreOutOf100")}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                <ul className="space-y-2.5">
+                  {evaluationHistory.map((test) => {
+                    const latest = test.results[0];
+                    const score = computeEvaluationScore(latest.value, test.worstValue, test.bestValue);
+                    const canExpand = test.results.length > 1;
+                    const isExpanded = expandedEvaluationTest === test.testId;
+                    return (
+                      <li key={test.testId} className="border-t border-border pt-2.5 first:border-0 first:pt-0">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0">
+                            {canExpand ? (
+                              <button
+                                type="button"
+                                className="font-medium text-foreground truncate underline decoration-dotted underline-offset-2 text-left"
+                                onClick={() => setExpandedEvaluationTest(isExpanded ? null : test.testId)}
+                                aria-expanded={isExpanded}
+                              >
+                                {test.testName}
+                              </button>
+                            ) : (
+                              <span className="font-medium text-foreground truncate">{test.testName}</span>
+                            )}
+                            <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">{formatPlainDate(latest.date)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
+                            <span className="font-semibold text-foreground">{score}</span>
+                            <span className="text-xs text-muted-foreground">({latest.value} {test.unit})</span>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="mt-2">
+                            <EvaluationScoreChart results={[...test.results].reverse()} unit={test.unit} worstValue={test.worstValue} bestValue={test.bestValue} />
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {attendanceStats && attendanceStats.monthly.length > 0 && (
           <Card>
@@ -641,9 +646,9 @@ export default function PlayerProfile() {
               </Button>
             </div>
 
-            {development && development.notes.filter((note) => !isNotePendingDelete(note.id)).length > 0 ? (
+            {notes.filter((note) => !isNotePendingDelete(note.id)).length > 0 ? (
               <ul className="space-y-3">
-                {development.notes.filter((note) => !isNotePendingDelete(note.id)).map((note) => (
+                {notes.filter((note) => !isNotePendingDelete(note.id)).map((note) => (
                   <li key={note.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0">
                     <div>
                       <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
@@ -670,10 +675,10 @@ export default function PlayerProfile() {
         </Card>
       </main>
 
-      <RatePlayerDialog
-        playerId={isRateOpen ? playerId : null}
+      <QuickAddEvaluationResultDialog
+        playerId={isAddResultOpen ? playerId : null}
         playerName={player.name}
-        onOpenChange={(open) => setIsRateOpen(open)}
+        onOpenChange={(open) => setIsAddResultOpen(open)}
       />
 
       <ConfirmDialog

@@ -1,9 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { buildSeasonReportSummary } from "./seasonReport";
-import type { PlayerDevelopment, DrillAttempt } from "@shared/schema";
+import type { PlayerEvaluationTestHistory, DrillAttempt } from "@shared/schema";
 
-function development(history: PlayerDevelopment["history"]): PlayerDevelopment {
-  return { current: null, history, notes: [] };
+function evalTest(overrides: Partial<PlayerEvaluationTestHistory> = {}): PlayerEvaluationTestHistory {
+  return {
+    testId: 1,
+    testName: "Sprint",
+    type: "time",
+    unit: "seconds",
+    worstValue: 15,
+    bestValue: 5,
+    results: [],
+    ...overrides,
+  };
 }
 
 function attempt(overrides: Partial<DrillAttempt> = {}): DrillAttempt {
@@ -21,44 +30,55 @@ function attempt(overrides: Partial<DrillAttempt> = {}): DrillAttempt {
 }
 
 describe("buildSeasonReportSummary", () => {
-  it("uses only the oldest and newest evaluation per category for first/latest/delta", () => {
-    // history is newest-first, matching server/storage.ts's getPlayerDevelopment.
+  it("uses only the oldest and newest result per test for first/latest/delta and scores", () => {
+    // results is newest-first, matching server/storage.ts's
+    // getEvaluationTestResultsForPlayer.
     const result = buildSeasonReportSummary(
-      development([
-        { category: "shooting", rating: 8, ratedAt: "2026-03-01T00:00:00.000Z" },
-        { category: "shooting", rating: 6, ratedAt: "2026-02-01T00:00:00.000Z" },
-        { category: "shooting", rating: 4, ratedAt: "2026-01-01T00:00:00.000Z" },
-      ]),
+      [
+        evalTest({
+          worstValue: 15, bestValue: 5,
+          results: [
+            { value: 8, date: "2026-03-01" },
+            { value: 10, date: "2026-02-01" },
+            { value: 12, date: "2026-01-01" },
+          ],
+        }),
+      ],
       [],
     );
-    expect(result.skillProgress).toEqual([{ category: "shooting", first: 4, latest: 8, delta: 4 }]);
+    expect(result.evaluationProgress).toEqual([{
+      testId: 1, testName: "Sprint", unit: "seconds",
+      first: 12, latest: 8, delta: -4,
+      firstScore: 31, latestScore: 70, scoreDelta: 39,
+    }]);
   });
 
-  it("only includes categories that were actually rated", () => {
+  it("includes every test that has at least one result", () => {
     const result = buildSeasonReportSummary(
-      development([{ category: "passing", rating: 5, ratedAt: "2026-01-01T00:00:00.000Z" }]),
+      [evalTest({ testId: 2, testName: "Free throws", results: [{ value: 7, date: "2026-01-01" }] })],
       [],
     );
-    expect(result.skillProgress).toHaveLength(1);
-    expect(result.skillProgress[0].category).toBe("passing");
+    expect(result.evaluationProgress).toHaveLength(1);
+    expect(result.evaluationProgress[0].testName).toBe("Free throws");
   });
 
-  it("reports a zero delta (not null) when a category has only ever been rated once", () => {
+  it("reports a zero delta (not null) when a test has only ever been recorded once", () => {
     const result = buildSeasonReportSummary(
-      development([{ category: "defense", rating: 7, ratedAt: "2026-01-01T00:00:00.000Z" }]),
+      [evalTest({ worstValue: 15, bestValue: 5, results: [{ value: 10, date: "2026-01-01" }] })],
       [],
     );
-    expect(result.skillProgress[0]).toEqual({ category: "defense", first: 7, latest: 7, delta: 0 });
+    expect(result.evaluationProgress[0].delta).toBe(0);
+    expect(result.evaluationProgress[0].scoreDelta).toBe(0);
   });
 
   it("returns a null overallShooting with no drill attempts logged", () => {
-    const result = buildSeasonReportSummary(development([]), []);
+    const result = buildSeasonReportSummary([], []);
     expect(result.overallShooting).toBeNull();
     expect(result.topDrills).toEqual([]);
   });
 
   it("computes the overall shooting percentage across every drill", () => {
-    const result = buildSeasonReportSummary(development([]), [
+    const result = buildSeasonReportSummary([], [
       attempt({ made: 1 }),
       attempt({ made: 1 }),
       attempt({ made: 0 }),
@@ -83,7 +103,7 @@ describe("buildSeasonReportSummary", () => {
       }
     }
 
-    const result = buildSeasonReportSummary(development([]), attempts);
+    const result = buildSeasonReportSummary([], attempts);
     expect(result.topDrills).toHaveLength(5);
     expect(result.topDrills.map((d) => d.drillName)).toEqual([
       "Free throws",
