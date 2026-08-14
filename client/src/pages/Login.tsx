@@ -20,6 +20,13 @@ export default function Login() {
   );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Player rosters commonly include minors (see privacy.sections.minors) —
+  // an active, unchecked-by-default checkbox is a stronger signal than a
+  // passive "by continuing you agree to..." link that whoever is signing up
+  // is actually the adult coach/staff member the account is for, not a
+  // player. Only gates signup; an existing coach logging back in doesn't
+  // need to re-confirm this every time.
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   const isPending = isLoggingIn || isSigningUp;
   const error = mode === "login" ? loginError : mode === "signup" ? signupError : null;
@@ -121,6 +128,29 @@ export default function Login() {
               </div>
             )}
 
+            {mode === "signup" && (
+              <label htmlFor="age-confirmation" className="flex items-start gap-2.5 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  id="age-confirmation"
+                  type="checkbox"
+                  checked={ageConfirmed}
+                  onChange={(e) => setAgeConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border text-basketball-orange focus:ring-basketball-orange"
+                />
+                <span>
+                  {t("login.ageConfirmationPrefix")}{" "}
+                  <Link href="/terms" className="text-basketball-orange underline" onClick={(e) => e.stopPropagation()}>
+                    {t("login.termsOfUse")}
+                  </Link>{" "}
+                  {t("login.and")}{" "}
+                  <Link href="/privacy" className="text-basketball-orange underline" onClick={(e) => e.stopPropagation()}>
+                    {t("login.privacyPolicy")}
+                  </Link>
+                  .
+                </span>
+              </label>
+            )}
+
             {(error || (mode === "forgot" && forgotPasswordMutation.isError)) && (
               <p className="text-sm text-red-600" role="alert">
                 {mode === "forgot" ? (extractErrorMessage(forgotPasswordMutation.error) ?? t("login.forgotPasswordFailed")) : error}
@@ -129,7 +159,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              disabled={mode === "forgot" ? (forgotPasswordMutation.isPending || !email) : (isPending || !email || !password)}
+              disabled={mode === "forgot" ? (forgotPasswordMutation.isPending || !email) : (isPending || !email || !password || (mode === "signup" && !ageConfirmed))}
               className="w-full basketball-orange basketball-orange-hover text-white"
             >
               {mode === "forgot"
@@ -166,23 +196,6 @@ export default function Login() {
           </p>
         )}
 
-        {mode === "signup" && (
-          <p className="text-center text-xs text-muted-foreground mt-3">
-            {t("login.agreeToTermsPrefix")}{" "}
-            {/* underline, not hover:underline: a link inline with body text
-                needs a non-color cue at rest, not just on hover — color
-                alone fails WCAG 1.4.1 for anyone who can't distinguish the
-                orange from the surrounding gray. */}
-            <Link href="/terms" className="text-basketball-orange underline">
-              {t("login.termsOfUse")}
-            </Link>{" "}
-            {t("login.and")}{" "}
-            <Link href="/privacy" className="text-basketball-orange underline">
-              {t("login.privacyPolicy")}
-            </Link>
-            .
-          </p>
-        )}
       </div>
 
       {/* text-rail-muted, not text-muted-foreground: this sits directly on
