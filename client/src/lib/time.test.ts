@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { addMinutesToClock, calculateAge } from "./time";
+import { addMinutesToClock, calculateAge, formatTimestamp } from "./time";
 
 describe("addMinutesToClock", () => {
   it("adds minutes within the same hour", () => {
@@ -23,6 +23,21 @@ describe("addMinutesToClock", () => {
   it("returns null for a malformed start time", () => {
     expect(addMinutesToClock("", 15)).toBeNull();
     expect(addMinutesToClock("not-a-time", 15)).toBeNull();
+  });
+});
+
+describe("formatTimestamp", () => {
+  it("returns an empty string for null", () => {
+    expect(formatTimestamp(null)).toBe("");
+  });
+
+  it("formats an ISO timestamp as month, day, and time", () => {
+    // Locale-dependent formatting (toLocaleDateString), so assert on shape
+    // rather than an exact string — a specific "Aug 14" would break under a
+    // non-US CI locale even though the function is working correctly.
+    const formatted = formatTimestamp("2026-08-14T15:40:00.000Z");
+    expect(formatted).toMatch(/\d{1,2}:\d{2}/);
+    expect(formatted.length).toBeGreaterThan(0);
   });
 });
 

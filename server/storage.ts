@@ -567,18 +567,24 @@ export class DatabaseStorage implements IStorage {
     return exercise || undefined;
   }
 
+  // One query across every one of the account's teams (not one per team,
+  // like this used to do) — same JS-side tally as the single-team
+  // getPlayPracticeStats below, just fetching all the rows it tallies over
+  // in a single round trip so a multi-team Club account doesn't pay for
+  // its team count in extra queries.
   async getExerciseUsageStats(accountId: number): Promise<Record<string, { count: number; lastUsedDate: string | null }>> {
     const teamsForAccount = await this.getTeamsByAccount(accountId);
     const stats: Record<string, { count: number; lastUsedDate: string | null }> = {};
-    for (const team of teamsForAccount) {
-      const sessions = await this.getAllTrainingSessions(team.id);
-      for (const session of sessions) {
-        for (const exerciseId of session.exerciseIds ?? []) {
-          const entry = stats[exerciseId] ?? { count: 0, lastUsedDate: null };
-          entry.count++;
-          if (!entry.lastUsedDate || session.date > entry.lastUsedDate) entry.lastUsedDate = session.date;
-          stats[exerciseId] = entry;
-        }
+    if (teamsForAccount.length === 0) return stats;
+
+    const sessions = await db.select().from(trainingSessions)
+      .where(inArray(trainingSessions.teamId, teamsForAccount.map((team) => team.id)));
+    for (const session of sessions) {
+      for (const exerciseId of session.exerciseIds ?? []) {
+        const entry = stats[exerciseId] ?? { count: 0, lastUsedDate: null };
+        entry.count++;
+        if (!entry.lastUsedDate || session.date > entry.lastUsedDate) entry.lastUsedDate = session.date;
+        stats[exerciseId] = entry;
       }
     }
     return stats;

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { UserPlus, X, Mail, Clock, Check, Download, Loader2, User } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ErrorState from "@/components/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export default function CoachSettings() {
     setPublicName(account?.publicName ?? "");
   }, [account?.publicName]);
 
-  const { data, isLoading } = useQuery<CoachesResponse>({ queryKey: ["/api/coaches"] });
+  const { data, isLoading, isError, refetch } = useQuery<CoachesResponse>({ queryKey: ["/api/coaches"] });
 
   const savePreferencesMutation = useMutation({
     mutationFn: async () =>
@@ -385,6 +386,8 @@ export default function CoachSettings() {
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
               </div>
+            ) : isError ? (
+              <ErrorState onRetry={() => refetch()} />
             ) : data && data.members.length > 0 ? (
               data.members.map((member) => (
                 <div key={member.memberAccountId} className="flex items-center justify-between gap-2 border border-border rounded-lg p-3">

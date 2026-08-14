@@ -20,6 +20,15 @@ export function formatPlainDate(date: string): string {
   return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+// A full timestamp (ISO string with time, e.g. a notification or comment's
+// createdAt) as "Aug 14, 3:40 PM" — shared by every dialog that lists
+// timestamped social activity (notifications, exercise/play/physical-test
+// comments).
+export function formatTimestamp(value: string | null): string {
+  if (!value) return "";
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 
 // Whole years elapsed since a "YYYY-MM-DD" birth date, as of today — the
 // naive `currentYear - birthYear` is off by one for anyone whose birthday

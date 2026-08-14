@@ -11,6 +11,8 @@ import BasketballCourt from "@/components/BasketballCourt";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ErrorState from "@/components/ErrorState";
+import DiagramEditorSkeleton from "@/components/DiagramEditorSkeleton";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
@@ -35,7 +37,7 @@ export default function ExerciseDiagramEditor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: existingExercise, isLoading } = useQuery<Exercise & { steps: (EditorStep & { stepIndex: number })[] }>({
+  const { data: existingExercise, isLoading, isError, refetch } = useQuery<Exercise & { steps: (EditorStep & { stepIndex: number })[] }>({
     queryKey: [`/api/exercises/${exerciseId}`],
   });
 
@@ -109,8 +111,20 @@ export default function ExerciseDiagramEditor() {
     { tool: "erase", label: t("exerciseDiagramEditor.tools.erase"), icon: Eraser },
   ], [t]);
 
+  // Same "stuck forever" trap as a failed board.currentStep would leave
+  // behind — a failed fetch never populates existingExercise, so
+  // board.loadSteps (the effect above) never runs and !board.currentStep
+  // would otherwise loop back into the loading branch indefinitely.
+  if (isError) {
+    return (
+      <main className="flex items-center justify-center h-full p-4">
+        <ErrorState onRetry={() => refetch()} />
+      </main>
+    );
+  }
+
   if (isLoading || !board.currentStep) {
-    return <main className="flex items-center justify-center h-full text-muted-foreground">{t("exerciseDiagramEditor.loadingEllipsis")}</main>;
+    return <DiagramEditorSkeleton />;
   }
 
   return (
