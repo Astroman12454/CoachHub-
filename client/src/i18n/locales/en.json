@@ -52,6 +52,10 @@
     "navigation": "Navigation",
     "mainNavigation": "Main"
   },
+  "bottomNav": {
+    "label": "Quick navigation",
+    "more": "More"
+  },
   "login": {
     "email": "Email",
     "password": "Password",
@@ -144,6 +148,12 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome back! Here's what's happening with your team.",
+    "gettingStarted": {
+      "title": "Getting started",
+      "addPlayers": "Add your players",
+      "setSchedule": "Set your weekly schedule",
+      "createSession": "Create your first training session"
+    },
     "totalSessions": "Total Sessions",
     "activePlayers": "Active Players",
     "exerciseLibrary": "Exercise Library",

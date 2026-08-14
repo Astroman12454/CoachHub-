@@ -52,6 +52,10 @@
     "navigation": "Navegación",
     "mainNavigation": "Principal"
   },
+  "bottomNav": {
+    "label": "Navegación rápida",
+    "more": "Más"
+  },
   "login": {
     "email": "Correo electrónico",
     "password": "Contraseña",
@@ -144,6 +148,12 @@
   "dashboard": {
     "title": "Panel",
     "subtitle": "¡Bienvenido de nuevo! Esto es lo que pasa con tu equipo.",
+    "gettingStarted": {
+      "title": "Primeros pasos",
+      "addPlayers": "Añade a tus jugadores",
+      "setSchedule": "Configura tu horario semanal",
+      "createSession": "Crea tu primera sesión de entrenamiento"
+    },
     "totalSessions": "Sesiones Totales",
     "activePlayers": "Jugadores Activos",
     "exerciseLibrary": "Biblioteca de Ejercicios",

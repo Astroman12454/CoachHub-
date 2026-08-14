@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import SessionModal from "@/components/SessionModal";
@@ -8,6 +8,7 @@ import CommandBar from "@/components/CommandBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/ErrorState";
 import TodayHero from "@/components/TodayHero";
+import GettingStartedCard from "@/components/GettingStartedCard";
 import DashboardStatsGrid, { type DashboardStats } from "@/components/DashboardStatsGrid";
 import UpcomingSessionsCard from "@/components/UpcomingSessionsCard";
 import QuickActionsCard from "@/components/QuickActionsCard";
@@ -23,6 +24,7 @@ import type { Exercise, TrainingSession, RecurringPracticeSlot } from "@shared/s
 export default function Dashboard() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { teams, currentTeamId } = useAuth();
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -45,6 +47,21 @@ export default function Dashboard() {
   const { data: recurringSlots = [] } = useQuery<RecurringPracticeSlot[]>({
     queryKey: ['/api/recurring-slots'],
   });
+
+  // Lets BottomTabBar's central "+" open the create-session modal from any
+  // page — it always routes here first since Dashboard is the one place
+  // that already owns this modal's state. Watches wouter's reactive search
+  // string (not a mount-only effect reading window.location.search once) —
+  // tapping "+" while already on the dashboard changes only the query
+  // string, which doesn't remount this component, so a mount-only effect
+  // would silently miss it. Stripped from the URL right away so a refresh
+  // (or sharing the link) doesn't reopen it.
+  useEffect(() => {
+    if (new URLSearchParams(search).get("newSession") === "1") {
+      setIsSessionModalOpen(true);
+      setLocation("/dashboard", { replace: true });
+    }
+  }, [search, setLocation]);
 
   const currentTeam = useMemo(() => teams.find((team) => team.id === currentTeamId), [teams, currentTeamId]);
 
@@ -198,6 +215,15 @@ export default function Dashboard() {
           onOpenSession={() => navigateToPage('/training-sessions')}
           onCreateSession={() => setIsSessionModalOpen(true)}
           onAddExercises={setEditingSession}
+        />
+
+        <GettingStartedCard
+          hasPlayers={(stats?.activePlayersCount ?? 0) > 0}
+          hasRecurringSchedule={recurringSlots.length > 0}
+          hasSessions={(stats?.totalSessions ?? 0) > 0}
+          onAddPlayers={() => navigateToPage('/players')}
+          onSetSchedule={() => navigateToPage('/weekly-schedule')}
+          onCreateSession={() => setIsSessionModalOpen(true)}
         />
 
         <div className="mb-5">
