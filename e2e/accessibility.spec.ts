@@ -72,11 +72,10 @@ test.describe("accessibility (axe)", () => {
         data: { email: `e2e-welcome-suggest-${Date.now()}@coachhub.test`, password: "e2e-test-password-123" },
       });
       await page.request.put("/api/account/public-name", { data: { publicName: `E2E Welcome Coach ${Date.now()}` } });
-      const create = await page.request.post("/api/exercises", {
-        data: { name: "E2E Welcome Suggestion Drill", description: "Shared for welcome dialog testing", category: "shooting", duration: 10, difficulty: "easy" },
-      });
-      const exercise = await create.json();
-      await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+      // A free-plan account can't create a custom exercise, but every
+      // signup is seeded with the default library — share one of those.
+      const seeded = await (await page.request.get("/api/exercises")).json();
+      await page.request.put(`/api/exercises/${seeded[0].id}/share-community`, { data: { shared: true } });
       expect(suggestRes.ok()).toBe(true);
       // page.request shares this context's cookie jar with page.goto below —
       // without logging back out, the throwaway coach's session would still
@@ -887,11 +886,10 @@ test.describe("accessibility (axe)", () => {
     const secondEmail = `e2e-suggest-${Date.now()}@coachhub.test`;
     await page.request.post("/api/signup", { data: { email: secondEmail, password: "e2e-test-password-123" } });
     await page.request.put("/api/account/public-name", { data: { publicName: `E2E Suggested Coach ${Date.now()}` } });
-    const create = await page.request.post("/api/exercises", {
-      data: { name: "E2E Suggested Drill", description: "Shared for suggestion testing", category: "shooting", duration: 10, difficulty: "easy" },
-    });
-    const exercise = await create.json();
-    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+    // A free-plan account can't create a custom exercise, but every signup
+    // is seeded with the default library — share one of those instead.
+    const seeded = await (await page.request.get("/api/exercises")).json();
+    await page.request.put(`/api/exercises/${seeded[0].id}/share-community`, { data: { shared: true } });
 
     // Switch back to the shared test account for the rest of the test.
     await page.request.post("/api/login", { data: { email: TEST_EMAIL, password: TEST_PASSWORD } });
@@ -1875,11 +1873,10 @@ test.describe("accessibility (axe)", () => {
     const secondEmail = `e2e-suggest-play-${Date.now()}@coachhub.test`;
     await page.request.post("/api/signup", { data: { email: secondEmail, password: "e2e-test-password-123" } });
     await page.request.put("/api/account/public-name", { data: { publicName: `E2E Suggested Play Coach ${Date.now()}` } });
-    const create = await page.request.post("/api/exercises", {
-      data: { name: "E2E Suggested Play Drill", description: "Shared for suggestion testing", category: "shooting", duration: 10, difficulty: "easy" },
-    });
-    const exercise = await create.json();
-    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+    // A free-plan account can't create a custom exercise, but every signup
+    // is seeded with the default library — share one of those instead.
+    const seeded = await (await page.request.get("/api/exercises")).json();
+    await page.request.put(`/api/exercises/${seeded[0].id}/share-community`, { data: { shared: true } });
 
     // Switch back to the shared test account for the rest of the test.
     await page.request.post("/api/login", { data: { email: TEST_EMAIL, password: TEST_PASSWORD } });
