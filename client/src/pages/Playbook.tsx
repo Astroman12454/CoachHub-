@@ -280,7 +280,7 @@ export default function Playbook() {
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1">
+                    <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1 min-w-0 truncate">
                       {play.name}
                     </CardTitle>
                     <div className="flex items-center gap-0.5 -mt-1 -mr-1 flex-shrink-0">

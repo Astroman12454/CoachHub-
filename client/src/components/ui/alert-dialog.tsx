@@ -37,7 +37,12 @@ const AlertDialogContent = React.forwardRef<
         // Same responsive bottom-sheet-on-mobile treatment as Dialog (see
         // dialog.tsx) — a delete confirmation should feel like the same
         // product as every other dialog, not a different component.
-        "fixed inset-x-0 bottom-0 top-auto z-50 grid max-h-[85vh] w-full max-w-lg translate-x-0 translate-y-0 gap-4 overflow-y-auto rounded-t-xl border-t bg-background p-6 pt-5 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+        // grid-cols-[minmax(0,1fr)]: same fix as dialog.tsx — this
+        // component's implicit grid column defaults to max-content sizing,
+        // so a long AlertDialogDescription (a confirm dialog often
+        // interpolates a dynamic name/email into it) overflows the dialog
+        // on one unbroken line instead of wrapping to fit it.
+        "fixed inset-x-0 bottom-0 top-auto z-50 grid grid-cols-[minmax(0,1fr)] max-h-[85vh] w-full max-w-lg translate-x-0 translate-y-0 gap-4 overflow-y-auto rounded-t-xl border-t bg-background p-6 pt-5 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         "sm:inset-x-auto sm:left-[50%] sm:top-[50%] sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border sm:pt-6 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%] sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0",
         className
       )}
