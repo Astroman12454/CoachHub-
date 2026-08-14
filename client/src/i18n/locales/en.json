@@ -462,6 +462,7 @@
     "emergencyContactPhonePlaceholder": "e.g., +1 555 123 4567",
     "medicalNotes": "Medical Notes",
     "medicalNotesPlaceholder": "Allergies, conditions, anything relevant in an emergency...",
+    "medicalNotesConsentHint": "Health information needs the parent or guardian's explicit consent before you record it, separate from the general roster data covered by your privacy policy.",
     "activePlayer": "Active Player",
     "activePlayerDescription": "This player will take part in training sessions",
     "captain": "Captain",
@@ -1315,7 +1316,7 @@
       },
       "minors": {
         "heading": "3. Player data and minors",
-        "body": "Coach Hub accounts are created and controlled by the coach, who must be an adult (18+). Players do not create accounts or log in themselves — the coach enters and manages their roster. Player rosters commonly include minors. If you enter data about players under 18, you are responsible for having a legitimate basis to do so (e.g. your role as coach/club and, where required, consent from a parent or guardian) and for keeping that data accurate and deleting it when it's no longer needed. Coach Hub does not direct the service at children and does not knowingly allow minors to register their own accounts."
+        "body": "Coach Hub accounts are created and controlled by the coach, who must be an adult (18+). Players do not create accounts or log in themselves — the coach enters and manages their roster. Player rosters commonly include minors. If you enter data about players under 18, you are responsible for having a legitimate basis to do so (e.g. your role as coach/club and, where required, consent from a parent or guardian) and for keeping that data accurate and deleting it when it's no longer needed. Coach Hub does not direct the service at children and does not knowingly allow minors to register their own accounts. Medical notes (allergies, conditions, or other health information) are a special category of data under GDPR Article 9, held to a higher standard than the rest of a player's file: before recording them you need explicit consent from the parent or guardian (or from the player themselves if already an adult) — the general legitimate basis covering the rest of the roster isn't enough on its own."
       },
       "sharing": {
         "heading": "4. Who we share data with",
