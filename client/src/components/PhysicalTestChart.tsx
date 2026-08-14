@@ -77,7 +77,17 @@ export default function PhysicalTestChart({ results, unit, lowerIsBetter }: Phys
 
         {points.map((p, i) => (
           <g key={i}>
-            {/* Transparent hit target, larger than the visible marker */}
+            {/* Transparent hit target, larger than the visible marker.
+                onClick is what makes this work on a phone — only the last
+                point had a value visible at all on mobile before this,
+                since touch has no persistent hover state. Hover uses
+                onPointerEnter/Leave gated to pointerType==="mouse" rather
+                than onMouseEnter/Leave: a tap synthesizes a compatibility
+                mouseenter *and* mouseleave around the click (enter, then
+                click, then leave, all for that one tap), so plain mouse
+                events would close the tooltip onClick had just opened.
+                Real mice don't carry that gate, so hover still works there;
+                tapping a different point just switches the tooltip to it. */}
             <circle
               cx={p.x}
               cy={p.y}
@@ -86,10 +96,11 @@ export default function PhysicalTestChart({ results, unit, lowerIsBetter }: Phys
               tabIndex={0}
               role="button"
               aria-label={`${formatPlainDate(p.date)}: ${p.value} ${unit}`}
-              onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered((h) => (h === i ? null : h))}
+              onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovered(i); }}
+              onPointerLeave={(e) => { if (e.pointerType === "mouse") setHovered((h) => (h === i ? null : h)); }}
               onFocus={() => setHovered(i)}
               onBlur={() => setHovered((h) => (h === i ? null : h))}
+              onClick={() => setHovered(i)}
               className="cursor-pointer outline-none"
             />
             <circle
@@ -104,8 +115,24 @@ export default function PhysicalTestChart({ results, unit, lowerIsBetter }: Phys
           </g>
         ))}
 
-        {/* Direct label on the endpoint, per line-chart labeling convention */}
-        <text x={last.x} y={last.y - 10} textAnchor="end" fontSize="10" fontWeight="600" fill="currentColor" className="text-foreground pointer-events-none">
+        {/* Direct label on the endpoint, per line-chart labeling convention.
+            paintOrder="stroke" + a background-colored stroke halo keeps this
+            legible when the endpoint sits low in the chart (a fast final
+            sprint time, e.g.) and the label would otherwise sit right on
+            top of the incoming line segment. */}
+        <text
+          x={last.x}
+          y={last.y - 12}
+          textAnchor="end"
+          fontSize="10"
+          fontWeight="600"
+          fill="currentColor"
+          stroke="var(--background, white)"
+          strokeWidth="4"
+          strokeLinejoin="round"
+          paintOrder="stroke"
+          className="text-foreground pointer-events-none"
+        >
           {last.value} {unit}
         </text>
       </svg>
