@@ -242,15 +242,15 @@ export default function CommunityPlays() {
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="flex items-center gap-1 mb-4 border border-border rounded-md p-1 w-fit flex-wrap">
           <Button type="button" size="sm" variant={feedTab === "discover" ? "default" : "ghost"} aria-pressed={feedTab === "discover"} onClick={() => setFeedTab("discover")} className={feedTab === "discover" ? "basketball-orange basketball-orange-hover text-white" : ""}>
-            <Compass className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <Compass className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityExercises.discoverTab")}
           </Button>
           <Button type="button" size="sm" variant={feedTab === "following" ? "default" : "ghost"} aria-pressed={feedTab === "following"} onClick={() => setFeedTab("following")} className={feedTab === "following" ? "basketball-orange basketball-orange-hover text-white" : ""}>
-            <UserCheck className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <UserCheck className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityExercises.followingTab")}
           </Button>
           <Button type="button" size="sm" variant={feedTab === "saved" ? "default" : "ghost"} aria-pressed={feedTab === "saved"} onClick={() => setFeedTab("saved")} className={feedTab === "saved" ? "basketball-orange basketball-orange-hover text-white" : ""}>
-            <Bookmark className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <Bookmark className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityPlays.savedTab")}
           </Button>
         </div>

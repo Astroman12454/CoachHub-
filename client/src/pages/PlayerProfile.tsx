@@ -540,7 +540,11 @@ export default function PlayerProfile() {
                           ) : (
                             <span className="font-medium text-foreground truncate">{test.testName}</span>
                           )}
-                          <span className="text-xs text-muted-foreground ml-2">{formatPlainDate(latest.date)}</span>
+                          {/* whitespace-nowrap: without it, a narrow column
+                              wraps mid-date ("Aug 1," / "2026" on separate
+                              lines) instead of moving the whole date down as
+                              one unit. */}
+                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">{formatPlainDate(latest.date)}</span>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
                           {isPersonalRecord && (

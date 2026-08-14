@@ -289,7 +289,7 @@ export default function CommunityExercises() {
             onClick={() => setFeedTab("discover")}
             className={feedTab === "discover" ? "basketball-orange basketball-orange-hover text-white" : ""}
           >
-            <Compass className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <Compass className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityExercises.discoverTab")}
           </Button>
           <Button
@@ -300,7 +300,7 @@ export default function CommunityExercises() {
             onClick={() => setFeedTab("following")}
             className={feedTab === "following" ? "basketball-orange basketball-orange-hover text-white" : ""}
           >
-            <UserCheck className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <UserCheck className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityExercises.followingTab")}
           </Button>
           <Button
@@ -311,7 +311,7 @@ export default function CommunityExercises() {
             onClick={() => setFeedTab("saved")}
             className={feedTab === "saved" ? "basketball-orange basketball-orange-hover text-white" : ""}
           >
-            <Bookmark className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+            <Bookmark className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t("communityPlays.savedTab")}
           </Button>
         </div>
