@@ -188,8 +188,12 @@ export default function Portal() {
               <p className="text-sm text-muted-foreground">{t("portal.noAttendanceRecorded")}</p>
             ) : (
               <ul className="space-y-2">
-                {data.attendance.map((a) => (
-                  <li key={a.sessionId} className="flex items-center justify-between text-sm">
+                {data.attendance.map((a, index) => (
+                  // sessionId alone isn't guaranteed unique here — attendance
+                  // has no (sessionId, playerId) uniqueness constraint
+                  // server-side, so a session marked twice for this player
+                  // would otherwise collide.
+                  <li key={`${a.sessionId}-${index}`} className="flex items-center justify-between text-sm">
                     <div>
                       <p className="font-medium text-foreground">{a.sessionName}</p>
                       <p className="text-muted-foreground text-xs">{formatDate(a.date)}</p>
