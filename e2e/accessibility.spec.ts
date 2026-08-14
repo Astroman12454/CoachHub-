@@ -2122,6 +2122,35 @@ test.describe("accessibility (axe)", () => {
       expect(summarize(results.violations)).toEqual([]);
     });
 
+    // A long player name grows the identity block to two or three lines at
+    // this width — regression check for a real bug found on-device: the
+    // header used to keep the name and the Report/Rate buttons on one
+    // non-wrapping row, so a tall wrapped name put the buttons right on top
+    // of it. Axe's color-contrast rule doesn't catch geometric overlap like
+    // this, so the check here is an explicit bounding-box comparison.
+    test("player profile — long name doesn't overlap the action buttons", async ({ page }) => {
+      await login(page);
+      const playerRes = await page.request.post("/api/players", {
+        data: { name: "E2E Very Long Player Name For Overlap Testing", isActive: 1 },
+      });
+      const player = await playerRes.json();
+      await page.goto(`/players/${player.id}`);
+      await page.waitForLoadState("networkidle");
+
+      const nameBox = await page.locator("h2").first().boundingBox();
+      const rateBox = await page.getByRole("button", { name: /^Rate$/ }).boundingBox();
+      expect(nameBox).toBeTruthy();
+      expect(rateBox).toBeTruthy();
+      // No vertical overlap between the two boxes.
+      const noOverlap = nameBox!.y + nameBox!.height <= rateBox!.y || rateBox!.y + rateBox!.height <= nameBox!.y;
+      expect(noOverlap).toBe(true);
+
+      // Same pre-existing, out-of-scope gap noted on the bottom-nav tests
+      // above: no visible <h1> on a bare mobile page with no dialog open.
+      const results = await scan(page, { disableRules: ["page-has-heading-one"] });
+      expect(summarize(results.violations)).toEqual([]);
+    });
+
     test("training sessions — delete confirm as a bottom sheet", async ({ page }) => {
       await login(page);
       await page.goto("/training-sessions");
