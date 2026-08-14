@@ -462,6 +462,7 @@
     "emergencyContactPhonePlaceholder": "ej., +34 600 123 456",
     "medicalNotes": "Notas Médicas",
     "medicalNotesPlaceholder": "Alergias, condiciones, cualquier cosa relevante en una emergencia...",
+    "medicalNotesConsentHint": "Los datos de salud necesitan el consentimiento explícito del padre, madre o tutor antes de registrarlos — es un requisito distinto y más estricto que el resto de datos de la plantilla.",
     "activePlayer": "Jugador Activo",
     "activePlayerDescription": "Este jugador participará en las sesiones de entrenamiento",
     "captain": "Capitán",
@@ -1315,7 +1316,7 @@
       },
       "minors": {
         "heading": "3. Datos de jugadores y menores",
-        "body": "Las cuentas de Coach Hub las crea y controla el entrenador, que debe ser mayor de edad (18+). Los jugadores no crean cuentas ni inician sesión por sí mismos — el entrenador introduce y gestiona su plantilla. Las plantillas de jugadores suelen incluir menores de edad. Si introduces datos de jugadores menores de 18 años, eres responsable de contar con una base legítima para hacerlo (por ejemplo, tu rol como entrenador/club y, cuando sea necesario, el consentimiento de un padre, madre o tutor) y de mantener esos datos exactos y eliminarlos cuando ya no sean necesarios. Coach Hub no dirige el servicio a menores y no permite conscientemente que registren sus propias cuentas."
+        "body": "Las cuentas de Coach Hub las crea y controla el entrenador, que debe ser mayor de edad (18+). Los jugadores no crean cuentas ni inician sesión por sí mismos — el entrenador introduce y gestiona su plantilla. Las plantillas de jugadores suelen incluir menores de edad. Si introduces datos de jugadores menores de 18 años, eres responsable de contar con una base legítima para hacerlo (por ejemplo, tu rol como entrenador/club y, cuando sea necesario, el consentimiento de un padre, madre o tutor) y de mantener esos datos exactos y eliminarlos cuando ya no sean necesarios. Coach Hub no dirige el servicio a menores y no permite conscientemente que registren sus propias cuentas. Las notas médicas (alergias, condiciones u otra información de salud) son una categoría especial de datos según el art. 9 del RGPD, con un nivel de protección más alto que el resto de la ficha del jugador: antes de registrarlas necesitas el consentimiento explícito del padre, madre o tutor (o del propio jugador si ya es mayor de edad), no basta con la base legítima general que cubre el resto de la plantilla."
       },
       "sharing": {
         "heading": "4. Con quién compartimos datos",
