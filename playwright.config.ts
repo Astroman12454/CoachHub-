@@ -15,6 +15,17 @@ export default defineConfig({
     baseURL: "http://localhost:5000",
     trace: "retain-on-failure",
     storageState: "e2e/.auth/state.json",
+    // Card lists animate in with the .fade-in CSS class (opacity 0 -> 1
+    // over ~250ms, staggered per card) — an axe color-contrast scan that
+    // lands mid-animation sees a still-transparent element and reports a
+    // false-positive violation. That's the real cause behind this suite's
+    // occasional "color-contrast" failures on freshly-rendered cards (seen
+    // on both CommunityExercises and CommunityPlays). index.css already
+    // collapses .fade-in to near-instant under prefers-reduced-motion —
+    // this just makes every test actually run with that preference, which
+    // both removes the race and matches how a motion-sensitive user would
+    // really see the page.
+    reducedMotion: "reduce",
   },
   projects: [
     {
