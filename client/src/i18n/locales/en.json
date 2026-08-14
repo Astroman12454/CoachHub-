@@ -42,7 +42,8 @@
     "exerciseLibrary": "Exercise Library",
     "physicalTests": "Physical Tests",
     "players": "Players",
-    "coaches": "Coaches"
+    "coaches": "Coaches",
+    "account": "Account"
   },
   "sidebar": {
     "tagline": "Basketball Training",
@@ -50,8 +51,7 @@
     "selectTeam": "Select team",
     "newTeam": "New Team",
     "navigation": "Navigation",
-    "mainNavigation": "Main",
-    "accountSettings": "Account settings"
+    "mainNavigation": "Main"
   },
   "bottomNav": {
     "label": "Quick navigation",

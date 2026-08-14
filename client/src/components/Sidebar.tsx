@@ -106,9 +106,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   // accepted an invite has full access to the club's teams but doesn't
   // manage who else is on it.
   const canManageCoaches = isClubPlan(account?.plan ?? "free") && !isClubMember;
-  const items = canManageCoaches
-    ? [...navigation, { key: "nav.coaches", href: "/settings/coaches", icon: UserCog }]
-    : navigation;
+  const items = [
+    ...(canManageCoaches ? [...navigation, { key: "nav.coaches", href: "/settings/coaches", icon: UserCog }] : navigation),
+    // Every plan gets this one, unlike Coaches above — it's where the
+    // account-level "delete my account" action lives (see AccountSettings),
+    // and every coach needs a way to reach it, not just Club owners.
+    { key: "nav.account", href: "/settings/account", icon: Settings },
+  ];
 
   const handlePlanClick = async () => {
     if (isBillingPending || isClubMember) return;
@@ -198,15 +202,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <LanguageToggle />
         <ThemeToggle />
-        <Link
-          href="/settings/account"
-          onClick={onNavigate}
-          className="w-10 h-10 rounded-md flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
-          aria-label={t("sidebar.accountSettings")}
-          title={t("sidebar.accountSettings")}
-        >
-          <Settings className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
-        </Link>
         <button
           type="button"
           onClick={logout}
