@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyNote, CheckCircle2, Dumbbell, Volume2, VolumeX, Activity } from "lucide-react";
+import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyNote, CheckCircle2, Dumbbell, Volume2, VolumeX, Activity, AlertTriangle, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AttendanceModal from "@/components/AttendanceModal";
 import RecordTestResultsDialog from "@/components/RecordTestResultsDialog";
@@ -44,7 +44,7 @@ export default function TrainingMode() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: session, isLoading: isLoadingSession } = useQuery<TrainingSession>({
+  const { data: session, isLoading: isLoadingSession, isError: isSessionError, refetch: refetchSession } = useQuery<TrainingSession>({
     queryKey: [`/api/training-sessions/${sessionId}`],
     enabled: !isNaN(sessionId),
   });
@@ -255,10 +255,58 @@ export default function TrainingMode() {
     });
   };
 
-  if (isLoadingSession || !session) {
+  // A failed fetch (not just a slow one) used to leave the coach stuck on
+  // the spinner below forever — isLoadingSession goes false but session
+  // stays undefined, so the old `isLoadingSession || !session` check never
+  // let go. Worst possible page for that: this is what's on screen live,
+  // mid-practice, often on a phone with a spotty gym connection.
+  if (isSessionError) {
     return (
-      <div className="min-h-screen bg-rail flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-white/20 border-t-basketball-orange rounded-full animate-spin" />
+      <div className="min-h-screen bg-rail flex flex-col items-center justify-center gap-4 p-4 text-center">
+        <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center">
+          <AlertTriangle className="w-6 h-6 text-red-400" strokeWidth={1.5} aria-hidden="true" />
+        </div>
+        <div>
+          <p className="font-display font-semibold uppercase tracking-tight text-rail-foreground mb-1">{t("errorState.title")}</p>
+          <p className="text-sm text-rail-muted max-w-sm">{t("errorState.description")}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => refetchSession()} className="basketball-orange basketball-orange-hover text-white">
+            <RotateCw className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
+            {t("errorState.tryAgain")}
+          </Button>
+          <Button variant="ghost" className="text-rail-foreground hover:bg-white/10" onClick={() => setLocation("/training-sessions")}>
+            {t("trainingMode.exit")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingSession || !session) {
+    // The rail is a fixed dark surface independent of the light/dark theme
+    // toggle, so the shared Skeleton component (its shimmer tokens are
+    // tuned per-theme, not per-surface) would render as a pale block on a
+    // near-black background in light mode — bg-white/10 placeholders match
+    // the muted-control treatment this screen's own header already uses.
+    return (
+      <div className="min-h-screen bg-rail flex flex-col court-texture" aria-hidden="true">
+        <header className="flex items-center justify-between gap-2 p-4 border-b border-rail-border">
+          <div className="w-10 h-10 rounded-md bg-white/10 animate-pulse flex-shrink-0" />
+          <div className="flex-1 flex flex-col items-center gap-1.5">
+            <div className="h-4 w-40 rounded bg-white/10 animate-pulse" />
+            <div className="h-3 w-24 rounded bg-white/10 animate-pulse" />
+          </div>
+          <div className="h-11 w-24 rounded-md bg-white/10 animate-pulse flex-shrink-0" />
+        </header>
+        <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 gap-6">
+          <div className="w-full max-w-sm bg-white/5 rounded-lg p-5 space-y-3">
+            <div className="h-5 w-2/3 rounded bg-white/10 animate-pulse" />
+            <div className="h-3 w-full rounded bg-white/10 animate-pulse" />
+            <div className="h-3 w-4/5 rounded bg-white/10 animate-pulse" />
+          </div>
+          <div className="w-36 h-36 rounded-full border-4 border-white/10 animate-pulse" />
+        </main>
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { apiRequest } from "@/lib/queryClient";
+import { formatTimestamp as formatWhen } from "@/lib/time";
 
 // "like"/"comment" (no suffix) are exercise notifications, kept unsuffixed
 // for backward compatibility with rows written before plays/physical tests
@@ -31,11 +32,6 @@ interface NotificationItem {
 interface NotificationsResponse {
   notifications: NotificationItem[];
   unreadCount: number;
-}
-
-function formatWhen(value: string | null): string {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 interface NotificationsDialogProps {

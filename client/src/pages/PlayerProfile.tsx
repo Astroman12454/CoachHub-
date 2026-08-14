@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSidebar } from "@/hooks/use-sidebar";
+import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
@@ -147,14 +148,14 @@ export default function PlayerProfile() {
     },
   });
 
-  const deleteNoteMutation = useMutation({
-    mutationFn: async (noteId: number) => apiRequest("DELETE", `/api/players/${playerId}/notes/${noteId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/development`] });
-    },
-    onError: (error) => {
-      toast({ title: t("playerProfile.couldntDeleteNote"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
-    },
+  // Undo-toast pattern shared with every other delete flow in the app
+  // (exercises, plays, physical tests, games, sessions, recurring slots) —
+  // hides the note immediately and only fires the DELETE if the undo
+  // window passes without the coach clicking "Undo".
+  const { requestDelete: requestDeleteNote, isPendingDelete: isNotePendingDelete } = useDeleteWithUndo({
+    endpoint: `/api/players/${playerId}/notes`,
+    errorMessage: t("playerProfile.couldntDeleteNote"),
+    extraInvalidateKeys: [`/api/players/${playerId}/development`],
   });
 
   const reportInjuryMutation = useMutation({
@@ -183,15 +184,10 @@ export default function PlayerProfile() {
     },
   });
 
-  const deleteInjuryMutation = useMutation({
-    mutationFn: async (injuryId: number) => apiRequest("DELETE", `/api/players/${playerId}/injuries/${injuryId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/injuries`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/players/injuries"] });
-    },
-    onError: (error) => {
-      toast({ title: t("playerProfile.couldntDeleteInjury"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
-    },
+  const { requestDelete: requestDeleteInjury, isPendingDelete: isInjuryPendingDelete } = useDeleteWithUndo({
+    endpoint: `/api/players/${playerId}/injuries`,
+    errorMessage: t("playerProfile.couldntDeleteInjury"),
+    extraInvalidateKeys: ["/api/players/injuries"],
   });
 
   const historyGroups = useMemo(() => (development ? groupHistory(development.history) : []), [development]);
@@ -442,9 +438,9 @@ export default function PlayerProfile() {
               </Button>
             </div>
 
-            {injuries.length > 0 ? (
+            {injuries.filter((injury) => !isInjuryPendingDelete(injury.id)).length > 0 ? (
               <ul className="space-y-3">
-                {injuries.map((injury) => (
+                {injuries.filter((injury) => !isInjuryPendingDelete(injury.id)).map((injury) => (
                   <li key={injury.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -629,9 +625,9 @@ export default function PlayerProfile() {
               </Button>
             </div>
 
-            {development && development.notes.length > 0 ? (
+            {development && development.notes.filter((note) => !isNotePendingDelete(note.id)).length > 0 ? (
               <ul className="space-y-3">
-                {development.notes.map((note) => (
+                {development.notes.filter((note) => !isNotePendingDelete(note.id)).map((note) => (
                   <li key={note.id} className="flex items-start justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0">
                     <div>
                       <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
@@ -670,7 +666,7 @@ export default function PlayerProfile() {
         title={t("playerProfile.deleteNoteConfirmTitle")}
         description={t("playerProfile.deleteNoteConfirmDescription")}
         onConfirm={() => {
-          if (noteToDelete !== null) deleteNoteMutation.mutate(noteToDelete);
+          if (noteToDelete !== null) requestDeleteNote(noteToDelete, t("playerProfile.noteDeletedToast"));
           setNoteToDelete(null);
         }}
       />
@@ -681,7 +677,7 @@ export default function PlayerProfile() {
         title={t("playerProfile.deleteInjuryConfirmTitle")}
         description={t("playerProfile.deleteInjuryConfirmDescription")}
         onConfirm={() => {
-          if (injuryToDelete !== null) deleteInjuryMutation.mutate(injuryToDelete);
+          if (injuryToDelete !== null) requestDeleteInjury(injuryToDelete, t("playerProfile.injuryDeletedToast"));
           setInjuryToDelete(null);
         }}
       />

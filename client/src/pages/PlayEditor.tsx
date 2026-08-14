@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ErrorState from "@/components/ErrorState";
+import DiagramEditorSkeleton from "@/components/DiagramEditorSkeleton";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
@@ -33,7 +35,7 @@ export default function PlayEditor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: existingPlay, isLoading } = useQuery<PlayType & { steps: (EditorStep & { stepIndex: number })[] }>({
+  const { data: existingPlay, isLoading, isError, refetch } = useQuery<PlayType & { steps: (EditorStep & { stepIndex: number })[] }>({
     queryKey: [`/api/plays/${playId}`],
     enabled: isEditing,
   });
@@ -117,8 +119,21 @@ export default function PlayEditor() {
     { tool: "erase", label: t("playEditor.tools.erase"), icon: Eraser },
   ], [t]);
 
+  // Without this, a failed fetch of an existing play used to fall straight
+  // through to the editor below with a blank board and no indication
+  // anything went wrong — the coach would appear to be editing their play
+  // while actually looking at an empty "new play" state, risking a Save
+  // that creates a stray duplicate instead of updating the original.
+  if (isEditing && isError) {
+    return (
+      <main className="flex items-center justify-center h-full p-4">
+        <ErrorState onRetry={() => refetch()} />
+      </main>
+    );
+  }
+
   if (isEditing && isLoading) {
-    return <main className="flex items-center justify-center h-full text-muted-foreground">{t("playEditor.loadingPlay")}</main>;
+    return <DiagramEditorSkeleton />;
   }
 
   return (

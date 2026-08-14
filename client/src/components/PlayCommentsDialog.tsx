@@ -10,6 +10,7 @@ import SetPublicNameDialog from "@/components/SetPublicNameDialog";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage, extractErrorCode } from "@/lib/queryClient";
+import { formatTimestamp as formatWhen } from "@/lib/time";
 
 interface PlayComment {
   id: number;
@@ -19,11 +20,6 @@ interface PlayComment {
   body: string;
   createdAt: string | null;
   canDelete: boolean;
-}
-
-function formatWhen(value: string | null): string {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 const MAX_LENGTH = 500;
