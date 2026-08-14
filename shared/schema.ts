@@ -707,6 +707,10 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Enter your password to confirm"),
+});
+
 export const inviteCoachSchema = z.object({
   email: z.string().email("Enter a valid email address"),
 });

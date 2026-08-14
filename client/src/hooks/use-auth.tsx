@@ -42,6 +42,9 @@ interface AuthContextValue {
   loginError: string | null;
   logout: () => void;
   switchTeam: (teamId: number) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
+  isDeletingAccount: boolean;
+  deleteAccountError: string | null;
 }
 
 // See WelcomeFollowCoachesDialog, which reads and clears this.
@@ -98,6 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const deleteAccountMutation = useMutation({
+    mutationFn: async (password: string) => {
+      await apiRequest("DELETE", "/api/account", { password });
+    },
+    onSuccess: () => {
+      queryClient.setQueryData([SESSION_QUERY_KEY], { authenticated: false });
+      queryClient.clear();
+    },
+  });
+
   const switchTeamMutation = useMutation({
     mutationFn: async (teamId: number) => {
       const res = await apiRequest("PUT", "/api/session/team", { teamId });
@@ -131,6 +144,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     switchTeam: async (teamId: number) => {
       await switchTeamMutation.mutateAsync(teamId);
     },
+    deleteAccount: async (password: string) => {
+      await deleteAccountMutation.mutateAsync(password);
+    },
+    isDeletingAccount: deleteAccountMutation.isPending,
+    deleteAccountError: deleteAccountMutation.isError ? (extractErrorMessage(deleteAccountMutation.error) ?? "Couldn't delete your account") : null,
   }), [
     data,
     isLoading,
@@ -144,6 +162,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginMutation.mutateAsync,
     logoutMutation.mutate,
     switchTeamMutation.mutateAsync,
+    deleteAccountMutation.isPending,
+    deleteAccountMutation.isError,
+    deleteAccountMutation.error,
+    deleteAccountMutation.mutateAsync,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

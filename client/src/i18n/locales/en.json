@@ -50,7 +50,8 @@
     "selectTeam": "Select team",
     "newTeam": "New Team",
     "navigation": "Navigation",
-    "mainNavigation": "Main"
+    "mainNavigation": "Main",
+    "accountSettings": "Account settings"
   },
   "bottomNav": {
     "label": "Quick navigation",
@@ -1192,6 +1193,18 @@
     "nativeUpgradeTitle": "Upgrade from a browser",
     "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."
   },
+  "accountSettings": {
+    "title": "Account",
+    "dangerZone": "Danger Zone",
+    "deleteAccountDescription": "Permanently deletes your account, teams, players, sessions, plays, exercises, and everything else tied to it. This can't be undone.",
+    "deleteAccount": "Delete my account"
+  },
+  "deleteAccountDialog": {
+    "title": "Delete your account?",
+    "description": "This permanently erases your account and everything in it — teams, players, sessions, plays, exercises, and any active subscription is cancelled. There's no undo. Enter your password to confirm.",
+    "passwordLabel": "Password",
+    "confirm": "Permanently delete"
+  },
   "coachSettings": {
     "title": "Manage Coaches",
     "subtitle": "Invite other coaches to your club's teams.",
@@ -1342,7 +1355,7 @@
       },
       "retention": {
         "heading": "6. How long we keep your data",
-        "body": "We keep your data for as long as your account is active. If you ask us to delete your account, we will erase your account, team, player, session, and billing-reference data within 30 days, except where we're legally required to keep records for longer (e.g. tax obligations tied to payments)."
+        "body": "We keep your data for as long as your account is active. You can delete your account yourself at any time from Settings → Account, which immediately and permanently erases your account, team, player, and session data, except where we're legally required to keep records for longer (e.g. tax obligations tied to payments). If you can't access your account, email us and we'll delete it on your behalf."
       },
       "security": {
         "heading": "7. Security",
@@ -1350,7 +1363,7 @@
       },
       "rights": {
         "heading": "8. Your rights",
-        "bodyPrefix": "Under GDPR you can request access to, correction of, deletion of, or export of your data, and you can object to or ask us to limit certain processing. To exercise any of these rights, email",
+        "bodyPrefix": "Under GDPR you can request access to, correction of, deletion of, or export of your data, and you can object to or ask us to limit certain processing. You can delete your account yourself from Settings → Account at any time. For anything else, email",
         "bodyMiddle": ". You also have the right to lodge a complaint with the Spanish Data Protection Agency (",
         "bodySuffix": ")."
       },
@@ -1411,7 +1424,7 @@
       },
       "termination": {
         "heading": "8. Suspension and termination",
-        "body": "You can stop using the service and delete your account at any time by emailing us. We may suspend or terminate accounts that violate these terms, with notice where reasonably possible."
+        "body": "You can stop using the service and delete your account at any time from Settings → Account. We may suspend or terminate accounts that violate these terms, with notice where reasonably possible."
       },
       "changes": {
         "heading": "9. Changes to these terms",
@@ -1433,7 +1446,7 @@
     "commonQuestions": "Common questions",
     "faqItems": [
       { "bold": "How do I upgrade or cancel my plan?", "text": "Open the sidebar in the app and tap your plan badge — that takes you to Stripe's checkout or billing portal, where you can upgrade, change payment details, or cancel anytime." },
-      { "bold": "How do I delete my account?", "text": "Email us from the address on your account and we'll delete it, along with your team, player, and session data, within 30 days." },
+      { "bold": "How do I delete my account?", "text": "Open the sidebar, tap the gear icon at the bottom, and choose \"Delete my account.\" This is immediate and permanent. Can't log in? Email us and we'll delete it on your behalf." },
       { "bold": "What's included in the free plan?", "text": "1 team, up to 15 players, and the full built-in exercise library." }
     ]
   }

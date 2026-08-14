@@ -2067,6 +2067,44 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
+  // Deliberately never uses the shared fixture account (login/TEST_EMAIL) —
+  // this is the one flow in the whole suite that's actually destructive, so
+  // it signs up its own throwaway coach first and only ever acts on that.
+  test("account settings — self-service account deletion", async ({ page }) => {
+    const email = `e2e-delete-account-${Date.now()}@coachhub.test`;
+    const password = "e2e-test-password-123";
+    const signupRes = await page.request.post("/api/signup", { data: { email, password } });
+    expect(signupRes.ok()).toBe(true);
+
+    await page.goto("/settings/account");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=Danger Zone");
+    const pageResults = await scan(page);
+    expect(summarize(pageResults.violations)).toEqual([]);
+
+    await page.click('button:has-text("Delete my account")');
+    await page.waitForSelector("text=Delete your account?");
+    const dialogResults = await scan(page);
+    expect(summarize(dialogResults.violations)).toEqual([]);
+
+    // Wrong password first — the account must survive this.
+    await page.fill("#delete-account-password", "not-the-real-password");
+    await page.click('button:has-text("Permanently delete")');
+    await page.waitForSelector("text=Incorrect password");
+
+    await page.fill("#delete-account-password", password);
+    await page.click('button:has-text("Permanently delete")');
+
+    // Deleting clears the session query, which flips AuthGate to the login
+    // screen with no explicit redirect in this app's own code.
+    await page.waitForSelector('button:has-text("Log In")');
+
+    // The unique-email constraint would reject this if the account row
+    // were still there — the clearest proof the delete actually happened.
+    const resignup = await page.request.post("/api/signup", { data: { email, password } });
+    expect(resignup.status()).toBe(201);
+  });
+
   // Dialog/AlertDialog render as a bottom sheet below the sm breakpoint
   // (see ui/dialog.tsx, ui/alert-dialog.tsx) — checked at a phone-sized
   // viewport since the rest of this suite runs at desktop width and would
