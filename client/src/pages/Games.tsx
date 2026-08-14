@@ -214,9 +214,9 @@ export default function Games() {
                 style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
               >
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="font-display uppercase tracking-tight text-lg text-foreground mb-1 truncate">
                         {t("games.vsOpponent", { opponent: game.opponent })}
                       </CardTitle>
                       <div className="flex items-center text-sm text-muted-foreground gap-3">
@@ -232,7 +232,7 @@ export default function Games() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-1 flex-shrink-0">
                       {game.date >= todayISO() && (
                         <Button
                           variant="ghost"

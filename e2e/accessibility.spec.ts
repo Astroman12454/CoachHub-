@@ -2144,6 +2144,50 @@ test.describe("accessibility (axe)", () => {
       expect(noOverlap).toBe(true);
     });
 
+    // Regression check for a real bug found on-device: DialogContent (and
+    // AlertDialogContent) has no explicit grid-template-columns, so its
+    // implicit column defaulted to max-content sizing — a long
+    // DialogDescription rendered on one unbroken line wider than the dialog
+    // itself instead of wrapping to fit it. Confirmed by measuring the
+    // description's own box, not just scanning for axe violations (a11y
+    // tools don't flag "text renders too wide," only contrast/semantics).
+    test("dialogs — a long description wraps to fit instead of overflowing", async ({ page }) => {
+      await login(page);
+      await page.goto("/physical-tests");
+      await page.waitForLoadState("networkidle");
+      await page.click('button:has-text("Record Results")');
+      await page.waitForSelector("text=Record Results — E2E Sprint Test");
+
+      const dialog = page.getByRole("dialog");
+      const dialogBox = await dialog.boundingBox();
+      const descriptionBox = await dialog.locator("p").first().boundingBox();
+      expect(dialogBox).toBeTruthy();
+      expect(descriptionBox).toBeTruthy();
+      expect(descriptionBox!.width).toBeLessThanOrEqual(dialogBox!.width);
+    });
+
+    // Regression check for a real bug found on-device: play/game card
+    // headers had no truncate protection on the name, so a long one (a
+    // coach-authored play name, an opponent team name) ran into the row of
+    // icon buttons next to it instead of ellipsizing.
+    test("playbook and games — a long name truncates instead of overlapping the icon row", async ({ page }) => {
+      await login(page);
+      const longPlayName = "E2E An Extremely Long Play Name To Test Card Header Truncation Behavior";
+      await page.request.post("/api/plays", {
+        data: { name: longPlayName, category: "offense", courtType: "half", steps: [{ tokens: [], drawings: [] }] },
+      });
+      const longOpponent = "E2E An Extremely Long Opponent Team Name For Truncation Testing FC";
+      await page.request.post("/api/games", { data: { opponent: longOpponent, date: "2026-08-20", location: "home" } });
+
+      await page.goto("/playbook");
+      await page.waitForLoadState("networkidle");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+      await page.goto("/games");
+      await page.waitForLoadState("networkidle");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    });
+
     // A long player name grows the identity block to two or three lines at
     // this width — regression check for a real bug found on-device: the
     // header used to keep the name and the Report/Rate buttons on one
