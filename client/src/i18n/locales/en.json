@@ -1057,7 +1057,38 @@
     "community": "Community",
     "addToCommunity": "Add {{name}} to the community",
     "removeFromCommunity": "Remove {{name}} from the community",
-    "couldntUpdateCommunityShare": "Couldn't update community share"
+    "couldntUpdateCommunityShare": "Couldn't update community share",
+    "quickTemplates": "Quick Templates",
+    "quickTemplatesHint": "Tap one to create a ready-to-use test instantly — you can fine-tune the numbers anytime.",
+    "quickCreatedTitle": "Test created",
+    "quickCreatedDescription": "\"{{name}}\" is ready to use. Tap the pencil anytime to adjust it."
+  },
+  "evaluationTestPresets": {
+    "fullCourtSprint": {
+      "name": "Full-Court Sprint",
+      "unit": "seconds",
+      "description": "One baseline-to-baseline sprint, best time."
+    },
+    "suicides": {
+      "name": "Suicides",
+      "unit": "seconds",
+      "description": "One full suicide drill (line to line and back)."
+    },
+    "freeThrows": {
+      "name": "Free Throws (1 min)",
+      "unit": "makes",
+      "description": "Free throws made in one minute."
+    },
+    "threePointers": {
+      "name": "Three-Pointers (1 min)",
+      "unit": "makes",
+      "description": "Three-pointers made in one minute."
+    },
+    "layups": {
+      "name": "Layups (1 min)",
+      "unit": "makes",
+      "description": "Layups made in one minute."
+    }
   },
   "evaluationTestForm": {
     "editTest": "Edit Evaluation Test",
@@ -1070,10 +1101,18 @@
     "type_count": "Count",
     "unit": "Unit",
     "unitPlaceholder": "e.g., seconds, makes",
+    "directionHintTime": "This is a timed test, so the \"worst\" result is usually the higher number (slower) and the \"best\" is the lower one (faster) — that's normal.",
+    "directionHintCount": "This is a count test, so the \"worst\" result is usually the lower number and the \"best\" is the higher one.",
     "worstValue": "Worst result (= 1 point)",
-    "worstValueDescription": "The result that should score 1 out of 100.",
+    "worstValueDescriptionTime": "The slowest time that should still score 1 out of 100. Example: 15 (seconds).",
+    "worstValueDescriptionCount": "The fewest makes that should still score 1 out of 100. Example: 0.",
     "bestValue": "Best result (= 100 points)",
-    "bestValueDescription": "The result that should score 100 out of 100.",
+    "bestValueDescriptionTime": "The fastest time that scores 100 out of 100. Example: 5 (seconds).",
+    "bestValueDescriptionCount": "The most makes that scores 100 out of 100. Example: 20.",
+    "previewLabel": "Try it with a sample result",
+    "previewPlaceholder": "e.g., 8",
+    "previewResult": "Score: {{score}} / 100",
+    "previewHint": "Type a result above to see what score it would get.",
     "descriptionOptional": "Description (Optional)",
     "descriptionPlaceholder": "How to administer this test...",
     "createTest": "Create Test",
