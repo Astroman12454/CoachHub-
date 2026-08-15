@@ -30,6 +30,8 @@
     "language": "Language",
     "switchToSpanish": "Switch to Spanish",
     "switchToEnglish": "Switch to English",
+    "switchToLightMode": "Switch to light mode",
+    "switchToDarkMode": "Switch to dark mode",
     "error": "Error",
     "undo": "Undo"
   },
@@ -885,7 +887,9 @@
     "likePlayText": "{{name}} liked your play \"{{play}}\"",
     "commentPlayText": "{{name}} commented on your play \"{{play}}\"",
     "likeEvaluationTestText": "{{name}} liked your evaluation test \"{{test}}\"",
-    "commentEvaluationTestText": "{{name}} commented on your evaluation test \"{{test}}\""
+    "commentEvaluationTestText": "{{name}} commented on your evaluation test \"{{test}}\"",
+    "couldntMarkRead": "Couldn't mark notification as read",
+    "couldntMarkAllRead": "Couldn't mark all as read"
   },
   "exerciseShareDialog": {
     "shareLink": "Share Link",
@@ -1286,6 +1290,8 @@
     "sendingEllipsis": "Sending…",
     "inviteSent": "Invite sent",
     "couldntSendInvite": "Couldn't send invite",
+    "couldntRevokeInvite": "Couldn't revoke invite",
+    "couldntRemoveMember": "Couldn't remove coach",
     "atSeatLimit": "You've used all your Club plan coach seats. Remove a coach to invite someone new.",
     "pendingInvites": "Pending Invites",
     "revokeInvite": "Revoke invite",

@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/ErrorState";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -27,12 +28,13 @@ function average(total: number, gamesPlayed: number): string {
 
 export default function PlayerStatsTable() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<SortField>("points");
 
-  const { data: summary = [], isLoading: isLoadingSummary } = useQuery<PlayerGameStatsSummary[]>({
+  const { data: summary = [], isLoading: isLoadingSummary, isError: isErrorSummary } = useQuery<PlayerGameStatsSummary[]>({
     queryKey: ["/api/players/stats"],
   });
-  const { data: roster = [], isLoading: isLoadingRoster } = useQuery<Player[]>({
+  const { data: roster = [], isLoading: isLoadingRoster, isError: isErrorRoster } = useQuery<Player[]>({
     queryKey: ["/api/players"],
   });
 
@@ -51,6 +53,17 @@ export default function PlayerStatsTable() {
           <Skeleton key={i} className="h-12" />
         ))}
       </div>
+    );
+  }
+
+  if (isErrorSummary || isErrorRoster) {
+    return (
+      <ErrorState
+        onRetry={() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/players/stats"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+        }}
+      />
     );
   }
 

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorState from "@/components/ErrorState";
 import SetPublicNameDialog from "@/components/SetPublicNameDialog";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +57,7 @@ export default function ExerciseCommentsDialog({ exerciseId, exerciseName, onOpe
   };
 
   const queryKey = [`/api/community-exercises/${exerciseId}/comments`];
-  const { data: comments = [], isLoading } = useQuery<ExerciseComment[]>({
+  const { data: comments = [], isLoading, isError, refetch } = useQuery<ExerciseComment[]>({
     queryKey,
     enabled: open,
   });
@@ -124,6 +125,8 @@ export default function ExerciseCommentsDialog({ exerciseId, exerciseName, onOpe
             <div className="space-y-2">
               {[1, 2].map((i) => <Skeleton key={i} className="h-14" />)}
             </div>
+          ) : isError ? (
+            <ErrorState onRetry={() => refetch()} />
           ) : comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">{t("exerciseCommentsDialog.empty")}</p>
           ) : (

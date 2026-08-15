@@ -91,7 +91,7 @@ export default function WeeklySchedule() {
   const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1).toISOString().split('T')[0];
   const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).toISOString().split('T')[0];
 
-  const { data: monthSessions = [] } = useQuery<TrainingSession[]>({
+  const { data: monthSessions = [], isError: monthSessionsError, refetch: refetchMonthSessions } = useQuery<TrainingSession[]>({
     queryKey: ['/api/training-sessions', 'month', monthStart, monthEnd],
     queryFn: async () => {
       const response = await fetch(`/api/training-sessions?startDate=${monthStart}&endDate=${monthEnd}`);
@@ -101,11 +101,11 @@ export default function WeeklySchedule() {
     enabled: viewMode === "month",
   });
 
-  const { data: players = [] } = useQuery<Player[]>({
+  const { data: players = [], isError: playersError, refetch: refetchPlayers } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
 
-  const { data: activeInjuries = [] } = useQuery<PlayerInjury[]>({
+  const { data: activeInjuries = [], isError: injuriesError, refetch: refetchInjuries } = useQuery<PlayerInjury[]>({
     queryKey: ['/api/players/injuries'],
   });
   const injuredPlayerIds = new Set(activeInjuries.map((injury) => injury.playerId));
@@ -193,7 +193,7 @@ export default function WeeklySchedule() {
     );
   }
 
-  if (sessionsError) {
+  if (sessionsError || monthSessionsError || playersError || injuriesError) {
     return (
       <div className="flex flex-col h-full">
         <TopBar
@@ -201,7 +201,14 @@ export default function WeeklySchedule() {
           subtitle={t("schedule.subtitle")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <ErrorState onRetry={() => refetchSessions()} />
+          <ErrorState
+            onRetry={() => {
+              refetchSessions();
+              refetchMonthSessions();
+              refetchPlayers();
+              refetchInjuries();
+            }}
+          />
         </main>
       </div>
     );

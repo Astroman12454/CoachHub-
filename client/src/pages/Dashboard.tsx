@@ -44,7 +44,7 @@ export default function Dashboard() {
     queryKey: ['/api/exercises'],
   });
 
-  const { data: recurringSlots = [] } = useQuery<RecurringPracticeSlot[]>({
+  const { data: recurringSlots = [], isError: recurringSlotsError, refetch: refetchRecurringSlots } = useQuery<RecurringPracticeSlot[]>({
     queryKey: ['/api/recurring-slots'],
   });
 
@@ -183,7 +183,7 @@ export default function Dashboard() {
     );
   }
 
-  if (statsError || sessionsError || exercisesError) {
+  if (statsError || sessionsError || exercisesError || recurringSlotsError) {
     return (
       <div className="flex flex-col h-full">
         <TopBar
@@ -192,7 +192,7 @@ export default function Dashboard() {
           showNewSessionButton={true}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <ErrorState onRetry={() => { refetchStats(); refetchSessions(); refetchExercises(); }} />
+          <ErrorState onRetry={() => { refetchStats(); refetchSessions(); refetchExercises(); refetchRecurringSlots(); }} />
         </main>
       </div>
     );

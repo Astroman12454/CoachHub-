@@ -65,7 +65,7 @@ export default function PlayerProfile() {
     enabled: !isNaN(playerId),
   });
 
-  const { data: attendanceStats } = useQuery<{
+  const { data: attendanceStats, isError: isErrorAttendance } = useQuery<{
     total: number; present: number; absent: number; rate: number;
     totalHoursTrained: number;
     monthly: { month: string; present: number; absent: number }[];
@@ -74,16 +74,16 @@ export default function PlayerProfile() {
     enabled: !isNaN(playerId),
   });
 
-  const { data: allStats = [] } = useQuery<PlayerGameStatsSummary[]>({ queryKey: ["/api/players/stats"] });
+  const { data: allStats = [], isError: isErrorStats } = useQuery<PlayerGameStatsSummary[]>({ queryKey: ["/api/players/stats"] });
   const gameStats = useMemo(() => allStats.find((s) => s.playerId === playerId), [allStats, playerId]);
 
-  const { data: injuries = [] } = useQuery<PlayerInjury[]>({
+  const { data: injuries = [], isError: isErrorInjuries } = useQuery<PlayerInjury[]>({
     queryKey: [`/api/players/${playerId}/injuries`],
     enabled: !isNaN(playerId),
   });
   const hasActiveInjury = injuries.some((i) => i.status === "active");
 
-  const { data: drillAttempts = [] } = useQuery<DrillAttempt[]>({
+  const { data: drillAttempts = [], isError: isErrorDrills } = useQuery<DrillAttempt[]>({
     queryKey: [`/api/players/${playerId}/drill-attempts`],
     enabled: !isNaN(playerId),
   });
@@ -179,7 +179,7 @@ export default function PlayerProfile() {
     extraInvalidateKeys: ["/api/players/injuries"],
   });
 
-  const { data: notes = [] } = useQuery<PlayerNote[]>({
+  const { data: notes = [], isError: isErrorNotes } = useQuery<PlayerNote[]>({
     queryKey: [`/api/players/${playerId}/notes`],
     enabled: !isNaN(playerId),
   });
@@ -196,14 +196,21 @@ export default function PlayerProfile() {
     );
   }
 
-  if (isError || !player) {
+  if (isError || isErrorAttendance || isErrorStats || isErrorInjuries || isErrorDrills || isErrorNotes || !player) {
     return (
       <div className="flex flex-col h-full">
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           <ErrorState
             title={t("playerProfile.couldntLoadPlayer")}
             description={t("playerProfile.couldntLoadPlayerDescription")}
-            onRetry={() => refetch()}
+            onRetry={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/attendance-stats`] });
+              queryClient.invalidateQueries({ queryKey: ["/api/players/stats"] });
+              queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/injuries`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/drill-attempts`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/notes`] });
+            }}
           />
         </main>
       </div>

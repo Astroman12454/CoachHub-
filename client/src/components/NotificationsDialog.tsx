@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatTimestamp as formatWhen } from "@/lib/time";
 
@@ -51,6 +52,7 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const restoreFocus = useDialogFocusReturn(open);
   const handleOpenChange = (next: boolean) => {
@@ -69,6 +71,7 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
   const markOneReadMutation = useMutation({
     mutationFn: async (id: number) => apiRequest("POST", `/api/notifications/${id}/read`),
     onMutate: async (id) => {
+      const previous = queryClient.getQueryData<NotificationsResponse>(['/api/notifications']);
       queryClient.setQueryData<NotificationsResponse>(['/api/notifications'], (old) => {
         if (!old) return old;
         const target = old.notifications.find((n) => n.id === id);
@@ -78,15 +81,26 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
           notifications: old.notifications.map((n) => n.id === id ? { ...n, read: true } : n),
         };
       });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context) queryClient.setQueryData(['/api/notifications'], context.previous);
+      toast({ title: t("notificationsDialog.couldntMarkRead"), description: t("common.tryAgain"), variant: "destructive" });
     },
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => apiRequest("POST", "/api/notifications/read-all"),
     onMutate: async () => {
+      const previous = queryClient.getQueryData<NotificationsResponse>(['/api/notifications']);
       queryClient.setQueryData<NotificationsResponse>(['/api/notifications'], (old) =>
         old && { unreadCount: 0, notifications: old.notifications.map((n) => ({ ...n, read: true })) }
       );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context) queryClient.setQueryData(['/api/notifications'], context.previous);
+      toast({ title: t("notificationsDialog.couldntMarkAllRead"), description: t("common.tryAgain"), variant: "destructive" });
     },
   });
 

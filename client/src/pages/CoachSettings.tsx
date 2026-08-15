@@ -140,6 +140,13 @@ export default function CoachSettings() {
   const revokeInviteMutation = useMutation({
     mutationFn: async (id: number) => apiRequest("DELETE", `/api/coaches/invites/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/coaches"] }),
+    onError: (error) => {
+      toast({
+        title: t("coachSettings.couldntRevokeInvite"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
   });
 
   const removeMemberMutation = useMutation({
@@ -147,6 +154,14 @@ export default function CoachSettings() {
     onSuccess: () => {
       setRemoveTarget(null);
       queryClient.invalidateQueries({ queryKey: ["/api/coaches"] });
+    },
+    onError: (error) => {
+      setRemoveTarget(null);
+      toast({
+        title: t("coachSettings.couldntRemoveMember"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
     },
   });
 

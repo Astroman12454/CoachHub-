@@ -245,8 +245,8 @@ export default function ExerciseLibrary() {
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         {/* Filters and Add Button */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:space-x-4">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("sessionModal.filterByCategory")}>
                 <SelectValue placeholder={t("sessionModal.filterByCategory")} />

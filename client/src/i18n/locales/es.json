@@ -30,6 +30,8 @@
     "language": "Idioma",
     "switchToSpanish": "Cambiar a español",
     "switchToEnglish": "Cambiar a inglés",
+    "switchToLightMode": "Cambiar a modo claro",
+    "switchToDarkMode": "Cambiar a modo oscuro",
     "error": "Error",
     "undo": "Deshacer"
   },
@@ -885,7 +887,9 @@
     "likePlayText": "A {{name}} le gustó tu jugada \"{{play}}\"",
     "commentPlayText": "{{name}} comentó en tu jugada \"{{play}}\"",
     "likeEvaluationTestText": "A {{name}} le gustó tu test de evaluación \"{{test}}\"",
-    "commentEvaluationTestText": "{{name}} comentó en tu test de evaluación \"{{test}}\""
+    "commentEvaluationTestText": "{{name}} comentó en tu test de evaluación \"{{test}}\"",
+    "couldntMarkRead": "No se pudo marcar la notificación como leída",
+    "couldntMarkAllRead": "No se pudo marcar todo como leído"
   },
   "exerciseShareDialog": {
     "shareLink": "Enlace para Compartir",
@@ -1286,6 +1290,8 @@
     "sendingEllipsis": "Enviando…",
     "inviteSent": "Invitación enviada",
     "couldntSendInvite": "No se pudo enviar la invitación",
+    "couldntRevokeInvite": "No se pudo revocar la invitación",
+    "couldntRemoveMember": "No se pudo quitar al entrenador",
     "atSeatLimit": "Usaste todos los cupos de entrenador de tu plan Club. Quitá a un entrenador para invitar a alguien nuevo.",
     "pendingInvites": "Invitaciones Pendientes",
     "revokeInvite": "Revocar invitación",
