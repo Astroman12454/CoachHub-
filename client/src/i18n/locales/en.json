@@ -704,9 +704,9 @@
     "deleteStepConfirmTitle": "Delete this step?",
     "deleteStepConfirmDescription": "This removes it from the play's sequence. This can't be undone.",
     "assignPlayer": "Assign a player",
-    "assignPlayerDescription": "Pick which roster player this token represents. It'll show their jersey number (or initials) on every step of this play.",
+    "assignPlayerDescription": "Pick which roster player this token represents, or leave it generic. It'll show their jersey number (or initials) on every step of this play.",
     "noActivePlayers": "No active players on the roster yet.",
-    "clearAssignment": "Clear assignment"
+    "genericToken": "Generic (no name or number)"
   },
   "exerciseLibrary": {
     "failedToDelete": "Failed to delete exercise",

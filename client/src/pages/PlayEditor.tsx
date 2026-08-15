@@ -410,39 +410,46 @@ export default function PlayEditor() {
             <DialogTitle className="font-display uppercase tracking-tight">{t("playEditor.assignPlayer")}</DialogTitle>
             <DialogDescription>{t("playEditor.assignPlayerDescription")}</DialogDescription>
           </DialogHeader>
-          {activePlayers.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">{t("playEditor.noActivePlayers")}</p>
-          ) : (
-            <ul className="space-y-1 max-h-72 overflow-y-auto">
-              {activePlayers.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (assigningToken) board.assignTokenLabel(assigningToken.id, labelForPlayer(p));
-                      setAssigningToken(null);
-                    }}
-                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left"
-                  >
-                    <div className="w-8 h-8 flex-shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-display font-semibold text-foreground">
-                      {labelForPlayer(p)}
-                    </div>
-                    <span className="text-sm truncate">{p.name}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <ul className="space-y-1 max-h-72 overflow-y-auto">
+            {/* Blank marker — no name, no number, nothing tying it to a
+                specific roster player. Placing several of these on the same
+                diagram is intentional (a generic "someone stands here"
+                spot), so it deliberately carries no identity to keep track
+                of or collide with. */}
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  if (assigningToken) board.assignTokenLabel(assigningToken.id, "");
+                  setAssigningToken(null);
+                }}
+                className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left"
+              >
+                <div className="w-8 h-8 flex-shrink-0 rounded-full border-2 border-dashed border-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{t("playEditor.genericToken")}</span>
+              </button>
+            </li>
+            {activePlayers.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (assigningToken) board.assignTokenLabel(assigningToken.id, labelForPlayer(p));
+                    setAssigningToken(null);
+                  }}
+                  className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left"
+                >
+                  <div className="w-8 h-8 flex-shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-display font-semibold text-foreground">
+                    {labelForPlayer(p)}
+                  </div>
+                  <span className="text-sm truncate">{p.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {activePlayers.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-2">{t("playEditor.noActivePlayers")}</p>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (assigningToken) board.assignTokenLabel(assigningToken.id, "?");
-              setAssigningToken(null);
-            }}
-          >
-            {t("playEditor.clearAssignment")}
-          </Button>
         </DialogContent>
       </Dialog>
     </div>
