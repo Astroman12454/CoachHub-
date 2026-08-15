@@ -128,16 +128,6 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
             <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
           </button>
         )}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
-            aria-label={t("exerciseCard.deleteName", { name: localized.name })}
-          >
-            <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
-          </button>
-        )}
         {!(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare || onOpenDiagram) && (
           <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
@@ -165,16 +155,28 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
       </h3>
       <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{localized.description}</p>
 
-      <div className="flex items-center gap-3 text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-          <span className="text-xs font-medium">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
-        </div>
-        {!!exercise.minPlayers && (
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" aria-hidden="true" />
-            <span className="text-xs font-medium">{t("exerciseCard.minPlayers", { count: exercise.minPlayers })}</span>
+            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+            <span className="text-xs font-medium">{t("sessionModal.minAbbrev", { count: exercise.duration })}</span>
           </div>
+          {!!exercise.minPlayers && (
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="text-xs font-medium">{t("exerciseCard.minPlayers", { count: exercise.minPlayers })}</span>
+            </div>
+          )}
+        </div>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="w-8 h-8 flex-shrink-0 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-label={t("exerciseCard.deleteName", { name: localized.name })}
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
+          </button>
         )}
       </div>
     </div>
