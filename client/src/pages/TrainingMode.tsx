@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyNote, CheckCircle2, Dumbbell, Volume2, VolumeX, Activity, AlertTriangle, RotateCw } from "lucide-react";
+import { X, Play, Pause, ChevronLeft, ChevronRight, Plus, ClipboardList, StickyNote, CheckCircle2, Dumbbell, Volume2, VolumeX, Target, AlertTriangle, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import AttendanceModal from "@/components/AttendanceModal";
-import RecordTestResultsDialog from "@/components/RecordTestResultsDialog";
+import RecordEvaluationResultsDialog from "@/components/RecordEvaluationResultsDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import TrainingSummaryDialog from "@/components/TrainingSummaryDialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import { localizedExerciseText } from "@/lib/exerciseI18n";
 import { saveTrainingProgress, loadTrainingProgress, clearTrainingProgress } from "@/lib/trainingProgress";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/types";
-import type { TrainingSession, Exercise, Play as PlaybookPlay, Player, PlayerInjury, PhysicalTest } from "@shared/schema";
+import type { TrainingSession, Exercise, Play as PlaybookPlay, Player, PlayerInjury, EvaluationTest } from "@shared/schema";
 
 function formatCountdown(totalSeconds: number): string {
   const clamped = Math.max(0, Math.round(totalSeconds));
@@ -50,7 +50,7 @@ export default function TrainingMode() {
   });
   const { data: exercises = [] } = useQuery<Exercise[]>({ queryKey: ["/api/exercises"] });
   const { data: plays = [] } = useQuery<PlaybookPlay[]>({ queryKey: ["/api/plays"] });
-  const { data: physicalTests = [] } = useQuery<PhysicalTest[]>({ queryKey: ["/api/physical-tests"] });
+  const { data: evaluationTests = [] } = useQuery<EvaluationTest[]>({ queryKey: ["/api/evaluation-tests"] });
   const { data: players = [] } = useQuery<Player[]>({ queryKey: ["/api/players"] });
   const { data: activeInjuries = [] } = useQuery<PlayerInjury[]>({ queryKey: ["/api/players/injuries"] });
   const injuredPlayerIds = useMemo(() => new Set(activeInjuries.map((i) => i.playerId)), [activeInjuries]);
@@ -69,15 +69,15 @@ export default function TrainingMode() {
       .filter((p): p is PlaybookPlay => !!p);
   }, [session?.playIds, plays]);
 
-  // Physical tests to run at the start of this session, before the exercise
-  // sequence below — a coach taps one to record the roster's results right
-  // there, without leaving Training Mode.
+  // Evaluation tests to run at the start of this session, before the
+  // exercise sequence below — a coach taps one to record the roster's
+  // results right there, without leaving Training Mode.
   const sessionTests = useMemo(() => {
     if (!session?.testIds) return [];
     return session.testIds
-      .map((id) => physicalTests.find((t) => t.id.toString() === id))
-      .filter((t): t is PhysicalTest => !!t);
-  }, [session?.testIds, physicalTests]);
+      .map((id) => evaluationTests.find((t) => t.id.toString() === id))
+      .filter((t): t is EvaluationTest => !!t);
+  }, [session?.testIds, evaluationTests]);
 
   const [stepIndex, setStepIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -85,7 +85,7 @@ export default function TrainingMode() {
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isNoteOpen, setIsNoteOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
-  const [recordingTest, setRecordingTest] = useState<PhysicalTest | null>(null);
+  const [recordingTest, setRecordingTest] = useState<EvaluationTest | null>(null);
   const [isFinishConfirmOpen, setIsFinishConfirmOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   // A smaller timer on a phone-sized viewport claims noticeably less
@@ -364,16 +364,16 @@ export default function TrainingMode() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 gap-3 sm:gap-6">
-        {/* Physical block — shown first, before the technical exercise
-            sequence below, so the session reads as physical-then-technical
-            the way it was planned in SessionModal. Not stepped through with
-            a timer like exercises (a physical test's "duration" is however
-            long recording the roster's results takes); tapping one just
-            opens the same bulk results form used from the Physical Tests
-            page. */}
+        {/* Evaluation tests block — shown first, before the technical
+            exercise sequence below, so the session reads as
+            tests-then-technical the way it was planned in SessionModal. Not
+            stepped through with a timer like exercises (a test's "duration"
+            is however long recording the roster's results takes); tapping
+            one just opens the same bulk results form used from the
+            Evaluations page. */}
         {sessionTests.length > 0 && (
           <div className="w-full max-w-lg">
-            <p className="text-xs uppercase tracking-wide text-rail-muted mb-2">{t("trainingMode.physicalTestsToday")}</p>
+            <p className="text-xs uppercase tracking-wide text-rail-muted mb-2">{t("trainingMode.evaluationTestsToday")}</p>
             <div className="flex flex-wrap gap-2">
               {sessionTests.map((test) => (
                 <button
@@ -382,7 +382,7 @@ export default function TrainingMode() {
                   onClick={() => setRecordingTest(test)}
                   className="flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 text-rail-foreground border-0 px-3 py-1.5 text-xs font-medium transition-colors"
                 >
-                  <Activity className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                  <Target className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
                   {test.name}
                 </button>
               ))}
@@ -565,7 +565,7 @@ export default function TrainingMode() {
         pendingPlayerId={pendingPlayerId}
       />
 
-      <RecordTestResultsDialog test={recordingTest} onOpenChange={(open) => !open && setRecordingTest(null)} />
+      <RecordEvaluationResultsDialog test={recordingTest} onOpenChange={(open) => !open && setRecordingTest(null)} />
 
       <ConfirmDialog
         open={isFinishConfirmOpen}

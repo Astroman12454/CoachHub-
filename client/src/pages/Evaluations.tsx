@@ -21,9 +21,8 @@ import { EVALUATION_TEST_PRESETS } from "@/lib/evaluationTestPresets";
 import type { EvaluationTest } from "@shared/schema";
 
 // General player evaluation (physical AND skill tests — sprints and free
-// throws alike), scored automatically 1-100. Sibling feature to Physical
-// Tests, not a sub-section of it — see EvaluationTestForm's worstValue/
-// bestValue reference-range fields and shared/evaluationScore.ts.
+// throws alike), scored automatically 1-100 — see EvaluationTestForm's
+// worstValue/bestValue reference-range fields and shared/evaluationScore.ts.
 export default function Evaluations() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();

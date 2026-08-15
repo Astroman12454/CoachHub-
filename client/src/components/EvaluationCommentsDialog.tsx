@@ -31,9 +31,9 @@ interface EvaluationCommentsDialogProps {
   onCommentCountChange?: (testId: number, delta: number) => void;
 }
 
-// Evaluation-test twin of PhysicalTestCommentsDialog — same behavior
-// (public name required to post, author or test owner can delete), pointed
-// at the community-evaluation-tests endpoints.
+// Same shape as ExerciseCommentsDialog/PlayCommentsDialog (public name
+// required to post, author or test owner can delete), pointed at the
+// community-evaluation-tests endpoints.
 export default function EvaluationCommentsDialog({ testId, testName, onOpenChange, onCommentCountChange }: EvaluationCommentsDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();

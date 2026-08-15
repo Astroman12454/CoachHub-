@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, Plus, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, Gauge, FileDown, Loader2, Activity, Crown, Phone, Clock, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Star, Plus, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, Gauge, FileDown, Loader2, Crown, Phone, Clock, Calendar, Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import ShotChart from "@/components/ShotChart";
@@ -22,8 +22,7 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
 import { calculateAge, formatPlainDate } from "@/lib/time";
 import { computeEvaluationScore } from "@shared/evaluationScore";
-import PhysicalTestChart from "@/components/PhysicalTestChart";
-import type { Player, PlayerNote, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerPhysicalTestHistory, PlayerEvaluationTestHistory } from "@shared/schema";
+import type { Player, PlayerNote, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerEvaluationTestHistory } from "@shared/schema";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -88,13 +87,8 @@ export default function PlayerProfile() {
     queryKey: [`/api/players/${playerId}/drill-attempts`],
     enabled: !isNaN(playerId),
   });
-  const { data: physicalTestHistory = [] } = useQuery<PlayerPhysicalTestHistory[]>({
-    queryKey: [`/api/players/${playerId}/physical-test-results`],
-    enabled: !isNaN(playerId),
-  });
 
   const [expandedDrill, setExpandedDrill] = useState<string | null>(null);
-  const [expandedTest, setExpandedTest] = useState<number | null>(null);
   const [expandedEvaluationTest, setExpandedEvaluationTest] = useState<number | null>(null);
 
   // Overall standing: the average of each test's latest score, rounded —
@@ -145,8 +139,8 @@ export default function PlayerProfile() {
   });
 
   // Undo-toast pattern shared with every other delete flow in the app
-  // (exercises, plays, physical tests, games, sessions, recurring slots) —
-  // hides the note immediately and only fires the DELETE if the undo
+  // (exercises, plays, evaluation tests, games, sessions, recurring slots)
+  // — hides the note immediately and only fires the DELETE if the undo
   // window passes without the coach clicking "Undo".
   const { requestDelete: requestDeleteNote, isPendingDelete: isNotePendingDelete } = useDeleteWithUndo({
     endpoint: `/api/players/${playerId}/notes`,
@@ -506,74 +500,6 @@ export default function PlayerProfile() {
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">{t("playerProfile.noInjuriesYet")}</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Activity className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
-              {t("playerProfile.physicalTests")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {physicalTestHistory.length > 0 ? (
-              <ul className="space-y-2.5">
-                {physicalTestHistory.map((test) => {
-                  const latest = test.results[0];
-                  const previous = test.results[1];
-                  const delta = previous ? latest.value - previous.value : null;
-                  const improved = delta !== null && delta !== 0 ? (test.lowerIsBetter ? delta < 0 : delta > 0) : null;
-                  const best = test.lowerIsBetter ? Math.min(...test.results.map((r) => r.value)) : Math.max(...test.results.map((r) => r.value));
-                  const isPersonalRecord = test.results.length > 1 && latest.value === best;
-                  const canExpand = test.results.length > 1;
-                  const isExpanded = expandedTest === test.testId;
-                  return (
-                    <li key={test.testId} className="border-t border-border pt-2.5 first:border-0 first:pt-0">
-                      <div className="flex items-center justify-between gap-3 text-sm">
-                        <div className="min-w-0">
-                          {canExpand ? (
-                            <button
-                              type="button"
-                              className="font-medium text-foreground truncate underline decoration-dotted underline-offset-2 text-left"
-                              onClick={() => setExpandedTest(isExpanded ? null : test.testId)}
-                              aria-expanded={isExpanded}
-                            >
-                              {test.testName}
-                            </button>
-                          ) : (
-                            <span className="font-medium text-foreground truncate">{test.testName}</span>
-                          )}
-                          {/* whitespace-nowrap: without it, a narrow column
-                              wraps mid-date ("Aug 1," / "2026" on separate
-                              lines) instead of moving the whole date down as
-                              one unit. */}
-                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">{formatPlainDate(latest.date)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0 tabular-nums">
-                          {isPersonalRecord && (
-                            <Trophy className="w-3.5 h-3.5 text-basketball-orange" strokeWidth={1.75} aria-label={t("playerProfile.personalRecord")} />
-                          )}
-                          <span className="font-semibold text-foreground">{latest.value} {test.unit}</span>
-                          {delta !== null && delta !== 0 && (
-                            <span className={improved ? "text-success" : "text-red-600"}>
-                              {delta > 0 ? "+" : ""}{delta.toFixed(1)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {isExpanded && (
-                        <div className="mt-2">
-                          <PhysicalTestChart results={[...test.results].reverse()} unit={test.unit} lowerIsBetter={test.lowerIsBetter} />
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t("playerProfile.noPhysicalTestsYet")}</p>
             )}
           </CardContent>
         </Card>

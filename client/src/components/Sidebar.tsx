@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Activity, Target, Pencil, Settings } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,7 +25,6 @@ const navigation = [
   { key: "nav.games", href: "/games", icon: Trophy },
   { key: "nav.playbook", href: "/playbook", icon: PencilRuler },
   { key: "nav.exerciseLibrary", href: "/exercise-library", icon: Dumbbell },
-  { key: "nav.physicalTests", href: "/physical-tests", icon: Activity },
   { key: "nav.evaluations", href: "/evaluations", icon: Target },
   { key: "nav.players", href: "/players", icon: Users },
 ];

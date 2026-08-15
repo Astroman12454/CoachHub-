@@ -118,7 +118,7 @@ describe("teams — data export", () => {
     app = await createTestApp();
   });
 
-  it("bundles the team's roster, schedule, attendance, games, plays, and physical-test history", async () => {
+  it("bundles the team's roster, schedule, attendance, games, plays, and evaluation-test history", async () => {
     const agent = await signedInAgent(app);
     const teams = await agent.get("/api/teams");
     const teamId = teams.body[0].id;
@@ -133,8 +133,8 @@ describe("teams — data export", () => {
       opponent: "Central High", date: "2026-08-06", teamScore: 58, opponentScore: 52,
       stats: [{ playerId: player.body.id, points: 12 }],
     });
-    const test = await agent.post("/api/physical-tests").send({ name: "Sprint", unit: "seconds", lowerIsBetter: 1 });
-    await agent.post(`/api/physical-tests/${test.body.id}/results`).send({
+    const test = await agent.post("/api/evaluation-tests").send({ name: "Sprint", type: "time", unit: "seconds", worstValue: 15, bestValue: 5 });
+    await agent.post(`/api/evaluation-tests/${test.body.id}/results`).send({
       date: "2026-08-01", results: [{ playerId: player.body.id, value: 9.8 }],
     });
     const play = await agent.post("/api/plays").send({
@@ -157,10 +157,10 @@ describe("teams — data export", () => {
     expect(res.body.plays).toHaveLength(1);
     expect(res.body.plays[0]).toMatchObject({ name: "Horns Flare" });
     expect(res.body.plays[0].steps).toHaveLength(1);
-    expect(res.body.physicalTests).toHaveLength(1);
-    expect(res.body.physicalTestHistory).toHaveLength(1);
-    expect(res.body.physicalTestHistory[0]).toMatchObject({ playerId: player.body.id, playerName: "Jordan" });
-    expect(res.body.physicalTestHistory[0].history[0]).toMatchObject({ testName: "Sprint", results: [{ value: 9.8, date: "2026-08-01" }] });
+    expect(res.body.evaluationTests).toHaveLength(1);
+    expect(res.body.evaluationTestHistory).toHaveLength(1);
+    expect(res.body.evaluationTestHistory[0]).toMatchObject({ playerId: player.body.id, playerName: "Jordan" });
+    expect(res.body.evaluationTestHistory[0].history[0]).toMatchObject({ testName: "Sprint", results: [{ value: 9.8, date: "2026-08-01" }] });
     expect(typeof res.body.exportedAt).toBe("string");
   });
 

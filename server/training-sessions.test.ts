@@ -40,16 +40,16 @@ function oneSession(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-describe("training sessions — physical tests (testIds)", () => {
+describe("training sessions — evaluation tests (testIds)", () => {
   let app: express.Express;
 
   beforeAll(async () => {
     app = await createTestApp();
   });
 
-  it("creates a session with physical tests to run before the exercises, and returns them back", async () => {
+  it("creates a session with evaluation tests to run before the exercises, and returns them back", async () => {
     const agent = await signedInAgent(app);
-    const test = await agent.post("/api/physical-tests").send({ name: "Sprint 3x Court", unit: "seconds", lowerIsBetter: 1 });
+    const test = await agent.post("/api/evaluation-tests").send({ name: "Sprint 3x Court", type: "time", unit: "seconds", worstValue: 15, bestValue: 5 });
 
     const created = await agent.post("/api/training-sessions").send(
       oneSession({ testIds: [test.body.id.toString()] }),
@@ -60,7 +60,7 @@ describe("training sessions — physical tests (testIds)", () => {
 
   it("strips testIds that don't belong to the requesting account", async () => {
     const owner = await signedInAgent(app);
-    const outsidersTest = await owner.post("/api/physical-tests").send({ name: "Vertical Jump", unit: "cm", lowerIsBetter: 0 });
+    const outsidersTest = await owner.post("/api/evaluation-tests").send({ name: "Vertical Jump", type: "count", unit: "cm", worstValue: 0, bestValue: 100 });
 
     const otherCoach = await signedInAgent(app);
     const created = await otherCoach.post("/api/training-sessions").send(
@@ -72,7 +72,7 @@ describe("training sessions — physical tests (testIds)", () => {
 
   it("updates a session's testIds, stripping any that don't belong to the account", async () => {
     const agent = await signedInAgent(app);
-    const test = await agent.post("/api/physical-tests").send({ name: "Sprint 3x Court", unit: "seconds", lowerIsBetter: 1 });
+    const test = await agent.post("/api/evaluation-tests").send({ name: "Sprint 3x Court", type: "time", unit: "seconds", worstValue: 15, bestValue: 5 });
     const created = await agent.post("/api/training-sessions").send(oneSession());
 
     const updated = await agent.put(`/api/training-sessions/${created.body.id}`).send({
@@ -84,7 +84,7 @@ describe("training sessions — physical tests (testIds)", () => {
 
   it("carries testIds through a saved session template", async () => {
     const agent = await signedInAgent(app);
-    const test = await agent.post("/api/physical-tests").send({ name: "Sprint 3x Court", unit: "seconds", lowerIsBetter: 1 });
+    const test = await agent.post("/api/evaluation-tests").send({ name: "Sprint 3x Court", type: "time", unit: "seconds", worstValue: 15, bestValue: 5 });
 
     const template = await agent.post("/api/session-templates").send({
       name: "Physical + Technical",

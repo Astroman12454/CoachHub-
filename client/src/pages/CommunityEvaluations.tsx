@@ -41,10 +41,10 @@ interface SuggestedCoach {
 
 type FeedTab = "discover" | "following" | "saved";
 
-// Evaluation-test twin of CommunityPhysicalTests.tsx / CommunityExercises.tsx
-// — browsing surface for evaluation test templates other coaches have
-// opted into the cross-account community library (see PUT
-// /api/evaluation-tests/:id/share-community and Evaluations' Globe toggle).
+// Same shape as CommunityExercises.tsx — browsing surface for evaluation
+// test templates other coaches have opted into the cross-account community
+// library (see PUT /api/evaluation-tests/:id/share-community and
+// Evaluations' Globe toggle).
 export default function CommunityEvaluations() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();

@@ -183,10 +183,9 @@ export const exerciseLikes = pgTable("exercise_likes", {
 }));
 
 // A private bookmark — "guardado" — on a community-shared exercise, added
-// after plays/physical tests already had one (see playSaves/
-// physicalTestSaves) so all three content types reach parity. Not a public
-// signal like a like; just this account's own reading list, kept in its
-// own table so saved exercises never mix with saved plays or physical tests.
+// after plays already had one (see playSaves) so both content types reach
+// parity. Not a public signal like a like; just this account's own reading
+// list, kept in its own table so saved exercises never mix with saved plays.
 export const exerciseSaves = pgTable("exercise_saves", {
   id: serial("id").primaryKey(),
   exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
@@ -216,21 +215,20 @@ export const createExerciseCommentSchema = z.object({
 export type CreateExerciseComment = z.infer<typeof createExerciseCommentSchema>;
 
 // "like"/"comment" (no suffix) mean an exercise, kept as-is for backward
-// compatibility with rows already written before plays/physical tests
-// joined the community — "like_play"/"comment_play",
-// "like_physical_test"/"comment_physical_test", and
+// compatibility with rows already written before plays joined the
+// community — "like_play"/"comment_play" and
 // "like_evaluation_test"/"comment_evaluation_test" are their equivalents,
 // following the same _suffix convention rather than renaming the original two.
-export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play", "like_physical_test", "comment_physical_test", "like_evaluation_test", "comment_evaluation_test"] as const;
+export const NOTIFICATION_TYPES = ["follow", "like", "comment", "like_play", "comment_play", "like_evaluation_test", "comment_evaluation_test"] as const;
 export type NotificationType = typeof NOTIFICATION_TYPES[number];
 
 // The in-app bell-icon feed for the social layer above — a coach was
-// followed, or one of their published exercises/plays/physical tests/
-// evaluation tests got a like or a comment. Distinct from server/notify.ts
-// (push/email session reminders sent to a whole team); this is per-account,
-// unread-tracked. exerciseId/playId/physicalTestId/evaluationTestId are
-// only meaningful for their matching type (all null for "follow");
-// actorAccountId is always the coach who took the action, never the recipient.
+// followed, or one of their published exercises/plays/evaluation tests got
+// a like or a comment. Distinct from server/notify.ts (push/email session
+// reminders sent to a whole team); this is per-account, unread-tracked.
+// exerciseId/playId/evaluationTestId are only meaningful for their matching
+// type (all null for "follow"); actorAccountId is always the coach who took
+// the action, never the recipient.
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
@@ -238,7 +236,6 @@ export const notifications = pgTable("notifications", {
   actorAccountId: integer("actor_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   exerciseId: integer("exercise_id").references(() => exercises.id, { onDelete: "cascade" }),
   playId: integer("play_id").references(() => plays.id, { onDelete: "cascade" }),
-  physicalTestId: integer("physical_test_id").references(() => physicalTests.id, { onDelete: "cascade" }),
   evaluationTestId: integer("evaluation_test_id").references(() => evaluationTests.id, { onDelete: "cascade" }),
   read: integer("read").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -253,8 +250,8 @@ export const trainingSessions = pgTable("training_sessions", {
   duration: integer("duration").notNull(), // in minutes
   exerciseIds: text("exercise_ids").array().default([]), // array of exercise IDs
   playIds: text("play_ids").array().default([]), // array of playbook play IDs practiced this session
-  // Physical tests to run at the start of this session, before the exercise
-  // sequence — lets a session combine a physical block (testing) with the
+  // Evaluation tests to run at the start of this session, before the
+  // exercise sequence — lets a session combine a testing block with the
   // technical block (exercises) that follows it in Training Mode.
   testIds: text("test_ids").array().default([]),
   notes: text("notes"),
@@ -370,78 +367,16 @@ export const pushSubscriptionSchema = z.object({
 });
 export type PushSubscriptionInput = z.infer<typeof pushSubscriptionSchema>;
 
-// A reusable physical-test template ("Sprint 3x court", measured in seconds)
-// — scoped by accountId like exercises, so a coach defines it once and runs
-// it with any of their teams. lowerIsBetter distinguishes timed tests (lower
-// is the better result) from rep/distance tests (higher is better), so the
-// UI can rank and trend results correctly without guessing from the unit.
-export const physicalTests = pgTable("physical_tests", {
-  id: serial("id").primaryKey(),
-  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  unit: text("unit").notNull(), // free text, e.g. "seconds", "reps", "meters"
-  lowerIsBetter: integer("lower_is_better").notNull().default(0), // 1 for timed tests, 0 for reps/distance
-  description: text("description"),
-  // 1 when a coach has opted this test into the cross-account community
-  // library — scoped directly by accountId, same as exercises (a physical
-  // test has no team indirection to resolve, unlike plays).
-  sharedToCommunity: integer("shared_to_community").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// Same like/comment/save trio pattern as exercises and plays — see their
-// comments above for why these stay separate explicit tables rather than
-// one polymorphic one.
-export const physicalTestLikes = pgTable("physical_test_likes", {
-  id: serial("id").primaryKey(),
-  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
-  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  testAccountUnique: unique().on(table.testId, table.accountId),
-}));
-
-export const physicalTestComments = pgTable("physical_test_comments", {
-  id: serial("id").primaryKey(),
-  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
-  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
-  body: text("body").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const physicalTestSaves = pgTable("physical_test_saves", {
-  id: serial("id").primaryKey(),
-  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
-  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-  testAccountUnique: unique().on(table.testId, table.accountId),
-}));
-
-// One player's result on one occasion a test was run — recorded in bulk
-// (the whole active roster at once, see POST /api/physical-tests/:id/results)
-// rather than one at a time like skill ratings, since a coach typically runs
-// a fitness test as a single team-wide session.
-export const physicalTestResults = pgTable("physical_test_results", {
-  id: serial("id").primaryKey(),
-  testId: integer("test_id").notNull().references(() => physicalTests.id, { onDelete: "cascade" }),
-  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
-  value: real("value").notNull(),
-  date: text("date").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
 export const EVALUATION_TEST_TYPES = ["time", "count"] as const;
 export type EvaluationTestType = (typeof EVALUATION_TEST_TYPES)[number];
 
 // A coach-defined test the app scores automatically on a 1-100 scale —
-// general player evaluation (physical AND skill, e.g. a timed sprint or
-// free throws made in a minute), not a sub-type of physicalTests. worstValue
-// is the raw result that scores 1, bestValue the one that scores 100 (see
-// computeEvaluationScore in shared/evaluationScore.ts); which one is
-// numerically larger encodes direction, so there's no separate
-// lowerIsBetter flag like physicalTests has. type is UI-only (icon/label
-// for "time" vs "count"), the score formula doesn't need it.
+// general player evaluation, physical AND skill alike (e.g. a timed sprint
+// or free throws made in a minute). worstValue is the raw result that
+// scores 1, bestValue the one that scores 100 (see computeEvaluationScore
+// in shared/evaluationScore.ts); which one is numerically larger encodes
+// direction, so there's no separate lowerIsBetter flag. type is UI-only
+// (icon/label for "time" vs "count"), the score formula doesn't need it.
 export const evaluationTests = pgTable("evaluation_tests", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
@@ -452,14 +387,14 @@ export const evaluationTests = pgTable("evaluation_tests", {
   bestValue: real("best_value").notNull(),
   description: text("description"),
   // 1 when a coach has opted this test into the cross-account community
-  // library — same scoping model as physicalTests.sharedToCommunity.
+  // library — scoped directly by accountId, same as exercises.
   sharedToCommunity: integer("shared_to_community").default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Same like/comment/save trio pattern as physicalTests — see its comments
-// above for why these stay separate explicit tables rather than one
-// polymorphic one.
+// Same like/comment/save trio pattern as exercises and plays — see their
+// comments above for why these stay separate explicit tables rather than
+// one polymorphic one.
 export const evaluationTestLikes = pgTable("evaluation_test_likes", {
   id: serial("id").primaryKey(),
   testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
@@ -662,8 +597,9 @@ export const playComments = pgTable("play_comments", {
 // A private bookmark — "guardado" — on a community-shared play. Unlike a
 // like, it's not a public signal and doesn't show up as a count anyone else
 // sees; it's just this account's own reading list, kept in its own table
-// per content type so a coach's saved plays, exercises, and physical tests
-// never mix (see the Discover/Following/Saved tabs on each community page).
+// per content type so a coach's saved plays, exercises, and evaluation
+// tests never mix (see the Discover/Following/Saved tabs on each community
+// page).
 export const playSaves = pgTable("play_saves", {
   id: serial("id").primaryKey(),
   playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
@@ -786,28 +722,6 @@ export const insertExerciseSchema = createInsertSchema(exercises).omit({
   phase: z.enum(EXERCISE_PHASES).nullish(),
 });
 
-export const insertPhysicalTestSchema = createInsertSchema(physicalTests).omit({
-  id: true,
-  accountId: true,
-  createdAt: true,
-}).extend({
-  name: z.string().min(1, "Test name is required"),
-  unit: z.string().min(1, "Unit is required").max(20, "Unit is too long"),
-  lowerIsBetter: z.union([z.literal(0), z.literal(1)]),
-  description: z.string().max(500).nullable().optional(),
-});
-
-// What a coach submits after running one test with the whole active roster
-// in one sitting — a single date plus one value per player, inserted as a
-// batch instead of one request per player.
-export const recordPhysicalTestResultsSchema = z.object({
-  date: z.string().min(1, "Date is required"),
-  results: z.array(z.object({
-    playerId: z.number().int(),
-    value: z.number(),
-  })).min(1, "At least one result is required"),
-});
-
 // Split from insertEvaluationTestSchema below so routes.ts can call
 // .partial() on it for updates — ZodEffects (what .refine() returns)
 // doesn't support .partial().
@@ -829,9 +743,8 @@ export const insertEvaluationTestSchema = evaluationTestFieldsSchema.refine((dat
   path: ["bestValue"],
 });
 
-// Same batch shape as recordPhysicalTestResultsSchema — a single result
-// entry (results: [{playerId, value}], length 1) is also how the profile's
-// quick single-player add reuses this same endpoint.
+// A single result entry (results: [{playerId, value}], length 1) is also
+// how the profile's quick single-player add reuses this same endpoint.
 export const recordEvaluationTestResultsSchema = z.object({
   date: z.string().min(1, "Date is required"),
   results: z.array(z.object({
@@ -1008,8 +921,6 @@ export interface NotificationView {
   exerciseName: string | null;
   playId: number | null;
   playName: string | null;
-  physicalTestId: number | null;
-  physicalTestName: string | null;
   evaluationTestId: number | null;
   evaluationTestName: string | null;
   read: boolean;
@@ -1056,20 +967,9 @@ export interface PlayCommentView {
   canDelete: boolean;
 }
 
-// Same shape again, for a physical test's comment thread — canDelete is
-// true for the comment's own author or the test's owning account (a
-// physical test is scoped directly by accountId, no team indirection).
-export interface PhysicalTestCommentView {
-  id: number;
-  testId: number;
-  accountId: number;
-  publicName: string | null;
-  body: string;
-  createdAt: string | null;
-  canDelete: boolean;
-}
-
-// Same shape again, for an evaluation test's comment thread.
+// Same shape again, for an evaluation test's comment thread — canDelete is
+// true for the comment's own author or the test's owning account (an
+// evaluation test is scoped directly by accountId, no team indirection).
 export interface EvaluationTestCommentView {
   id: number;
   testId: number;
@@ -1080,37 +980,15 @@ export interface EvaluationTestCommentView {
   canDelete: boolean;
 }
 
-export type InsertPhysicalTest = z.infer<typeof insertPhysicalTestSchema>;
-export type PhysicalTest = typeof physicalTests.$inferSelect;
-export type PhysicalTestResult = typeof physicalTestResults.$inferSelect;
-export type RecordPhysicalTestResults = z.infer<typeof recordPhysicalTestResultsSchema>;
-
-// The shape of POST /api/physical-tests/:id/results — newRecordPlayerIds is
-// every player whose submitted value beat their own prior best on this test
-// (direction-aware; a player with no prior result isn't included).
-export interface RecordPhysicalTestResultsResponse {
-  results: PhysicalTestResult[];
-  newRecordPlayerIds: number[];
-}
-
-// One player's full history for one test template, newest-first — the
-// shape returned by GET /api/players/:id/physical-test-results.
-export interface PlayerPhysicalTestHistory {
-  testId: number;
-  testName: string;
-  unit: string;
-  lowerIsBetter: boolean;
-  results: { value: number; date: string }[];
-}
-
 export type InsertEvaluationTest = z.infer<typeof insertEvaluationTestSchema>;
 export type EvaluationTest = typeof evaluationTests.$inferSelect;
 export type EvaluationTestResult = typeof evaluationTestResults.$inferSelect;
 export type RecordEvaluationTestResults = z.infer<typeof recordEvaluationTestResultsSchema>;
 
-// Same shape as RecordPhysicalTestResultsResponse — newRecordPlayerIds is
-// every player whose submitted value beat their own prior best on this test
-// (direction derived from bestValue vs worstValue).
+// The shape of POST /api/evaluation-tests/:id/results — newRecordPlayerIds
+// is every player whose submitted value beat their own prior best on this
+// test (direction derived from bestValue vs worstValue; a player with no
+// prior result isn't included).
 export interface RecordEvaluationTestResultsResponse {
   results: EvaluationTestResult[];
   newRecordPlayerIds: number[];

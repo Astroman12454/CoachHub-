@@ -345,13 +345,13 @@ test.describe("accessibility (axe)", () => {
     expect(summarize(results.violations)).toEqual([]);
   });
 
-  test("training sessions — physical tests picker", async ({ page }) => {
+  test("training sessions — evaluation tests picker", async ({ page }) => {
     await login(page);
     await page.goto("/training-sessions");
     await page.click('button:has-text("New Session")');
     await page.waitForSelector("text=Create Training Session");
-    await page.waitForSelector("text=Physical Tests");
-    await page.locator('[aria-label="Physical tests to practice"] button').first().click();
+    await page.waitForSelector("text=Evaluations");
+    await page.locator('[aria-label="Evaluation tests to practice"] button').first().click();
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -521,18 +521,18 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/training-sessions/${session.id}`);
   });
 
-  test("training mode — physical test recorded before the exercise sequence", async ({ page }) => {
+  test("training mode — evaluation test recorded before the exercise sequence", async ({ page }) => {
     await login(page);
     const [exercisesRes, testsRes] = await Promise.all([
       page.request.get("/api/exercises"),
-      page.request.get("/api/physical-tests"),
+      page.request.get("/api/evaluation-tests"),
     ]);
     const exercises = await exercisesRes.json();
     const tests = await testsRes.json();
-    const sprintTest = tests.find((t: { name: string }) => t.name === "E2E Sprint Test");
+    const sprintTest = tests.find((t: { name: string }) => t.name === "E2E Evaluation Sprint");
     const sessionRes = await page.request.post("/api/training-sessions", {
       data: {
-        name: "E2E Training Mode Session — Physical + Technical",
+        name: "E2E Training Mode Session — Evaluations + Technical",
         date: new Date().toISOString().split("T")[0],
         time: "17:00",
         duration: 60,
@@ -543,9 +543,9 @@ test.describe("accessibility (axe)", () => {
     });
     const session = await sessionRes.json();
     await page.goto(`/training-sessions/${session.id}/live`);
-    await page.waitForSelector("text=Physical tests today");
+    await page.waitForSelector("text=Evaluation tests today");
     await page.click(`button:has-text("${sprintTest.name}")`);
-    await page.waitForSelector("text=Record Results — E2E Sprint Test");
+    await page.waitForSelector("text=Record Results — E2E Evaluation Sprint");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -1213,27 +1213,9 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/exercises/${exercise.id}`);
   });
 
-  test("physical tests", async ({ page }) => {
+  test("evaluations — sharing to the community toggles the globe icon", async ({ page }) => {
     await login(page);
-    await page.goto("/physical-tests");
-    await page.waitForLoadState("networkidle");
-    await page.waitForSelector("text=E2E Sprint Test");
-    const results = await scan(page);
-    expect(summarize(results.violations)).toEqual([]);
-  });
-
-  test("physical tests — create test form open", async ({ page }) => {
-    await login(page);
-    await page.goto("/physical-tests");
-    await page.click('button:has-text("Add Test")');
-    await page.waitForSelector("text=Create New Physical Test");
-    const results = await scan(page);
-    expect(summarize(results.violations)).toEqual([]);
-  });
-
-  test("physical tests — sharing to the community toggles the globe icon", async ({ page }) => {
-    await login(page);
-    await page.goto("/physical-tests");
+    await page.goto("/evaluations");
     await page.waitForLoadState("networkidle");
 
     const shareToggle = page.locator('button[aria-label^="Add "][aria-label*="to the community"]').first();
@@ -1245,45 +1227,7 @@ test.describe("accessibility (axe)", () => {
     await page.locator('button[aria-label^="Remove "][aria-label*="from the community"]').first().click();
   });
 
-  test("community physical tests page — likes, saves, and comments a shared test", async ({ page }) => {
-    await login(page);
-    const create = await page.request.post("/api/physical-tests", {
-      data: { name: "E2E Community Test", unit: "seconds", lowerIsBetter: 1, description: "Shared for community testing" },
-    });
-    const test = await create.json();
-    await page.request.put(`/api/physical-tests/${test.id}/share-community`, { data: { shared: true } });
-
-    await page.goto("/physical-tests/community");
-    await page.waitForLoadState("networkidle");
-    await page.waitForSelector("text=E2E Community Test");
-
-    await page.click('button[aria-label="Like E2E Community Test"]');
-    await expect(page.locator('button[aria-label="Unlike E2E Community Test"]')).toHaveAttribute("aria-pressed", "true");
-
-    await page.click('button[aria-label="Save E2E Community Test"]');
-    await expect(page.locator('button[aria-label="Unsave E2E Community Test"]')).toHaveAttribute("aria-pressed", "true");
-
-    await page.click('button[aria-label="View comments on E2E Community Test"]');
-    await page.fill('textarea[aria-label="Add a comment…"]', "Solid test!");
-    await page.click('button:has-text("Post")');
-    await page.waitForSelector("text=Solid test!");
-    const results = await scan(page);
-    expect(summarize(results.violations)).toEqual([]);
-
-    await page.request.delete(`/api/physical-tests/${test.id}`);
-  });
-
-  test("physical tests — record results dialog open", async ({ page }) => {
-    await login(page);
-    await page.goto("/physical-tests");
-    await page.waitForLoadState("networkidle");
-    await page.click('button:has-text("Record Results")');
-    await page.waitForSelector("text=Record Results — E2E Sprint Test");
-    const results = await scan(page);
-    expect(summarize(results.violations)).toEqual([]);
-  });
-
-  test("physical tests — beating a previous result shows the new personal record toast", async ({ page }) => {
+  test("evaluations — beating a previous result shows the new personal record toast", async ({ page }) => {
     await login(page);
     // A unique name per run — a fixed name would collide with players left
     // over from earlier runs and pick up their result history, throwing off
@@ -1291,65 +1235,24 @@ test.describe("accessibility (axe)", () => {
     const playerName = `E2E PR Player ${Date.now()}`;
     await page.request.post("/api/players", { data: { name: playerName, isActive: 1 } });
 
-    await page.goto("/physical-tests");
+    await page.goto("/evaluations");
     await page.waitForLoadState("networkidle");
     await page.click('button:has-text("Record Results")');
-    await page.waitForSelector("text=Record Results — E2E Sprint Test");
+    await page.waitForSelector("text=Record Results — E2E Evaluation Sprint");
     await page.getByLabel(playerName, { exact: true }).fill("9.8");
     await page.click('button:has-text("Save Results")');
     await page.waitForSelector("text=Results saved");
 
     await page.click('button:has-text("Record Results")');
-    await page.waitForSelector("text=Record Results — E2E Sprint Test");
-    // Sprint test is lower-is-better (seconds) — a faster time than the 9.8
-    // recorded above is a new personal record.
+    await page.waitForSelector("text=Record Results — E2E Evaluation Sprint");
+    // Sprint test's worstValue > bestValue (a timed test) — a faster time
+    // than the 9.8 recorded above is a new personal record.
     await page.getByLabel(playerName, { exact: true }).fill("9.2");
     await page.click('button:has-text("Save Results")');
     await page.waitForSelector("text=New personal record!");
     // Same pre-existing Radix Toast a11y issue disabled in the command-bar
     // error-toast test above — not introduced by this feature.
     const results = await scan(page, { disableRules: ["aria-hidden-focus", "list", "aria-allowed-role"] });
-    expect(summarize(results.violations)).toEqual([]);
-  });
-
-  test("player profile — physical test evolution chart", async ({ page }) => {
-    await login(page);
-    const playerRes = await page.request.post("/api/players", { data: { name: "E2E Chart Player", isActive: 1 } });
-    const player = await playerRes.json();
-    const testsRes = await page.request.get("/api/physical-tests");
-    const tests = await testsRes.json();
-    const sprintTest = tests.find((t: { name: string }) => t.name === "E2E Sprint Test");
-    await page.request.post(`/api/physical-tests/${sprintTest.id}/results`, {
-      data: { date: "2026-01-01", results: [{ playerId: player.id, value: 10.0 }] },
-    });
-    await page.request.post(`/api/physical-tests/${sprintTest.id}/results`, {
-      data: { date: "2026-02-01", results: [{ playerId: player.id, value: 9.5 }] },
-    });
-
-    await page.goto(`/players/${player.id}`);
-    await page.waitForLoadState("networkidle");
-    await page.click('button:has-text("E2E Sprint Test")');
-    await page.waitForSelector('svg[aria-label^="Trend chart"]');
-    const results = await scan(page);
-    expect(summarize(results.violations)).toEqual([]);
-  });
-
-  test("player profile — physical test recorded", async ({ page }) => {
-    await login(page);
-    await page.goto("/physical-tests");
-    await page.waitForLoadState("networkidle");
-    await page.click('button:has-text("Record Results")');
-    await page.waitForSelector("text=Record Results — E2E Sprint Test");
-    await page.getByLabel("E2E Test Player", { exact: true }).fill("9.8");
-    await page.click('button:has-text("Save Results")');
-    await page.waitForSelector("text=Results saved");
-
-    await page.goto("/players");
-    await page.waitForLoadState("networkidle");
-    await page.locator('[role="button"][aria-label="View E2E Test Player\'s profile"]').click();
-    await page.waitForLoadState("networkidle");
-    await page.waitForSelector("text=E2E Sprint Test");
-    const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
   });
 
@@ -1446,9 +1349,9 @@ test.describe("accessibility (axe)", () => {
     await page.click('button:has-text("Save Result")');
     await page.waitForSelector("text=Result saved");
     await page.waitForSelector("text=E2E Evaluation Sprint");
-    // Same pre-existing Radix Toast a11y issue disabled in the physical
-    // tests "new personal record" test above — not introduced by this
-    // feature, just triggered here by the same visible toast.
+    // Same pre-existing Radix Toast a11y issue disabled in the "new personal
+    // record" test above — not introduced by this feature, just triggered
+    // here by the same visible toast.
     const results = await scan(page, { disableRules: ["aria-hidden-focus", "list", "aria-allowed-role"] });
     expect(summarize(results.violations)).toEqual([]);
   });
@@ -2253,10 +2156,10 @@ test.describe("accessibility (axe)", () => {
     // tools don't flag "text renders too wide," only contrast/semantics).
     test("dialogs — a long description wraps to fit instead of overflowing", async ({ page }) => {
       await login(page);
-      await page.goto("/physical-tests");
+      await page.goto("/evaluations");
       await page.waitForLoadState("networkidle");
       await page.click('button:has-text("Record Results")');
-      await page.waitForSelector("text=Record Results — E2E Sprint Test");
+      await page.waitForSelector("text=Record Results — E2E Evaluation Sprint");
 
       const dialog = page.getByRole("dialog");
       const dialogBox = await dialog.boundingBox();

@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
-import type { Exercise, Play, PhysicalTest, TrainingSession, SessionTemplate } from "@shared/schema";
+import type { Exercise, Play, EvaluationTest, TrainingSession, SessionTemplate } from "@shared/schema";
 import { DIFFICULTY_LEVELS } from "@shared/schema";
 import { canGenerateAiSessionPlan } from "@shared/entitlements";
 import { CATEGORY_COLORS } from "@/lib/types";
@@ -113,9 +113,10 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
     setSelectedPlayIds(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
 
-  // Physical tests to run at the start of this session, before the exercise
-  // sequence — same id-tracking rationale as selectedExerciseIds above.
-  const { data: physicalTests = [] } = useQuery<PhysicalTest[]>({ queryKey: ["/api/physical-tests"] });
+  // Evaluation tests to run at the start of this session, before the
+  // exercise sequence — same id-tracking rationale as selectedExerciseIds
+  // above.
+  const { data: evaluationTests = [] } = useQuery<EvaluationTest[]>({ queryKey: ["/api/evaluation-tests"] });
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>(
     () => source?.testIds ?? []
   );
@@ -486,23 +487,23 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
               )}
             />
 
-            {/* Physical Tests — shown before exercises so the form itself
-                mirrors the order Training Mode runs them in: physical block
+            {/* Evaluation Tests — shown before exercises so the form itself
+                mirrors the order Training Mode runs them in: tests block
                 first, technical exercises after. */}
-            {physicalTests.length > 0 && (
+            {evaluationTests.length > 0 && (
               <div>
-                <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.physicalTestsToPractice")}</h3>
+                <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.evaluationTestsToPractice")}</h3>
                 <div className="border border-border rounded-lg p-4">
                   <p className="text-sm text-muted-foreground mb-3">
-                    {t("sessionModal.physicalTestsToPracticeDescription")}
+                    {t("sessionModal.evaluationTestsToPracticeDescription")}
                   </p>
                   <div
                     className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-56 overflow-y-auto"
                     tabIndex={0}
                     role="region"
-                    aria-label={t("sessionModal.physicalTestsToPracticeAriaLabel")}
+                    aria-label={t("sessionModal.evaluationTestsToPracticeAriaLabel")}
                   >
-                    {physicalTests.map(test => {
+                    {evaluationTests.map(test => {
                       const selected = selectedTestIds.includes(test.id.toString());
                       return (
                         <button

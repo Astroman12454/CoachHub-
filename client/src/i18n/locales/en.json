@@ -40,7 +40,6 @@
     "games": "Games",
     "playbook": "Playbook",
     "exerciseLibrary": "Exercise Library",
-    "physicalTests": "Physical Tests",
     "evaluations": "Evaluations",
     "players": "Players",
     "coaches": "Coaches",
@@ -306,9 +305,9 @@
     "time": "Time",
     "notesOptional": "Notes (Optional)",
     "notesPlaceholder": "Session objectives, special instructions...",
-    "physicalTestsToPractice": "Physical Tests",
-    "physicalTestsToPracticeDescription": "Tap a test to run it at the start of this session, before the exercises below — see it live in Training Mode.",
-    "physicalTestsToPracticeAriaLabel": "Physical tests to practice",
+    "evaluationTestsToPractice": "Evaluations",
+    "evaluationTestsToPracticeDescription": "Tap a test to run it at the start of this session, before the exercises below — see it live in Training Mode.",
+    "evaluationTestsToPracticeAriaLabel": "Evaluation tests to practice",
     "sessionTimeline": "Session Timeline",
     "addExercises": "Add Exercises",
     "filterByCategory": "Filter by category",
@@ -429,9 +428,6 @@
     "deleteInjuryConfirmTitle": "Delete this injury record?",
     "deleteInjuryConfirmDescription": "This can't be undone.",
     "injuryDeletedToast": "Injury record deleted.",
-    "physicalTests": "Physical Tests",
-    "noPhysicalTestsYet": "No physical test results yet — record them from the Physical Tests page.",
-    "personalRecord": "Personal record",
     "drillStats": "Drill Stats",
     "noDrillStatsYet": "No drills logged yet — track attempts from a session's attendance screen.",
     "shotChartFor": "Shot chart for {{drillName}}"
@@ -481,7 +477,12 @@
   },
   "evaluationScoreChart": {
     "ariaLabel": "Score trend chart: from {{first}} to {{last}} out of 100, trending {{trend}}",
-    "scoreLabel": "{{score}} ({{value}} {{unit}})"
+    "scoreLabel": "{{score}} ({{value}} {{unit}})",
+    "trend": {
+      "up": "up",
+      "down": "down",
+      "flat": "flat"
+    }
   },
   "quickAddEvaluationResult": {
     "title": "Add Evaluation Result",
@@ -496,14 +497,6 @@
     "savedTitle": "Result saved",
     "savedDescription": "The player's evaluation history is updated.",
     "couldntSave": "Couldn't save result"
-  },
-  "physicalTestChart": {
-    "ariaLabel": "Trend chart: from {{first}} to {{last}} {{unit}}, trending {{trend}}",
-    "trend": {
-      "up": "up",
-      "down": "down",
-      "flat": "flat"
-    }
   },
   "scrimmageBalancer": {
     "openButton": "Balance Teams",
@@ -847,27 +840,6 @@
     "unsave": "Unsave {{name}}",
     "viewComments": "View comments on {{name}}"
   },
-  "communityPhysicalTests": {
-    "title": "Community Physical Tests",
-    "subtitle": "Browse and import physical tests other coaches have shared publicly",
-    "backToTests": "Back to physical tests",
-    "emptyTitle": "No Community Physical Tests Yet",
-    "emptyDescription": "No coach has shared a physical test to the community yet — share one of your own from Physical Tests.",
-    "emptyFollowingDescription": "Follow a coach from their profile to see their shared physical tests here.",
-    "emptySavedTitle": "No Saved Physical Tests Yet",
-    "emptySavedDescription": "Bookmark a physical test from the community to find it here later.",
-    "imported": "Physical test imported",
-    "importedDescription": "\"{{name}}\" was added to your physical tests.",
-    "couldntImport": "Couldn't import physical test",
-    "importName": "Import {{name}}",
-    "couldntUpdateLike": "Couldn't update like",
-    "couldntUpdateSave": "Couldn't update saved physical test",
-    "like": "Like {{name}}",
-    "unlike": "Unlike {{name}}",
-    "save": "Save {{name}}",
-    "unsave": "Unsave {{name}}",
-    "viewComments": "View comments on {{name}}"
-  },
   "communityEvaluations": {
     "title": "Community Evaluations",
     "subtitle": "Browse and import evaluation tests other coaches have shared publicly",
@@ -912,8 +884,6 @@
     "commentText": "{{name}} commented on \"{{exercise}}\"",
     "likePlayText": "{{name}} liked your play \"{{play}}\"",
     "commentPlayText": "{{name}} commented on your play \"{{play}}\"",
-    "likePhysicalTestText": "{{name}} liked your physical test \"{{test}}\"",
-    "commentPhysicalTestText": "{{name}} commented on your physical test \"{{test}}\"",
     "likeEvaluationTestText": "{{name}} liked your evaluation test \"{{test}}\"",
     "commentEvaluationTestText": "{{name}} commented on your evaluation test \"{{test}}\""
   },
@@ -986,58 +956,6 @@
     "step": "Step",
     "deleteStepConfirmTitle": "Delete this step?",
     "deleteStepConfirmDescription": "This removes it from the diagram's sequence. This can't be undone."
-  },
-  "physicalTests": {
-    "subtitle": "Define fitness tests and track every player's results over time",
-    "searchPlaceholder": "Search tests...",
-    "addTest": "Add Test",
-    "recordResults": "Record Results",
-    "editTestFor": "Edit {{name}}",
-    "deleteTestFor": "Delete {{name}}",
-    "emptyTitle": "No Physical Tests Yet",
-    "emptyFilterDescription": "No tests match your search.",
-    "emptyDescription": "Create a test (like a timed sprint or a jump) to start tracking your roster's fitness.",
-    "addFirstTest": "Add First Test",
-    "failedToDelete": "Failed to delete test",
-    "deletedToast": "\"{{name}}\" deleted.",
-    "deleteConfirmTitle": "Delete this test?",
-    "deleteConfirmDescription": "This will permanently delete \"{{name}}\" and every recorded result for it. This can't be undone.",
-    "community": "Community",
-    "addToCommunity": "Add {{name}} to the community",
-    "removeFromCommunity": "Remove {{name}} from the community",
-    "couldntUpdateCommunityShare": "Couldn't update community share"
-  },
-  "physicalTestForm": {
-    "editTest": "Edit Physical Test",
-    "createNewTest": "Create New Physical Test",
-    "dialogDescription": "Set the test's name, unit of measurement, and whether a lower or higher result is better.",
-    "testName": "Test Name",
-    "testNamePlaceholder": "e.g., Sprint 3x Court",
-    "unit": "Unit",
-    "unitPlaceholder": "e.g., seconds, reps, meters",
-    "descriptionOptional": "Description (Optional)",
-    "descriptionPlaceholder": "How to administer this test...",
-    "lowerIsBetter": "Lower is better",
-    "lowerIsBetterDescription": "Turn on for timed tests (a faster time wins). Leave off for reps or distance (more is better).",
-    "createTest": "Create Test",
-    "updatedSuccessfully": "Test updated successfully",
-    "createdSuccessfully": "Test created successfully",
-    "failedToUpdate": "Failed to update test",
-    "failedToCreate": "Failed to create test"
-  },
-  "recordTestResultsDialog": {
-    "title": "Record Results — {{name}}",
-    "description": "Enter each active player's result in {{unit}}. Leave a player blank to skip them.",
-    "date": "Date",
-    "noActivePlayers": "No active players on this team yet.",
-    "filledCount": "{{count}}/{{total}} entered",
-    "save": "Save Results",
-    "savedTitle": "Results saved",
-    "savedDescription": "The team's results were recorded.",
-    "couldntSave": "Couldn't save results",
-    "newRecordTitle": "New personal record!",
-    "newRecordDescription_one": "{{names}} just beat their personal best.",
-    "newRecordDescription_other": "{{names}} just beat their personal bests."
   },
   "evaluations": {
     "subtitle": "Score your roster automatically — physical and skill tests alike, 1 to 100",
@@ -1244,7 +1162,7 @@
     "noExercises": "This session has no exercises yet",
     "noExercisesHint": "Add exercises to the session to run it in training mode.",
     "playsToday": "Plays to practice today",
-    "physicalTestsToday": "Physical tests today — tap to record results",
+    "evaluationTestsToday": "Evaluation tests today — tap to record results",
     "muteSound": "Mute sound",
     "unmuteSound": "Unmute sound"
   },

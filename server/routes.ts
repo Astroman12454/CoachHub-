@@ -30,8 +30,6 @@ import {
   insertSessionTemplateSchema,
   insertRecurringPracticeSlotSchema,
   generateSessionsFromSlotsSchema,
-  insertPhysicalTestSchema,
-  recordPhysicalTestResultsSchema,
   insertEvaluationTestSchema,
   evaluationTestFieldsSchema,
   recordEvaluationTestResultsSchema,
@@ -246,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // A one-shot JSON snapshot of everything under this team — roster,
-  // schedule, attendance, games/stats, plays/steps, and physical-test
+  // schedule, attendance, games/stats, plays/steps, and evaluation-test
   // history — for a coach who wants a personal backup or wants to move the
   // season's data elsewhere. Not a restore/import path, just an export.
   app.get("/api/teams/:id/export", async (req, res) => {
@@ -259,24 +257,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Team not found" });
       }
 
-      const [players, teamSessions, teamGames, teamPlays, teamPhysicalTests, teamEvaluationTests] = await Promise.all([
+      const [players, teamSessions, teamGames, teamPlays, teamEvaluationTests] = await Promise.all([
         storage.getAllPlayers(id),
         storage.getAllTrainingSessions(id),
         storage.getAllGames(id),
         storage.getAllPlays(id),
-        storage.getAllPhysicalTests(accountId),
         storage.getAllEvaluationTests(accountId),
       ]);
 
-      const [attendanceBySession, gamesWithStats, playsWithSteps, physicalTestHistory, evaluationTestHistory] = await Promise.all([
+      const [attendanceBySession, gamesWithStats, playsWithSteps, evaluationTestHistory] = await Promise.all([
         Promise.all(teamSessions.map((s) => storage.getAttendanceBySession(s.id))),
         Promise.all(teamGames.map(async (g) => ({ ...g, stats: await storage.getGameStats(g.id) }))),
         Promise.all(teamPlays.map(async (p) => ({ ...p, steps: await storage.getPlaySteps(p.id) }))),
-        Promise.all(players.map(async (p) => ({
-          playerId: p.id,
-          playerName: p.name,
-          history: await storage.getPhysicalTestResultsForPlayer(p.id),
-        }))),
         Promise.all(players.map(async (p) => ({
           playerId: p.id,
           playerName: p.name,
@@ -292,8 +284,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attendance: attendanceBySession.flat(),
         games: gamesWithStats,
         plays: playsWithSteps,
-        physicalTests: teamPhysicalTests,
-        physicalTestHistory,
         evaluationTests: teamEvaluationTests,
         evaluationTestHistory,
       });
@@ -835,307 +825,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Physical test routes — templates scoped by account, shared across that
-  // account's teams (and, for a Club coach, across the whole club — see
-  // resolveEffectiveAccountId), same as exercises. No plan gate: physical
-  // testing is a player-evaluation tool like skill ratings, available on
-  // every plan.
-  app.get("/api/physical-tests", async (req, res) => {
-    try {
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const tests = await storage.getAllPhysicalTests(accountId);
-      res.json(tests);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch physical tests" });
-    }
-  });
-
-  app.post("/api/physical-tests", async (req, res) => {
-    try {
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const testData = insertPhysicalTestSchema.parse(req.body);
-      const test = await storage.createPhysicalTest(accountId, testData);
-      res.status(201).json(test);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid physical test data" });
-    }
-  });
-
-  app.put("/api/physical-tests/:id", async (req, res) => {
-    try {
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const id = parseId(req, res);
-      if (id === null) return;
-      const updateData = insertPhysicalTestSchema.partial().parse(req.body);
-      const test = await storage.updatePhysicalTest(id, accountId, updateData);
-
-      if (!test) {
-        return res.status(404).json({ message: "Physical test not found" });
-      }
-
-      res.json(test);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid physical test data" });
-    }
-  });
-
-  app.delete("/api/physical-tests/:id", async (req, res) => {
-    try {
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const id = parseId(req, res);
-      if (id === null) return;
-      const deleted = await storage.deletePhysicalTest(id, accountId);
-
-      if (!deleted) {
-        return res.status(404).json({ message: "Physical test not found" });
-      }
-
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete physical test" });
-    }
-  });
-
-  const setPhysicalTestCommunityShareSchema = z.object({ shared: z.boolean() });
-
-  // Physical test community — same shape and gating as the exercise/play
-  // communities above (public name required to publish). Scoped directly
-  // by accountId, same as the rest of this resource's routes.
-  app.put("/api/physical-tests/:id/share-community", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const { shared } = setPhysicalTestCommunityShareSchema.parse(req.body);
-
-      const existing = await storage.getPhysicalTestById(id, accountId);
-      if (!existing) {
-        return res.status(404).json({ message: "Physical test not found" });
-      }
-      if (shared) {
-        const account = await storage.getAccountById(accountId);
-        if (!account?.publicName) {
-          return res.status(409).json({ message: "Set a public name before publishing to the community.", code: "PUBLIC_NAME_REQUIRED" });
-        }
-      }
-      const test = await storage.setPhysicalTestCommunityShare(id, accountId, shared);
-      if (!test) {
-        return res.status(404).json({ message: "Physical test not found" });
-      }
-      res.json(test);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid request" });
-    }
-  });
-
-  app.get("/api/community-physical-tests", async (req, res) => {
-    try {
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const sort = req.query.sort === "popular" ? "popular" : "recent";
-      const followingOnly = req.query.following === "true";
-      const savedOnly = req.query.saved === "true";
-      const shared = await storage.getCommunityPhysicalTests(accountId, { sort, followingOnly, savedOnly });
-      res.json(shared.map(({ id, name, unit, lowerIsBetter, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
-        ({ id, name, unit, lowerIsBetter, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
-      ));
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch community physical tests" });
-    }
-  });
-
-  app.post("/api/community-physical-tests/:id/like", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const liked = await storage.likePhysicalTest(id, accountId);
-      if (!liked) {
-        return res.status(404).json({ message: "Community physical test not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to like physical test" });
-    }
-  });
-
-  app.delete("/api/community-physical-tests/:id/like", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      await storage.unlikePhysicalTest(id, accountId);
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to unlike physical test" });
-    }
-  });
-
-  app.post("/api/community-physical-tests/:id/save", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const saved = await storage.savePhysicalTest(id, accountId);
-      if (!saved) {
-        return res.status(404).json({ message: "Community physical test not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to save physical test" });
-    }
-  });
-
-  app.delete("/api/community-physical-tests/:id/save", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      await storage.unsavePhysicalTest(id, accountId);
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to unsave physical test" });
-    }
-  });
-
-  app.get("/api/community-physical-tests/:id/comments", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const comments = await storage.getPhysicalTestComments(id, accountId);
-      if (!comments) {
-        return res.status(404).json({ message: "Community physical test not found" });
-      }
-      res.json(comments);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch comments" });
-    }
-  });
-
-  app.post("/api/community-physical-tests/:id/comments", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const account = await storage.getAccountById(accountId);
-      if (!account?.publicName) {
-        return res.status(409).json({ message: "Set a public name before commenting.", code: "PUBLIC_NAME_REQUIRED" });
-      }
-
-      const { body } = createExerciseCommentSchema.parse(req.body);
-      const comment = await storage.createPhysicalTestComment(id, accountId, body);
-      if (!comment) {
-        return res.status(404).json({ message: "Community physical test not found" });
-      }
-      res.status(201).json(comment);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid comment" });
-    }
-  });
-
-  app.delete("/api/community-physical-tests/:id/comments/:commentId", async (req, res) => {
-    try {
-      const commentId = parseId(req, res, "commentId");
-      if (commentId === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const deleted = await storage.deletePhysicalTestComment(commentId, accountId);
-      if (!deleted) {
-        return res.status(404).json({ message: "Comment not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete comment" });
-    }
-  });
-
-  // No plan gate, same as creating a physical test from scratch — see the
-  // comment on the physical test routes above.
-  app.post("/api/community-physical-tests/:id/import", async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const imported = await storage.importCommunityPhysicalTest(id, accountId);
-      if (!imported) {
-        return res.status(404).json({ message: "Community physical test not found" });
-      }
-      res.status(201).json(imported);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to import physical test" });
-    }
-  });
-
-  // A whole active roster's results for one test, recorded in a single
-  // batch (the way a coach actually runs a fitness test — one session,
-  // everyone in turn) rather than one request per player.
-  app.post("/api/physical-tests/:id/results", requireTeam, async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const test = await storage.getPhysicalTestById(id, accountId);
-      if (!test) {
-        return res.status(404).json({ message: "Physical test not found" });
-      }
-
-      const { date, results } = recordPhysicalTestResultsSchema.parse(req.body);
-      const teamPlayers = await storage.getAllPlayers(req.session.currentTeamId!);
-      const teamPlayerIds = new Set(teamPlayers.map((p) => p.id));
-      const invalidPlayerId = results.find((r) => !teamPlayerIds.has(r.playerId));
-      if (invalidPlayerId) {
-        return res.status(400).json({ message: "One or more players don't belong to the current team." });
-      }
-
-      // Snapshot each player's best-ever value before inserting the new
-      // results, so we can tell who just beat their own personal record —
-      // a player with no prior result doesn't count (nothing to beat yet).
-      const previousBests = await storage.getBestPhysicalTestValues(id, results.map((r) => r.playerId), test.lowerIsBetter === 1);
-      const saved = await storage.recordPhysicalTestResults(id, date, results);
-      const newRecordPlayerIds = results
-        .filter((r) => {
-          const prevBest = previousBests[r.playerId];
-          if (prevBest === undefined) return false;
-          return test.lowerIsBetter === 1 ? r.value < prevBest : r.value > prevBest;
-        })
-        .map((r) => r.playerId);
-
-      res.status(201).json({ results: saved, newRecordPlayerIds });
-    } catch (error) {
-      res.status(400).json({ message: "Invalid physical test results" });
-    }
-  });
-
-  // Prefills the bulk-entry form with each player's most recent result for
-  // this test, so re-testing the roster doesn't start from a blank table.
-  app.get("/api/physical-tests/:id/latest", requireTeam, async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const latest = await storage.getLatestPhysicalTestResultsForTeam(id, req.session.currentTeamId!);
-      res.json(latest);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch latest results" });
-    }
-  });
-
-  app.get("/api/players/:id/physical-test-results", requireTeam, async (req, res) => {
-    try {
-      const id = parseId(req, res);
-      if (id === null) return;
-      const player = await storage.getPlayerById(id, req.session.currentTeamId!);
-      if (!player) {
-        return res.status(404).json({ message: "Player not found" });
-      }
-      const history = await storage.getPhysicalTestResultsForPlayer(id);
-      res.json(history);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch physical test results" });
-    }
-  });
-
   // Evaluation tests — general player evaluation (physical and skill
   // tests alike), scored automatically 1-100 (see computeEvaluationScore).
-  // Same route shape as physical tests above, available on every plan.
+  // Templates scoped by account, shared across that account's teams (and,
+  // for a Club coach, across the whole club — see resolveEffectiveAccountId),
+  // same as exercises. No plan gate: available on every plan.
   app.get("/api/evaluation-tests", async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
@@ -1507,11 +1201,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return playIds.filter(id => ownedIds.has(id));
   }
 
-  // Same defense-in-depth as sanitizeExerciseIds above — physical tests are
-  // scoped by accountId, not team, same as exercises.
+  // Same defense-in-depth as sanitizeExerciseIds above — evaluation tests
+  // are scoped by accountId, not team, same as exercises.
   async function sanitizeTestIds(accountId: number, testIds: string[] | null | undefined) {
     if (!testIds || testIds.length === 0) return testIds;
-    const owned = await storage.getAllPhysicalTests(accountId);
+    const owned = await storage.getAllEvaluationTests(accountId);
     const ownedIds = new Set(owned.map(t => t.id.toString()));
     return testIds.filter(id => ownedIds.has(id));
   }

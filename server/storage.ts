@@ -9,9 +9,6 @@ import {
   playLikes,
   playComments,
   playSaves,
-  physicalTestLikes,
-  physicalTestComments,
-  physicalTestSaves,
   evaluationTestLikes,
   evaluationTestComments,
   evaluationTestSaves,
@@ -32,8 +29,6 @@ import {
   recurringPracticeSlots,
   accountInvites,
   accountMemberships,
-  physicalTests,
-  physicalTestResults,
   evaluationTests,
   evaluationTestResults,
   type Account,
@@ -71,10 +66,6 @@ import {
   type AccountInvite,
   type AccountMembership,
   type CoachMember,
-  type PhysicalTest,
-  type InsertPhysicalTest,
-  type PhysicalTestResult,
-  type PlayerPhysicalTestHistory,
   type EvaluationTest,
   type InsertEvaluationTest,
   type EvaluationTestResult,
@@ -85,7 +76,6 @@ import {
   type SuggestedCoach,
   type ExerciseCommentView,
   type PlayCommentView,
-  type PhysicalTestCommentView,
   type EvaluationTestCommentView,
 } from "@shared/schema";
 import { computeEvaluationScore } from "@shared/evaluationScore";
@@ -184,7 +174,7 @@ export interface IStorage {
   // Callers don't create these directly; likeExercise/followCoach/
   // createExerciseComment do it internally, only for a genuinely new like/
   // follow/comment and never for self.
-  createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test" | "like_evaluation_test" | "comment_evaluation_test"; actorAccountId: number; exerciseId?: number; playId?: number; physicalTestId?: number; evaluationTestId?: number }): Promise<void>;
+  createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_evaluation_test" | "comment_evaluation_test"; actorAccountId: number; exerciseId?: number; playId?: number; evaluationTestId?: number }): Promise<void>;
   getNotifications(accountId: number, limit?: number): Promise<NotificationView[]>;
   getUnreadNotificationCount(accountId: number): Promise<number>;
   markNotificationRead(id: number, accountId: number): Promise<void>;
@@ -218,21 +208,9 @@ export interface IStorage {
   getPlayComments(playId: number, viewerAccountId: number): Promise<PlayCommentView[] | undefined>;
   deletePlayComment(commentId: number, accountId: number): Promise<boolean>;
 
-  // Physical test community — scoped directly by accountId, same as
-  // exercises (no team indirection to resolve, unlike plays above).
-  setPhysicalTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<PhysicalTest | undefined>;
-  getCommunityPhysicalTests(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(PhysicalTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
-  importCommunityPhysicalTest(id: number, accountId: number): Promise<PhysicalTest | undefined>;
-  likePhysicalTest(testId: number, accountId: number): Promise<boolean>;
-  unlikePhysicalTest(testId: number, accountId: number): Promise<void>;
-  savePhysicalTest(testId: number, accountId: number): Promise<boolean>;
-  unsavePhysicalTest(testId: number, accountId: number): Promise<void>;
-  createPhysicalTestComment(testId: number, accountId: number, body: string): Promise<PhysicalTestCommentView | undefined>;
-  getPhysicalTestComments(testId: number, viewerAccountId: number): Promise<PhysicalTestCommentView[] | undefined>;
-  deletePhysicalTestComment(commentId: number, accountId: number): Promise<boolean>;
-
-  // Evaluation test community — general player evaluation (physical and
-  // skill tests alike), same shape as the physical test community above.
+  // Evaluation test community — scoped directly by accountId, same as
+  // exercises (no team indirection to resolve, unlike plays above). Covers
+  // general player evaluation, physical and skill tests alike.
   setEvaluationTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<EvaluationTest | undefined>;
   getCommunityEvaluationTests(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
   importCommunityEvaluationTest(id: number, accountId: number): Promise<EvaluationTest | undefined>;
@@ -250,29 +228,12 @@ export interface IStorage {
   saveExerciseDiagram(id: number, accountId: number, data: SaveExerciseDiagram): Promise<Exercise | undefined>;
   deleteExerciseDiagram(id: number, accountId: number): Promise<boolean>;
 
-  // Physical test methods — the templates are scoped by account (shared
-  // across that account's teams, same as exercises); results are recorded
-  // in bulk (a whole roster in one sitting) and read back per player.
-  getAllPhysicalTests(accountId: number): Promise<PhysicalTest[]>;
-  getPhysicalTestById(id: number, accountId: number): Promise<PhysicalTest | undefined>;
-  createPhysicalTest(accountId: number, test: InsertPhysicalTest): Promise<PhysicalTest>;
-  updatePhysicalTest(id: number, accountId: number, test: Partial<InsertPhysicalTest>): Promise<PhysicalTest | undefined>;
-  deletePhysicalTest(id: number, accountId: number): Promise<boolean>;
-  recordPhysicalTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<PhysicalTestResult[]>;
-  getLatestPhysicalTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>>;
-  getPhysicalTestResultsForPlayer(playerId: number): Promise<PlayerPhysicalTestHistory[]>;
-  // Each player's best-ever value for this test before a new result is
-  // recorded — direction-aware (lower is better for timed tests). Used to
-  // tell whether an incoming result is a new personal record; a player with
-  // no prior result is left out of the map entirely, since there's no
-  // record for them to beat yet.
-  getBestPhysicalTestValues(testId: number, playerIds: number[], lowerIsBetter: boolean): Promise<Record<number, number>>;
-
   // Evaluation test methods — general player evaluation (physical and
-  // skill), scored 1-100 (see computeEvaluationScore). Same shape as the
-  // physical test methods above: templates scoped by account, results
-  // recorded per player/date, either in bulk or one at a time (a single
-  // result array is also how the profile's quick single-player add works).
+  // skill), scored 1-100 (see computeEvaluationScore). Templates are scoped
+  // by account (shared across that account's teams, same as exercises);
+  // results recorded per player/date, either in bulk (a whole roster in one
+  // sitting) or one at a time (a single result array is also how the
+  // profile's quick single-player add works), and read back per player.
   getAllEvaluationTests(accountId: number): Promise<EvaluationTest[]>;
   getEvaluationTestById(id: number, accountId: number): Promise<EvaluationTest | undefined>;
   createEvaluationTest(accountId: number, test: InsertEvaluationTest): Promise<EvaluationTest>;
@@ -282,8 +243,10 @@ export interface IStorage {
   getLatestEvaluationTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>>;
   getEvaluationTestResultsForPlayer(playerId: number): Promise<PlayerEvaluationTestHistory[]>;
   // Each player's best-ever value for this test before a new result is
-  // recorded — direction derived from bestValue vs worstValue, same
-  // personal-record semantics as getBestPhysicalTestValues.
+  // recorded — direction derived from bestValue vs worstValue. Used to tell
+  // whether an incoming result is a new personal record; a player with no
+  // prior result is left out of the map entirely, since there's no record
+  // for them to beat yet.
   getBestEvaluationTestValues(testId: number, playerIds: number[], worstValue: number, bestValue: number): Promise<Record<number, number>>;
   // Roster-wide latest score per player per test — feeds the scrimmage team
   // balancer (replaces the old getCurrentSkillRatingsForTeam).
@@ -869,14 +832,13 @@ export class DatabaseStorage implements IStorage {
       .slice(0, limit);
   }
 
-  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test" | "like_evaluation_test" | "comment_evaluation_test"; actorAccountId: number; exerciseId?: number; playId?: number; physicalTestId?: number; evaluationTestId?: number }): Promise<void> {
+  async createNotification(data: { accountId: number; type: "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_evaluation_test" | "comment_evaluation_test"; actorAccountId: number; exerciseId?: number; playId?: number; evaluationTestId?: number }): Promise<void> {
     await db.insert(notifications).values({
       accountId: data.accountId,
       type: data.type,
       actorAccountId: data.actorAccountId,
       exerciseId: data.exerciseId ?? null,
       playId: data.playId ?? null,
-      physicalTestId: data.physicalTestId ?? null,
       evaluationTestId: data.evaluationTestId ?? null,
     });
   }
@@ -892,8 +854,6 @@ export class DatabaseStorage implements IStorage {
         exerciseName: exercises.name,
         playId: notifications.playId,
         playName: plays.name,
-        physicalTestId: notifications.physicalTestId,
-        physicalTestName: physicalTests.name,
         evaluationTestId: notifications.evaluationTestId,
         evaluationTestName: evaluationTests.name,
         read: notifications.read,
@@ -903,7 +863,6 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(accounts, eq(notifications.actorAccountId, accounts.id))
       .leftJoin(exercises, eq(notifications.exerciseId, exercises.id))
       .leftJoin(plays, eq(notifications.playId, plays.id))
-      .leftJoin(physicalTests, eq(notifications.physicalTestId, physicalTests.id))
       .leftJoin(evaluationTests, eq(notifications.evaluationTestId, evaluationTests.id))
       .where(eq(notifications.accountId, accountId))
       .orderBy(desc(notifications.id))
@@ -918,8 +877,6 @@ export class DatabaseStorage implements IStorage {
       exerciseName: row.exerciseName,
       playId: row.playId,
       playName: row.playName,
-      physicalTestId: row.physicalTestId,
-      physicalTestName: row.physicalTestName,
       evaluationTestId: row.evaluationTestId,
       evaluationTestName: row.evaluationTestName,
       read: row.read === 1,
@@ -1249,195 +1206,6 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async setPhysicalTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<PhysicalTest | undefined> {
-    const [test] = await db
-      .update(physicalTests)
-      .set({ sharedToCommunity: shared ? 1 : 0 })
-      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)))
-      .returning();
-    return test || undefined;
-  }
-
-  async getCommunityPhysicalTests(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(PhysicalTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
-    let shared = await db.select().from(physicalTests).where(eq(physicalTests.sharedToCommunity, 1));
-    if (shared.length === 0) return [];
-
-    if (opts.followingOnly) {
-      const followingRows = await db
-        .select({ followingAccountId: coachFollows.followingAccountId })
-        .from(coachFollows)
-        .where(eq(coachFollows.followerAccountId, accountId));
-      const followingAccountIds = new Set(followingRows.map((row) => row.followingAccountId));
-      shared = shared.filter((test) => followingAccountIds.has(test.accountId));
-    }
-
-    if (opts.savedOnly) {
-      const savedRows = await db.select({ testId: physicalTestSaves.testId }).from(physicalTestSaves).where(eq(physicalTestSaves.accountId, accountId));
-      const savedTestIds = new Set(savedRows.map((row) => row.testId));
-      shared = shared.filter((test) => savedTestIds.has(test.id));
-    }
-
-    if (shared.length === 0) return [];
-
-    const testIds = shared.map((test) => test.id);
-    const likeCounts = await db
-      .select({ testId: physicalTestLikes.testId, count: sql<number>`count(*)::int` })
-      .from(physicalTestLikes)
-      .where(inArray(physicalTestLikes.testId, testIds))
-      .groupBy(physicalTestLikes.testId);
-    const likeCountByTestId = new Map(likeCounts.map((row) => [row.testId, row.count]));
-
-    const likedRows = await db
-      .select({ testId: physicalTestLikes.testId })
-      .from(physicalTestLikes)
-      .where(and(inArray(physicalTestLikes.testId, testIds), eq(physicalTestLikes.accountId, accountId)));
-    const likedTestIds = new Set(likedRows.map((row) => row.testId));
-
-    const savedRowsForViewer = await db
-      .select({ testId: physicalTestSaves.testId })
-      .from(physicalTestSaves)
-      .where(and(inArray(physicalTestSaves.testId, testIds), eq(physicalTestSaves.accountId, accountId)));
-    const savedTestIdsForViewer = new Set(savedRowsForViewer.map((row) => row.testId));
-
-    const commentCounts = await db
-      .select({ testId: physicalTestComments.testId, count: sql<number>`count(*)::int` })
-      .from(physicalTestComments)
-      .where(inArray(physicalTestComments.testId, testIds))
-      .groupBy(physicalTestComments.testId);
-    const commentCountByTestId = new Map(commentCounts.map((row) => [row.testId, row.count]));
-
-    const publisherIds = Array.from(new Set(shared.map((test) => test.accountId)));
-    const publishers = await db
-      .select({ id: accounts.id, publicName: accounts.publicName })
-      .from(accounts)
-      .where(inArray(accounts.id, publisherIds));
-    const publisherById = new Map(publishers.map((publisher) => [publisher.id, publisher]));
-
-    const withExtras = shared.map((test) => ({
-      ...test,
-      likeCount: likeCountByTestId.get(test.id) ?? 0,
-      likedByMe: likedTestIds.has(test.id),
-      savedByMe: savedTestIdsForViewer.has(test.id),
-      commentCount: commentCountByTestId.get(test.id) ?? 0,
-      publishedBy: {
-        accountId: test.accountId,
-        publicName: publisherById.get(test.accountId)?.publicName ?? null,
-      },
-    }));
-
-    return opts.sort === "popular"
-      ? withExtras.sort((a, b) => b.likeCount - a.likeCount || b.id - a.id)
-      : withExtras.sort((a, b) => b.id - a.id);
-  }
-
-  async importCommunityPhysicalTest(id: number, accountId: number): Promise<PhysicalTest | undefined> {
-    const [source] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, id), eq(physicalTests.sharedToCommunity, 1)));
-    if (!source) return undefined;
-
-    const [imported] = await db
-      .insert(physicalTests)
-      .values({
-        accountId,
-        name: source.name,
-        unit: source.unit,
-        lowerIsBetter: source.lowerIsBetter,
-        description: source.description,
-      })
-      .returning();
-    return imported;
-  }
-
-  async likePhysicalTest(testId: number, accountId: number): Promise<boolean> {
-    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
-    if (!test) return false;
-
-    const inserted = await db.insert(physicalTestLikes).values({ testId, accountId }).onConflictDoNothing().returning();
-    if (inserted.length > 0 && test.accountId !== accountId) {
-      await this.createNotification({ accountId: test.accountId, type: "like_physical_test", actorAccountId: accountId, physicalTestId: testId });
-    }
-    return true;
-  }
-
-  async unlikePhysicalTest(testId: number, accountId: number): Promise<void> {
-    await db.delete(physicalTestLikes).where(and(eq(physicalTestLikes.testId, testId), eq(physicalTestLikes.accountId, accountId)));
-  }
-
-  async savePhysicalTest(testId: number, accountId: number): Promise<boolean> {
-    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
-    if (!test) return false;
-
-    await db.insert(physicalTestSaves).values({ testId, accountId }).onConflictDoNothing();
-    return true;
-  }
-
-  async unsavePhysicalTest(testId: number, accountId: number): Promise<void> {
-    await db.delete(physicalTestSaves).where(and(eq(physicalTestSaves.testId, testId), eq(physicalTestSaves.accountId, accountId)));
-  }
-
-  async createPhysicalTestComment(testId: number, accountId: number, body: string): Promise<PhysicalTestCommentView | undefined> {
-    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
-    if (!test) return undefined;
-
-    const [comment] = await db.insert(physicalTestComments).values({ testId, accountId, body }).returning();
-
-    if (test.accountId !== accountId) {
-      await this.createNotification({ accountId: test.accountId, type: "comment_physical_test", actorAccountId: accountId, physicalTestId: testId });
-    }
-
-    const [author] = await db.select({ publicName: accounts.publicName }).from(accounts).where(eq(accounts.id, accountId));
-
-    return {
-      id: comment.id,
-      testId: comment.testId,
-      accountId: comment.accountId,
-      publicName: author?.publicName ?? null,
-      body: comment.body,
-      createdAt: comment.createdAt ? comment.createdAt.toISOString() : null,
-      canDelete: true,
-    };
-  }
-
-  async getPhysicalTestComments(testId: number, viewerAccountId: number): Promise<PhysicalTestCommentView[] | undefined> {
-    const [test] = await db.select().from(physicalTests).where(and(eq(physicalTests.id, testId), eq(physicalTests.sharedToCommunity, 1)));
-    if (!test) return undefined;
-
-    const rows = await db
-      .select({
-        id: physicalTestComments.id,
-        testId: physicalTestComments.testId,
-        accountId: physicalTestComments.accountId,
-        publicName: accounts.publicName,
-        body: physicalTestComments.body,
-        createdAt: physicalTestComments.createdAt,
-      })
-      .from(physicalTestComments)
-      .leftJoin(accounts, eq(accounts.id, physicalTestComments.accountId))
-      .where(eq(physicalTestComments.testId, testId))
-      .orderBy(asc(physicalTestComments.id));
-
-    return rows.map((r) => ({
-      id: r.id,
-      testId: r.testId,
-      accountId: r.accountId,
-      publicName: r.publicName,
-      body: r.body,
-      createdAt: r.createdAt ? r.createdAt.toISOString() : null,
-      canDelete: r.accountId === viewerAccountId || test.accountId === viewerAccountId,
-    }));
-  }
-
-  async deletePhysicalTestComment(commentId: number, accountId: number): Promise<boolean> {
-    const [comment] = await db.select().from(physicalTestComments).where(eq(physicalTestComments.id, commentId));
-    if (!comment) return false;
-
-    const [test] = await db.select().from(physicalTests).where(eq(physicalTests.id, comment.testId));
-    const canDelete = comment.accountId === accountId || test?.accountId === accountId;
-    if (!canDelete) return false;
-
-    const result = await db.delete(physicalTestComments).where(eq(physicalTestComments.id, commentId));
-    return (result.rowCount ?? 0) > 0;
-  }
-
   async setEvaluationTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<EvaluationTest | undefined> {
     const [test] = await db
       .update(evaluationTests)
@@ -1714,114 +1482,8 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  // Physical test methods
-  async getAllPhysicalTests(accountId: number): Promise<PhysicalTest[]> {
-    return await db.select().from(physicalTests).where(eq(physicalTests.accountId, accountId));
-  }
-
-  async getPhysicalTestById(id: number, accountId: number): Promise<PhysicalTest | undefined> {
-    const [test] = await db
-      .select()
-      .from(physicalTests)
-      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)));
-    return test || undefined;
-  }
-
-  async createPhysicalTest(accountId: number, insertTest: InsertPhysicalTest): Promise<PhysicalTest> {
-    const [test] = await db
-      .insert(physicalTests)
-      .values({ ...insertTest, accountId, description: insertTest.description || null })
-      .returning();
-    return test;
-  }
-
-  async updatePhysicalTest(id: number, accountId: number, updateData: Partial<InsertPhysicalTest>): Promise<PhysicalTest | undefined> {
-    const [test] = await db
-      .update(physicalTests)
-      .set(updateData)
-      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)))
-      .returning();
-    return test || undefined;
-  }
-
-  async deletePhysicalTest(id: number, accountId: number): Promise<boolean> {
-    const result = await db
-      .delete(physicalTests)
-      .where(and(eq(physicalTests.id, id), eq(physicalTests.accountId, accountId)));
-    return (result.rowCount ?? 0) > 0;
-  }
-
-  async recordPhysicalTestResults(testId: number, date: string, results: { playerId: number; value: number }[]): Promise<PhysicalTestResult[]> {
-    return await db
-      .insert(physicalTestResults)
-      .values(results.map((r) => ({ testId, playerId: r.playerId, value: r.value, date })))
-      .returning();
-  }
-
-  async getBestPhysicalTestValues(testId: number, playerIds: number[], lowerIsBetter: boolean): Promise<Record<number, number>> {
-    if (playerIds.length === 0) return {};
-    const rows = await db
-      .select({ playerId: physicalTestResults.playerId, value: physicalTestResults.value })
-      .from(physicalTestResults)
-      .where(and(eq(physicalTestResults.testId, testId), inArray(physicalTestResults.playerId, playerIds)));
-
-    const bests: Record<number, number> = {};
-    for (const row of rows) {
-      const current = bests[row.playerId];
-      if (current === undefined || (lowerIsBetter ? row.value < current : row.value > current)) {
-        bests[row.playerId] = row.value;
-      }
-    }
-    return bests;
-  }
-
-  async getLatestPhysicalTestResultsForTeam(testId: number, teamId: number): Promise<Record<number, { value: number; date: string }>> {
-    const rows = await db
-      .select({ playerId: physicalTestResults.playerId, value: physicalTestResults.value, date: physicalTestResults.date })
-      .from(physicalTestResults)
-      .innerJoin(players, eq(physicalTestResults.playerId, players.id))
-      .where(and(eq(physicalTestResults.testId, testId), eq(players.teamId, teamId)))
-      .orderBy(desc(physicalTestResults.date), desc(physicalTestResults.createdAt));
-
-    // Rows are newest-first, so the first time a player is seen is their
-    // latest result — same reduction as getCurrentSkillRatingsForTeam.
-    const latest: Record<number, { value: number; date: string }> = {};
-    for (const row of rows) {
-      if (!(row.playerId in latest)) latest[row.playerId] = { value: row.value, date: row.date };
-    }
-    return latest;
-  }
-
-  async getPhysicalTestResultsForPlayer(playerId: number): Promise<PlayerPhysicalTestHistory[]> {
-    const rows = await db
-      .select({
-        testId: physicalTests.id,
-        testName: physicalTests.name,
-        unit: physicalTests.unit,
-        lowerIsBetter: physicalTests.lowerIsBetter,
-        value: physicalTestResults.value,
-        date: physicalTestResults.date,
-      })
-      .from(physicalTestResults)
-      .innerJoin(physicalTests, eq(physicalTestResults.testId, physicalTests.id))
-      .where(eq(physicalTestResults.playerId, playerId))
-      .orderBy(desc(physicalTestResults.date), desc(physicalTestResults.createdAt));
-
-    const byTest = new Map<number, PlayerPhysicalTestHistory>();
-    for (const row of rows) {
-      let group = byTest.get(row.testId);
-      if (!group) {
-        group = { testId: row.testId, testName: row.testName, unit: row.unit, lowerIsBetter: row.lowerIsBetter === 1, results: [] };
-        byTest.set(row.testId, group);
-      }
-      group.results.push({ value: row.value, date: row.date });
-    }
-    return Array.from(byTest.values());
-  }
-
-  // Evaluation test methods — same shape as the physical test methods
-  // above, generalized to a coach-defined 1-100 score (see
-  // computeEvaluationScore) instead of only a raw value.
+  // Evaluation test methods — a coach-defined test scored automatically
+  // 1-100 (see computeEvaluationScore).
   async getAllEvaluationTests(accountId: number): Promise<EvaluationTest[]> {
     return await db.select().from(evaluationTests).where(eq(evaluationTests.accountId, accountId));
   }

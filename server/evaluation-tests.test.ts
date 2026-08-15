@@ -359,9 +359,8 @@ describe("evaluation tests", () => {
     const invite = await ownerAgent.post("/api/coaches/invite").send({ email: coachEmail });
     expect(invite.status).toBe(201);
 
-    // Same as physical-tests.test.ts: the invite email never actually sends
-    // in this test env, so insert the membership row directly rather than
-    // accepting via token.
+    // The invite email never actually sends in this test env, so insert the
+    // membership row directly rather than accepting via token.
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const ownerAccount = await pool.query("SELECT id FROM accounts WHERE email = $1", [ownerEmail]);
     const coachAccount = await pool.query("SELECT id FROM accounts WHERE email = $1", [coachEmail]);

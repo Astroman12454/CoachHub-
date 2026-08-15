@@ -22,7 +22,7 @@ export function formatPlainDate(date: string): string {
 
 // A full timestamp (ISO string with time, e.g. a notification or comment's
 // createdAt) as "Aug 14, 3:40 PM" — shared by every dialog that lists
-// timestamped social activity (notifications, exercise/play/physical-test
+// timestamped social activity (notifications, exercise/play/evaluation-test
 // comments).
 export function formatTimestamp(value: string | null): string {
   if (!value) return "";

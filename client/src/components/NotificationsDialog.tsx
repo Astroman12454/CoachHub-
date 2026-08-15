@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, ClipboardList, Heart, MessageCircle, Target, UserCheck } from "lucide-react";
+import { ClipboardList, Heart, MessageCircle, Target, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatTimestamp as formatWhen } from "@/lib/time";
 
 // "like"/"comment" (no suffix) are exercise notifications, kept unsuffixed
-// for backward compatibility with rows written before plays/physical tests
-// joined the community — see NOTIFICATION_TYPES in shared/schema.ts.
-type NotificationItemType = "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_physical_test" | "comment_physical_test" | "like_evaluation_test" | "comment_evaluation_test";
+// for backward compatibility with rows written before plays joined the
+// community — see NOTIFICATION_TYPES in shared/schema.ts.
+type NotificationItemType = "follow" | "like" | "comment" | "like_play" | "comment_play" | "like_evaluation_test" | "comment_evaluation_test";
 
 interface NotificationItem {
   id: number;
@@ -23,8 +23,6 @@ interface NotificationItem {
   exerciseName: string | null;
   playId: number | null;
   playName: string | null;
-  physicalTestId: number | null;
-  physicalTestName: string | null;
   evaluationTestId: number | null;
   evaluationTestName: string | null;
   read: boolean;
@@ -99,8 +97,6 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
       setLocation(`/coaches/${item.actorAccountId}`);
     } else if (item.type === "like_play" || item.type === "comment_play") {
       setLocation("/playbook");
-    } else if (item.type === "like_physical_test" || item.type === "comment_physical_test") {
-      setLocation("/physical-tests");
     } else if (item.type === "like_evaluation_test" || item.type === "comment_evaluation_test") {
       setLocation("/evaluations");
     } else {
@@ -109,9 +105,8 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
   };
 
   function iconFor(type: NotificationItem["type"]) {
-    if (type === "like" || type === "like_play" || type === "like_physical_test" || type === "like_evaluation_test") return <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />;
+    if (type === "like" || type === "like_play" || type === "like_evaluation_test") return <Heart className="w-3.5 h-3.5 text-red-500" strokeWidth={1.75} aria-hidden="true" />;
     if (type === "comment_play") return <ClipboardList className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
-    if (type === "comment_physical_test") return <Activity className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
     if (type === "comment_evaluation_test") return <Target className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
     if (type === "comment") return <MessageCircle className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
     return <UserCheck className="w-3.5 h-3.5 text-court" strokeWidth={1.75} aria-hidden="true" />;
@@ -123,8 +118,6 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
     if (item.type === "comment") return t("notificationsDialog.commentText", { name, exercise: item.exerciseName ?? "" });
     if (item.type === "like_play") return t("notificationsDialog.likePlayText", { name, play: item.playName ?? "" });
     if (item.type === "comment_play") return t("notificationsDialog.commentPlayText", { name, play: item.playName ?? "" });
-    if (item.type === "like_physical_test") return t("notificationsDialog.likePhysicalTestText", { name, test: item.physicalTestName ?? "" });
-    if (item.type === "comment_physical_test") return t("notificationsDialog.commentPhysicalTestText", { name, test: item.physicalTestName ?? "" });
     if (item.type === "like_evaluation_test") return t("notificationsDialog.likeEvaluationTestText", { name, test: item.evaluationTestName ?? "" });
     if (item.type === "comment_evaluation_test") return t("notificationsDialog.commentEvaluationTestText", { name, test: item.evaluationTestName ?? "" });
     return t("notificationsDialog.likeText", { name, exercise: item.exerciseName ?? "" });
@@ -172,7 +165,7 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
                   onClick={() => handleItemClick(item)}
                   className={`w-full text-left flex items-start gap-3 p-3 rounded-md hover:bg-muted transition-colors ${item.read ? "" : "bg-basketball-orange/5"}`}
                 >
-                  <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${item.type === "like" || item.type === "like_play" || item.type === "like_physical_test" ? "bg-red-100 dark:bg-red-950/40" : "bg-court/10"}`}>
+                  <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center ${item.type === "like" || item.type === "like_play" || item.type === "like_evaluation_test" ? "bg-red-100 dark:bg-red-950/40" : "bg-court/10"}`}>
                     {iconFor(item.type)}
                   </div>
                   <div className="min-w-0 flex-1">

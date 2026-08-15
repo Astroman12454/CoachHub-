@@ -18,10 +18,10 @@ const PAD_BOTTOM = 20;
 const MIN_SCORE = 1;
 const MAX_SCORE = 100;
 
-// Same hand-rolled SVG line chart as PhysicalTestChart, but plotted against
-// the fixed 1-100 score axis (via computeEvaluationScore) instead of each
-// test's own dynamic value range — so score trends read consistently no
-// matter which evaluation test is expanded.
+// A hand-rolled SVG line chart plotted against the fixed 1-100 score axis
+// (via computeEvaluationScore) instead of each test's own dynamic value
+// range — so score trends read consistently no matter which evaluation
+// test is expanded.
 export default function EvaluationScoreChart({ results, unit, worstValue, bestValue }: EvaluationScoreChartProps) {
   const { t } = useTranslation();
   const [hovered, setHovered] = useState<number | null>(null);
@@ -58,7 +58,7 @@ export default function EvaluationScoreChart({ results, unit, worstValue, bestVa
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="w-full h-auto"
         aria-label={t("evaluationScoreChart.ariaLabel", {
-          first: points[0].score, last: last.score, trend: t(`physicalTestChart.trend.${trendDirection}`),
+          first: points[0].score, last: last.score, trend: t(`evaluationScoreChart.trend.${trendDirection}`),
         })}
       >
         {/* Gridlines at the fixed score floor/ceiling */}
