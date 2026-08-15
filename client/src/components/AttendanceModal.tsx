@@ -205,7 +205,12 @@ export default function AttendanceModal({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+                      {/* flex-wrap here matters: without it, these 4 buttons
+                          plus a player name of any real length (and the
+                          injured badge) don't fit on the sm: breakpoint's
+                          row — the buttons were getting clipped by the
+                          dialog edge instead of shrinking or reflowing. */}
+                      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end sm:gap-2">
                         {Object.entries(ATTENDANCE_STATUS).map(([status, config]) => (
                           <Button
                             key={status}
