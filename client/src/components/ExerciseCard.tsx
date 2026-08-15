@@ -35,42 +35,49 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
       className="bg-card border border-border rounded-lg p-5 hover:border-basketball-orange hover:shadow-md transition-all duration-200 cursor-pointer group"
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className={`w-9 h-9 flex-shrink-0 ${categorySolidClass} rounded-md flex items-center justify-center`}>
-            <CategoryIcon className="w-4 h-4 text-white" strokeWidth={2} />
-          </div>
-          <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 dark:border-orange-900/40 dark:text-orange-300 dark:bg-orange-950/40">
-            {t(`categories.exercise.${exercise.category}`, exercise.category).toLowerCase()}
-          </Badge>
-          <Badge className={`${difficultyColorClass} shadow-sm`}>
-            {t(`categories.difficulty.${exercise.difficulty}`, exercise.difficulty).toLowerCase()}
-          </Badge>
-          {exercise.phase && (
-            <Badge variant="outline" className="border-border text-muted-foreground">
-              {t(`categories.phase.${exercise.phase}`, exercise.phase).toLowerCase()}
-            </Badge>
-          )}
+      <div className="flex items-center gap-2 flex-wrap mb-3">
+        <div className={`w-9 h-9 flex-shrink-0 ${categorySolidClass} rounded-md flex items-center justify-center`}>
+          <CategoryIcon className="w-4 h-4 text-white" strokeWidth={2} />
         </div>
+        <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50 dark:border-orange-900/40 dark:text-orange-300 dark:bg-orange-950/40">
+          {t(`categories.exercise.${exercise.category}`, exercise.category).toLowerCase()}
+        </Badge>
+        <Badge className={`${difficultyColorClass} shadow-sm`}>
+          {t(`categories.difficulty.${exercise.difficulty}`, exercise.difficulty).toLowerCase()}
+        </Badge>
+        {exercise.phase && (
+          <Badge variant="outline" className="border-border text-muted-foreground">
+            {t(`categories.phase.${exercise.phase}`, exercise.phase).toLowerCase()}
+          </Badge>
+        )}
+      </div>
 
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {onToggleFavorite && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-              className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 data-[favorite=true]:opacity-100 transition-opacity duration-200"
-              data-favorite={isFavorite}
-              aria-pressed={isFavorite}
-              aria-label={isFavorite ? t("exerciseCard.unfavoriteName", { name: localized.name }) : t("exerciseCard.favoriteName", { name: localized.name })}
-            >
-              <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
-            </button>
-          )}
-          {(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare || onOpenDiagram) ? (
-            // Always visible on mobile/tablet (no hover to reveal them on
-            // touch); fades in on hover only once there's room to spare on
-            // desktop.
-            <div className="flex items-center gap-1.5 flex-shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
+      {/* Its own full-width row, separate from the badges above — with up to
+          7 action buttons possible (favorite/diagram/community/share/
+          duplicate/edit/delete) at 40px each, sharing a row with the badges
+          (as it used to) reliably overflowed the card on anything but the
+          widest desktop columns. w-full here is what lets flex-wrap below
+          actually wrap onto a second line instead of just being sized by
+          its own unwrapped content (a flex item with no explicit width
+          isn't reliably constrained by its parent's own wrap). */}
+      <div className="flex items-center flex-wrap justify-end gap-1.5 w-full mb-4">
+        {onToggleFavorite && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 data-[favorite=true]:opacity-100 transition-opacity duration-200"
+            data-favorite={isFavorite}
+            aria-pressed={isFavorite}
+            aria-label={isFavorite ? t("exerciseCard.unfavoriteName", { name: localized.name }) : t("exerciseCard.favoriteName", { name: localized.name })}
+          >
+            <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
+          </button>
+        )}
+        {(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare || onOpenDiagram) ? (
+          // Always visible on mobile/tablet (no hover to reveal them on
+          // touch); fades in on hover only once there's room to spare on
+          // desktop.
+          <div className="flex items-center flex-wrap justify-end gap-1.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
               {onOpenDiagram && (
                 <button
                   type="button"
@@ -138,7 +145,6 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
               <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
             </div>
           )}
-        </div>
       </div>
 
       {exercise.imageUrl && !imageFailed ? (
