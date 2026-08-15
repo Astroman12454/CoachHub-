@@ -1057,7 +1057,38 @@
     "community": "Comunidad",
     "addToCommunity": "Añadir {{name}} a la comunidad",
     "removeFromCommunity": "Quitar {{name}} de la comunidad",
-    "couldntUpdateCommunityShare": "No se pudo actualizar el estado en la comunidad"
+    "couldntUpdateCommunityShare": "No se pudo actualizar el estado en la comunidad",
+    "quickTemplates": "Plantillas Rápidas",
+    "quickTemplatesHint": "Tocá una para crear un test listo para usar al instante — podés ajustar los números cuando quieras.",
+    "quickCreatedTitle": "Test creado",
+    "quickCreatedDescription": "\"{{name}}\" está listo para usar. Tocá el lápiz cuando quieras ajustarlo."
+  },
+  "evaluationTestPresets": {
+    "fullCourtSprint": {
+      "name": "Sprint de Cancha Completa",
+      "unit": "segundos",
+      "description": "Un sprint de línea de fondo a línea de fondo, mejor tiempo."
+    },
+    "suicides": {
+      "name": "Suicidios",
+      "unit": "segundos",
+      "description": "Un suicidio completo (ida y vuelta por cada línea)."
+    },
+    "freeThrows": {
+      "name": "Tiros Libres (1 min)",
+      "unit": "aciertos",
+      "description": "Tiros libres encestados en un minuto."
+    },
+    "threePointers": {
+      "name": "Triples (1 min)",
+      "unit": "aciertos",
+      "description": "Triples encestados en un minuto."
+    },
+    "layups": {
+      "name": "Bandejas (1 min)",
+      "unit": "aciertos",
+      "description": "Bandejas encestadas en un minuto."
+    }
   },
   "evaluationTestForm": {
     "editTest": "Editar Test de Evaluación",
@@ -1070,10 +1101,18 @@
     "type_count": "Aciertos",
     "unit": "Unidad",
     "unitPlaceholder": "ej., segundos, aciertos",
+    "directionHintTime": "Como es un test cronometrado, el \"peor\" resultado suele ser el número más alto (más lento) y el \"mejor\" el más bajo (más rápido) — es normal.",
+    "directionHintCount": "Como es un test de aciertos, el \"peor\" resultado suele ser el número más bajo y el \"mejor\" el más alto.",
     "worstValue": "Peor resultado (= 1 punto)",
-    "worstValueDescription": "El resultado que debería valer 1 sobre 100.",
+    "worstValueDescriptionTime": "El tiempo más lento que todavía debería valer 1 sobre 100. Ejemplo: 15 (segundos).",
+    "worstValueDescriptionCount": "La menor cantidad de aciertos que todavía debería valer 1 sobre 100. Ejemplo: 0.",
     "bestValue": "Mejor resultado (= 100 puntos)",
-    "bestValueDescription": "El resultado que debería valer 100 sobre 100.",
+    "bestValueDescriptionTime": "El tiempo más rápido que vale 100 sobre 100. Ejemplo: 5 (segundos).",
+    "bestValueDescriptionCount": "La mayor cantidad de aciertos que vale 100 sobre 100. Ejemplo: 20.",
+    "previewLabel": "Probá con un resultado de ejemplo",
+    "previewPlaceholder": "ej., 8",
+    "previewResult": "Puntuación: {{score}} / 100",
+    "previewHint": "Escribí un resultado arriba para ver qué puntuación le daría.",
     "descriptionOptional": "Descripción (Opcional)",
     "descriptionPlaceholder": "Cómo administrar este test...",
     "createTest": "Crear Test",

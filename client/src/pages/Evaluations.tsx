@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage, extractErrorCode } from "@/lib/queryClient";
+import { EVALUATION_TEST_PRESETS } from "@/lib/evaluationTestPresets";
 import type { EvaluationTest } from "@shared/schema";
 
 // General player evaluation (physical AND skill tests — sprints and free
@@ -63,6 +64,30 @@ export default function Evaluations() {
         return;
       }
       toast({ title: t("evaluations.couldntUpdateCommunityShare"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
+  });
+
+  // One-click test creation from a preset — the fastest path to a working
+  // test for a coach who doesn't want to think through reference values
+  // from scratch. Still fully editable afterward, same as any other test.
+  const quickCreateMutation = useMutation({
+    mutationFn: async (preset: (typeof EVALUATION_TEST_PRESETS)[number]) => {
+      const res = await apiRequest("POST", "/api/evaluation-tests", {
+        name: t(`evaluationTestPresets.${preset.key}.name`),
+        type: preset.type,
+        unit: t(`evaluationTestPresets.${preset.key}.unit`),
+        worstValue: preset.worstValue,
+        bestValue: preset.bestValue,
+        description: t(`evaluationTestPresets.${preset.key}.description`),
+      });
+      return (await res.json()) as EvaluationTest;
+    },
+    onSuccess: (test) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/evaluation-tests"] });
+      toast({ title: t("evaluations.quickCreatedTitle"), description: t("evaluations.quickCreatedDescription", { name: test.name }) });
+    },
+    onError: (error) => {
+      toast({ title: t("evaluationTestForm.failedToCreate"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
     },
   });
 
@@ -125,6 +150,30 @@ export default function Evaluations() {
             {t("evaluations.addTest")}
           </Button>
         </div>
+
+        {!searchQuery && (
+          <div className="mb-6">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-1">{t("evaluations.quickTemplates")}</p>
+            <p className="text-xs text-muted-foreground mb-3">{t("evaluations.quickTemplatesHint")}</p>
+            <div className="flex flex-wrap gap-2">
+              {EVALUATION_TEST_PRESETS.map((preset) => (
+                <Button
+                  key={preset.key}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => quickCreateMutation.mutate(preset)}
+                  disabled={quickCreateMutation.isPending}
+                >
+                  {preset.type === "time"
+                    ? <Timer className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+                    : <Crosshair className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.75} aria-hidden="true" />}
+                  {t(`evaluationTestPresets.${preset.key}.name`)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {filteredTests.length === 0 ? (
           <EmptyState
