@@ -59,7 +59,11 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
           widest desktop columns. w-full here is what lets flex-wrap below
           actually wrap onto a second line instead of just being sized by
           its own unwrapped content (a flex item with no explicit width
-          isn't reliably constrained by its parent's own wrap). */}
+          isn't reliably constrained by its parent's own wrap). Every button
+          is a direct child of this row (not grouped into sub-divs) so
+          flex-wrap balances them across lines together — favorite grouped
+          with its own wrapper div used to strand it alone on the first
+          line whenever the rest wrapped to a second one. */}
       <div className="flex items-center flex-wrap justify-end gap-1.5 w-full mb-4">
         {onToggleFavorite && (
           <button
@@ -73,78 +77,72 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
             <Star className={cn("w-3.5 h-3.5", isFavorite ? "text-basketball-orange fill-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
           </button>
         )}
-        {(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare || onOpenDiagram) ? (
-          // Always visible on mobile/tablet (no hover to reveal them on
-          // touch); fades in on hover only once there's room to spare on
-          // desktop.
-          <div className="flex items-center flex-wrap justify-end gap-1.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
-              {onOpenDiagram && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onOpenDiagram(); }}
-                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.diagramName", { name: localized.name })}
-                >
-                  <Waypoints className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-                </button>
-              )}
-              {onToggleCommunityShare && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onToggleCommunityShare(); }}
-                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-pressed={isSharedToCommunity}
-                  aria-label={isSharedToCommunity ? t("exerciseCard.unshareCommunityName", { name: localized.name }) : t("exerciseCard.shareCommunityName", { name: localized.name })}
-                >
-                  <Globe className={cn("w-3.5 h-3.5", isSharedToCommunity ? "text-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
-                </button>
-              )}
-              {onShare && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onShare(); }}
-                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.shareName", { name: localized.name })}
-                >
-                  <Share2 className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-                </button>
-              )}
-              {onDuplicate && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.duplicateName", { name: localized.name })}
-                >
-                  <Copy className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-                </button>
-              )}
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                  className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.editName", { name: localized.name })}
-                >
-                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
-                </button>
-              )}
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center"
-                  aria-label={t("exerciseCard.deleteName", { name: localized.name })}
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
-            </div>
-          )}
+        {onOpenDiagram && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenDiagram(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-label={t("exerciseCard.diagramName", { name: localized.name })}
+          >
+            <Waypoints className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        )}
+        {onToggleCommunityShare && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onToggleCommunityShare(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-pressed={isSharedToCommunity}
+            aria-label={isSharedToCommunity ? t("exerciseCard.unshareCommunityName", { name: localized.name }) : t("exerciseCard.shareCommunityName", { name: localized.name })}
+          >
+            <Globe className={cn("w-3.5 h-3.5", isSharedToCommunity ? "text-basketball-orange" : "text-muted-foreground")} aria-hidden="true" />
+          </button>
+        )}
+        {onShare && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onShare(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-label={t("exerciseCard.shareName", { name: localized.name })}
+          >
+            <Share2 className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        )}
+        {onDuplicate && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-label={t("exerciseCard.duplicateName", { name: localized.name })}
+          >
+            <Copy className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        )}
+        {onEdit && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-border hover:bg-muted rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-label={t("exerciseCard.editName", { name: localized.name })}
+          >
+            <Pencil className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="w-10 h-10 bg-card shadow-sm border border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200"
+            aria-label={t("exerciseCard.deleteName", { name: localized.name })}
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
+          </button>
+        )}
+        {!(onEdit || onDelete || onDuplicate || onShare || onToggleCommunityShare || onOpenDiagram) && (
+          <div className="w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <ArrowRight className="w-3.5 h-3.5 text-basketball-orange" />
+          </div>
+        )}
       </div>
 
       {exercise.imageUrl && !imageFailed ? (
