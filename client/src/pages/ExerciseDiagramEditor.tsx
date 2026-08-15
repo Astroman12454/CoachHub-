@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { smoothPath, DRAWING_COLORS } from "@/lib/playDrawing";
 import { useDiagramBoard, type EditorStep, type Tool } from "@/hooks/use-diagram-board";
+import { useScrollEdges } from "@/hooks/use-scroll-edges";
 import PlayStepMarks from "@/components/PlayStepMarks";
 import { localizedExerciseText } from "@/lib/exerciseI18n";
 import { COURT_TYPES } from "@shared/schema";
@@ -111,6 +112,9 @@ export default function ExerciseDiagramEditor() {
     { tool: "erase", label: t("exerciseDiagramEditor.tools.erase"), icon: Eraser },
   ], [t]);
 
+  const toolsScroll = useScrollEdges<HTMLDivElement>();
+  const stepsScroll = useScrollEdges<HTMLDivElement>([board.steps.length]);
+
   // Same "stuck forever" trap as a failed board.currentStep would leave
   // behind — a failed fetch never populates existingExercise, so
   // board.loadSteps (the effect above) never runs and !board.currentStep
@@ -174,7 +178,8 @@ export default function ExerciseDiagramEditor() {
       </header>
 
       {/* Tool palette */}
-      <div className="bg-card border-b border-border px-4 py-2 flex items-center gap-2 overflow-x-auto">
+      <div className="relative border-b border-border">
+      <div ref={toolsScroll.ref} className="bg-card px-4 py-2 flex items-center gap-2 overflow-x-auto">
         {toolButtons.map(({ tool: toolValue, label, icon: Icon }) => (
           <button
             key={toolValue}
@@ -225,6 +230,9 @@ export default function ExerciseDiagramEditor() {
             style={{ backgroundColor: c }}
           />
         ))}
+      </div>
+      {!toolsScroll.atStart && <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card to-transparent" />}
+      {!toolsScroll.atEnd && <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent" />}
       </div>
 
       {/* Canvas */}
@@ -280,7 +288,8 @@ export default function ExerciseDiagramEditor() {
       </main>
 
       {/* Step strip */}
-      <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-2 overflow-x-auto">
+      <div className="relative border-t border-border">
+      <div ref={stepsScroll.ref} className="bg-card px-4 py-2 flex items-center gap-2 overflow-x-auto">
         <Button
           type="button"
           variant="outline"
@@ -323,6 +332,9 @@ export default function ExerciseDiagramEditor() {
           <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={2} aria-hidden="true" />
           {t("exerciseDiagramEditor.step")}
         </Button>
+      </div>
+      {!stepsScroll.atStart && <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card to-transparent" />}
+      {!stepsScroll.atEnd && <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent" />}
       </div>
 
       <ConfirmDialog

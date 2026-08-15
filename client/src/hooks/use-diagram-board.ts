@@ -15,6 +15,7 @@ const HIT_RADIUS = 4.2;
 const MIN_SAMPLE_DIST = 1.4; // percent-space distance between recorded drag points
 const MAX_DRAWING_POINTS = 16; // cap on points persisted per drawing (drawingSchema allows up to 40)
 const MAX_HISTORY = 50;
+const TAP_MOVE_THRESHOLD = 0.8; // percent-space; below this, a select-tool press is a tap, not a drag
 
 function distanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
   const dx = x2 - x1;
@@ -47,7 +48,16 @@ export function emptyStep(): EditorStep {
 // in one would silently not exist in the other. Each editor page keeps only
 // what's actually different about it (a play's name/category/notes/PDF
 // export vs. an exercise's single court-type select and "remove diagram").
-export function useDiagramBoard(courtType: string) {
+export interface DiagramBoardOptions {
+  /** Fired when a token is tapped without being dragged (pointerdown and
+   * pointerup landed on the same token with negligible movement between) —
+   * lets a caller like PlayEditor offer "assign a real player" on tap
+   * without this hook needing to know that concept exists. */
+  onTokenTap?: (token: Token) => void;
+}
+
+export function useDiagramBoard(courtType: string, options: DiagramBoardOptions = {}) {
+  const { onTokenTap } = options;
   const [steps, setSteps] = useState<EditorStep[]>([emptyStep()]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [tool, setTool] = useState<Tool>("select");
@@ -115,6 +125,7 @@ export function useDiagramBoard(courtType: string) {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragTokenId = useRef<string | null>(null);
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const drawPointsRef = useRef<{ x: number; y: number }[] | null>(null);
   const [drawPreview, setDrawPreview] = useState<{ x: number; y: number }[] | null>(null);
   const [color, setColor] = useState<string>("#000000");
@@ -244,6 +255,7 @@ export function useDiagramBoard(courtType: string) {
       if (hit) {
         pushHistory();
         dragTokenId.current = hit.id;
+        dragStartPos.current = { x: hit.x, y: hit.y };
       }
       return;
     }
@@ -306,7 +318,17 @@ export function useDiagramBoard(courtType: string) {
 
   const handlePointerUp = useCallback(() => {
     if (isPlaying) return;
+    const draggedId = dragTokenId.current;
+    const start = dragStartPos.current;
     dragTokenId.current = null;
+    dragStartPos.current = null;
+
+    if (draggedId && onTokenTap) {
+      const token = currentStep.tokens.find((t) => t.id === draggedId);
+      if (token && start && Math.hypot(token.x - start.x, token.y - start.y) < TAP_MOVE_THRESHOLD) {
+        onTokenTap(token);
+      }
+    }
 
     if (drawPointsRef.current) {
       const raw = [...drawPointsRef.current];
@@ -323,7 +345,7 @@ export function useDiagramBoard(courtType: string) {
     }
     drawPointsRef.current = null;
     setDrawPreview(null);
-  }, [isPlaying, drawPreview, tool, color, commitCurrentStep]);
+  }, [isPlaying, drawPreview, tool, color, commitCurrentStep, currentStep, onTokenTap]);
 
   const commitTextDraft = useCallback(() => {
     if (textDraft && textDraft.value.trim()) {
@@ -353,6 +375,18 @@ export function useDiagramBoard(courtType: string) {
     setStepToDelete(null);
   }, [stepToDelete, pushHistory, steps.length]);
 
+  // A token's id is stable across steps (addStep clones tokens, keeping
+  // their id), so relabeling one — e.g. assigning it to a real roster
+  // player — updates every step at once instead of leaving the other steps
+  // showing a stale label for what's still the same player/marker.
+  const assignTokenLabel = useCallback((tokenId: string, label: string) => {
+    pushHistory();
+    setSteps((prev) => prev.map((s) => ({
+      ...s,
+      tokens: s.tokens.map((t) => (t.id === tokenId ? { ...t, label } : t)),
+    })));
+  }, [pushHistory]);
+
   const displayTokens = playbackTokens ?? currentStep?.tokens ?? [];
   const displayDrawings = isPlaying ? [] : currentStep?.drawings ?? [];
 
@@ -364,6 +398,6 @@ export function useDiagramBoard(courtType: string) {
     handlePointerDown, handlePointerMove, handlePointerUp,
     isPlaying, startPlayback, stopPlayback, displayTokens, displayDrawings,
     addStep, stepToDelete, setStepToDelete, confirmDeleteStep,
-    toViewBoxY, viewBoxHeight,
+    toViewBoxY, viewBoxHeight, assignTokenLabel,
   };
 }

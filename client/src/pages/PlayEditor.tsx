@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorState from "@/components/ErrorState";
 import DiagramEditorSkeleton from "@/components/DiagramEditorSkeleton";
@@ -21,9 +22,18 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { smoothPath, DRAWING_COLORS } from "@/lib/playDrawing";
 import { useDiagramBoard, type EditorStep, type Tool } from "@/hooks/use-diagram-board";
+import { useScrollEdges } from "@/hooks/use-scroll-edges";
 import PlayStepMarks from "@/components/PlayStepMarks";
 import { PLAY_CATEGORIES, COURT_TYPES, PLAY_SITUATIONS } from "@shared/schema";
-import type { Play as PlayType } from "@shared/schema";
+import type { Play as PlayType, Player, Token } from "@shared/schema";
+
+// Prefer a jersey number (what a coach actually calls out on the floor) and
+// fall back to initials — tokenSchema caps label at 4 chars, so this always
+// fits regardless of which a player has.
+function labelForPlayer(player: Player): string {
+  if (player.jerseyNumber != null) return String(player.jerseyNumber);
+  return player.name.split(" ").map((n) => n[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "?";
+}
 
 export default function PlayEditor() {
   const { t } = useTranslation();
@@ -40,6 +50,9 @@ export default function PlayEditor() {
     enabled: isEditing,
   });
 
+  const { data: players = [] } = useQuery<Player[]>({ queryKey: ["/api/players"] });
+  const activePlayers = useMemo(() => players.filter((p) => p.isActive === 1), [players]);
+
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("offense");
   const [courtType, setCourtType] = useState<string>("half");
@@ -49,8 +62,13 @@ export default function PlayEditor() {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  // Tapping (not dragging) an offense token opens this — lets a coach pin a
+  // token to an actual roster player instead of a generic number.
+  const [assigningToken, setAssigningToken] = useState<Token | null>(null);
 
-  const board = useDiagramBoard(courtType);
+  const board = useDiagramBoard(courtType, {
+    onTokenTap: (token) => { if (token.type === "offense") setAssigningToken(token); },
+  });
 
   // Load existing play into editor state once it arrives.
   useEffect(() => {
@@ -118,6 +136,9 @@ export default function PlayEditor() {
     { tool: "text", label: t("playEditor.tools.text"), icon: Type },
     { tool: "erase", label: t("playEditor.tools.erase"), icon: Eraser },
   ], [t]);
+
+  const toolsScroll = useScrollEdges<HTMLDivElement>();
+  const stepsScroll = useScrollEdges<HTMLDivElement>([board.steps.length]);
 
   // Without this, a failed fetch of an existing play used to fall straight
   // through to the editor below with a blank board and no indication
@@ -216,7 +237,8 @@ export default function PlayEditor() {
       </header>
 
       {/* Tool palette */}
-      <div className="bg-card border-b border-border px-4 py-2 flex items-center gap-2 overflow-x-auto">
+      <div className="relative border-b border-border">
+      <div ref={toolsScroll.ref} className="bg-card px-4 py-2 flex items-center gap-2 overflow-x-auto">
         {toolButtons.map(({ tool: toolValue, label, icon: Icon }) => (
           <button
             key={toolValue}
@@ -267,6 +289,9 @@ export default function PlayEditor() {
             style={{ backgroundColor: c }}
           />
         ))}
+      </div>
+      {!toolsScroll.atStart && <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card to-transparent" />}
+      {!toolsScroll.atEnd && <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent" />}
       </div>
 
       {/* Canvas */}
@@ -322,7 +347,8 @@ export default function PlayEditor() {
       </main>
 
       {/* Step strip */}
-      <div className="bg-card border-t border-border px-4 py-2 flex items-center gap-2 overflow-x-auto">
+      <div className="relative border-t border-border">
+      <div ref={stepsScroll.ref} className="bg-card px-4 py-2 flex items-center gap-2 overflow-x-auto">
         <Button
           type="button"
           variant="outline"
@@ -366,6 +392,9 @@ export default function PlayEditor() {
           {t("playEditor.step")}
         </Button>
       </div>
+      {!stepsScroll.atStart && <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card to-transparent" />}
+      {!stepsScroll.atEnd && <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent" />}
+      </div>
 
       <ConfirmDialog
         open={board.stepToDelete !== null}
@@ -374,6 +403,48 @@ export default function PlayEditor() {
         description={t("playEditor.deleteStepConfirmDescription")}
         onConfirm={board.confirmDeleteStep}
       />
+
+      <Dialog open={!!assigningToken} onOpenChange={(open) => !open && setAssigningToken(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-tight">{t("playEditor.assignPlayer")}</DialogTitle>
+            <DialogDescription>{t("playEditor.assignPlayerDescription")}</DialogDescription>
+          </DialogHeader>
+          {activePlayers.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">{t("playEditor.noActivePlayers")}</p>
+          ) : (
+            <ul className="space-y-1 max-h-72 overflow-y-auto">
+              {activePlayers.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (assigningToken) board.assignTokenLabel(assigningToken.id, labelForPlayer(p));
+                      setAssigningToken(null);
+                    }}
+                    className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left"
+                  >
+                    <div className="w-8 h-8 flex-shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-display font-semibold text-foreground">
+                      {labelForPlayer(p)}
+                    </div>
+                    <span className="text-sm truncate">{p.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (assigningToken) board.assignTokenLabel(assigningToken.id, "?");
+              setAssigningToken(null);
+            }}
+          >
+            {t("playEditor.clearAssignment")}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -702,7 +702,11 @@
     "deleteStep": "Eliminar paso {{number}}",
     "step": "Paso",
     "deleteStepConfirmTitle": "¿Eliminar este paso?",
-    "deleteStepConfirmDescription": "Esto lo quita de la secuencia de la jugada. No se puede deshacer."
+    "deleteStepConfirmDescription": "Esto lo quita de la secuencia de la jugada. No se puede deshacer.",
+    "assignPlayer": "Asignar un jugador",
+    "assignPlayerDescription": "Elegí qué jugador del plantel representa esta ficha. Se mostrará su dorsal (o iniciales) en todos los pasos de la jugada.",
+    "noActivePlayers": "Todavía no hay jugadores activos en el plantel.",
+    "clearAssignment": "Quitar asignación"
   },
   "exerciseLibrary": {
     "failedToDelete": "No se pudo eliminar el ejercicio",
