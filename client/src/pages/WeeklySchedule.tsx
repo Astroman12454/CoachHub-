@@ -55,12 +55,7 @@ export default function WeeklySchedule() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isExportingSchedule, setIsExportingSchedule] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState(() => {
-    const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - today.getDay() + 1);
-    return monday;
-  });
+  const [selectedWeek, setSelectedWeek] = useState(() => mondayOf(new Date()));
   const [selectedSession, setSelectedSession] = useState<TrainingSession | null>(null);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<TrainingSession | null>(null);

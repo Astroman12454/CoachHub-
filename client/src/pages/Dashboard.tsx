@@ -16,7 +16,7 @@ import ExerciseCategoriesCard from "@/components/ExerciseCategoriesCard";
 import AICoachBanner from "@/components/AICoachBanner";
 import AIRecommendationsModal from "@/components/AIRecommendationsModal";
 import RecentExercisesCard from "@/components/RecentExercisesCard";
-import WelcomeFollowCoachesDialog from "@/components/WelcomeFollowCoachesDialog";
+import WelcomeOnboardingDialog from "@/components/WelcomeOnboardingDialog";
 import { computeInsights } from "@/lib/insights";
 import { useAuth } from "@/hooks/use-auth";
 import type { Exercise, TrainingSession, RecurringPracticeSlot } from "@shared/schema";
@@ -296,7 +296,7 @@ export default function Dashboard() {
           }}
         />
 
-        <WelcomeFollowCoachesDialog />
+        <WelcomeOnboardingDialog />
       </main>
     </div>
   );

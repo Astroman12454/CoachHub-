@@ -1234,10 +1234,14 @@
     "placeholder": "ej., Entrenador Alex",
     "couldntSave": "No se pudo guardar tu nombre público"
   },
-  "welcomeFollowDialog": {
-    "title": "¡Bienvenido a CoachHub!",
-    "description": "Sigue a algunos entrenadores para ver sus ejercicios, jugadas y pruebas físicas en tus feeds de Comunidad.",
-    "continue": "Continuar"
+  "welcomeOnboardingDialog": {
+    "colorTitle": "¡Bienvenido a CoachHub!",
+    "colorDescription": "Elegí un color para tu equipo — se va a ver en toda la app. Podés cambiarlo cuando quieras desde Ajustes del entrenador.",
+    "followTitle": "Seguí a algún entrenador",
+    "followDescription": "Seguí a algunos entrenadores para ver sus ejercicios, jugadas y pruebas físicas en tus feeds de Comunidad.",
+    "nextStep": "Siguiente",
+    "done": "Continuar",
+    "couldntSaveColor": "No se pudo guardar el color"
   },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",

@@ -66,8 +66,8 @@ test.describe("accessibility (axe)", () => {
     test("signup — welcome dialog suggests a coach to follow", async ({ page }) => {
       // A throwaway coach shares an exercise first so the brand-new signup
       // below actually has someone to be suggested (see
-      // WelcomeFollowCoachesDialog — it stays closed if there's nobody to
-      // recommend).
+      // WelcomeOnboardingDialog — its second, follow-a-coach step is
+      // skipped if there's nobody to recommend).
       const suggestRes = await page.request.post("/api/signup", {
         data: { email: `e2e-welcome-suggest-${Date.now()}@coachhub.test`, password: "e2e-test-password-123" },
       });
@@ -93,7 +93,15 @@ test.describe("accessibility (axe)", () => {
       await page.check("#age-confirmation");
       await page.click('button:has-text("Create Account")');
 
+      // Step 1: pick a team color, then move to the follow-a-coach step.
       await page.waitForSelector("text=Welcome to CoachHub!");
+      await page.click('button[aria-label="Teal"]');
+      const colorScan = await scan(page);
+      expect(summarize(colorScan.violations)).toEqual([]);
+      await page.click('button:has-text("Next")');
+
+      // Step 2: the suggested-coach row.
+      await page.waitForSelector("text=Follow a coach or two");
       // Not asserting our own throwaway coach specifically appears — ranking
       // is by likes/exercise count across every coach ever shared in this
       // dev DB (see getSuggestedCoaches), so an older candidate can easily
@@ -103,7 +111,7 @@ test.describe("accessibility (axe)", () => {
       expect(summarize(results.violations)).toEqual([]);
 
       await page.click('button:has-text("Continue")');
-      await expect(page.locator("text=Welcome to CoachHub!")).toHaveCount(0);
+      await expect(page.locator("text=Follow a coach or two")).toHaveCount(0);
     });
 
     test("accept-invite page with an invalid token", async ({ page }) => {

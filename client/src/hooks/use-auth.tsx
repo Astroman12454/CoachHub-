@@ -47,7 +47,7 @@ interface AuthContextValue {
   deleteAccountError: string | null;
 }
 
-// See WelcomeFollowCoachesDialog, which reads and clears this.
+// See WelcomeOnboardingDialog, which reads and clears this.
 export const JUST_SIGNED_UP_KEY = "coachhub:justSignedUp";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (session) => {
       queryClient.setQueryData([SESSION_QUERY_KEY], session);
-      // Read by WelcomeFollowCoachesDialog on the dashboard right after —
+      // Read by WelcomeOnboardingDialog on the dashboard right after —
       // a one-time nudge to follow a coach or two, only for an account that
       // was actually just created through the signup form (never for a
       // plain login, and never for accounts created directly via the API).
