@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import ExerciseCommentsDialog from "@/components/ExerciseCommentsDialog";
 import ReportContentDialog, { type ReportTarget } from "@/components/ReportContentDialog";
+import StarRatingInput from "@/components/StarRatingInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,6 +39,9 @@ interface CommunityExercise {
   likedByMe: boolean;
   savedByMe: boolean;
   commentCount: number;
+  avgRating: number | null;
+  ratingCount: number;
+  myRating: number | null;
   publishedBy: { accountId: number; publicName: string | null };
 }
 
@@ -127,6 +131,47 @@ export default function CommunityExercises() {
       }
       toast({
         title: t("communityExercises.couldntUpdateLike"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => typeof query.queryKey[0] === "string" && (query.queryKey[0] as string).startsWith("/api/community-exercises") && query.queryKey[0] !== queryKey[0],
+      });
+    },
+  });
+
+  // A 1-5 star rating, distinct from liking — re-rating replaces the
+  // coach's own value rather than toggling, so the optimistic patch has to
+  // recompute the average from the prior avg/count instead of just
+  // incrementing a counter (see toggleLikeMutation above for the simpler
+  // boolean case).
+  const rateMutation = useMutation({
+    mutationFn: async ({ id, rating }: { id: number; rating: number }) =>
+      apiRequest("PUT", `/api/community-exercises/${id}/rating`, { rating }),
+    onMutate: async ({ id, rating }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousExercises = queryClient.getQueryData<CommunityExercise[]>(queryKey);
+
+      queryClient.setQueryData<CommunityExercise[]>(queryKey, (old = []) =>
+        old.map((ex) => {
+          if (ex.id !== id) return ex;
+          const priorSum = (ex.avgRating ?? 0) * ex.ratingCount;
+          const nextCount = ex.myRating === null ? ex.ratingCount + 1 : ex.ratingCount;
+          const nextSum = ex.myRating === null ? priorSum + rating : priorSum - ex.myRating + rating;
+          return { ...ex, myRating: rating, ratingCount: nextCount, avgRating: nextSum / nextCount };
+        })
+      );
+
+      return { previousExercises, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) {
+        queryClient.setQueryData(context.queryKey, context.previousExercises);
+      }
+      toast({
+        title: t("communityExercises.couldntUpdateRating"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -455,6 +500,19 @@ export default function CommunityExercises() {
                     </Link>
                   )}
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2 mt-1">{localized.description}</p>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <StarRatingInput
+                      value={exercise.myRating ?? 0}
+                      onChange={(rating) => rateMutation.mutate({ id: exercise.id, rating })}
+                      ariaLabelPrefix={localized.name}
+                    />
+                    {exercise.ratingCount > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {t("communityExercises.ratingSummary", { avg: exercise.avgRating!.toFixed(1), count: exercise.ratingCount })}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 text-muted-foreground">

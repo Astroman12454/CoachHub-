@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Dumbbell, Globe, Heart, UserCheck, Users } from "lucide-react";
+import { ArrowLeft, Clock, Dumbbell, Globe, Heart, Star, UserCheck, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
@@ -39,6 +39,8 @@ interface CommunityExercise {
   descriptionEs: string | null;
   instructionsEs: string | null;
   likeCount: number;
+  avgRating: number | null;
+  ratingCount: number;
   publishedBy: { accountId: number; publicName: string | null };
 }
 
@@ -223,6 +225,14 @@ export default function CoachProfile() {
                       <Heart className="w-3.5 h-3.5" aria-hidden="true" />
                       <span className="text-xs font-medium">{exercise.likeCount}</span>
                     </div>
+                    {exercise.ratingCount > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="text-xs font-medium">
+                          {t("communityExercises.ratingSummary", { avg: exercise.avgRating!.toFixed(1), count: exercise.ratingCount })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

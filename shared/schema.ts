@@ -199,6 +199,26 @@ export const exerciseLikes = pgTable("exercise_likes", {
   exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
 }));
 
+// A coach's 1-5 star rating of a community-shared exercise — unlike a like,
+// this is a scored opinion rather than a flat signal, so it's a 5-way
+// value instead of a boolean, and re-rating updates the existing row
+// (storage.rateExercise upserts) rather than being rejected as a
+// duplicate. One rating per (exercise, coach), same as likes/saves.
+export const exerciseRatings = pgTable("exercise_ratings", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
+}));
+
+export const rateExerciseSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+});
+export type RateExercise = z.infer<typeof rateExerciseSchema>;
+
 // A private bookmark — "guardado" — on a community-shared exercise, added
 // after plays already had one (see playSaves) so both content types reach
 // parity. Not a public signal like a like; just this account's own reading

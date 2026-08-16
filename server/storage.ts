@@ -4,6 +4,7 @@ import {
   exercises,
   exerciseSteps,
   exerciseLikes,
+  exerciseRatings,
   exerciseComments,
   exerciseSaves,
   exerciseReports,
@@ -153,7 +154,7 @@ export interface IStorage {
   // likedByMe are computed against exerciseLikes for the requesting account,
   // publishedBy against the sharing account's public name, and
   // followingOnly narrows the list to accounts the requester follows.
-  getCommunityExercises(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(Exercise & { likeCount: number; likedByMe: boolean; savedByMe: boolean; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  getCommunityExercises(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(Exercise & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; avgRating: number | null; ratingCount: number; myRating: number | null; publishedBy: { accountId: number; publicName: string | null } })[]>;
   // Copies a shared exercise into the importing account as a brand-new,
   // private row (fresh id, isFavorite/shareToken/sharedToCommunity all
   // reset) — importing never mutates or links back to the original.
@@ -166,6 +167,12 @@ export interface IStorage {
   // on a currently-shared exercise.
   saveExercise(exerciseId: number, accountId: number): Promise<boolean>;
   unsaveExercise(exerciseId: number, accountId: number): Promise<void>;
+  // A coach's 1-5 star opinion of a community exercise, public (unlike a
+  // save) and re-ratable (unlike a like's on/off) — see exerciseRatings.
+  // Only works on exercises currently shared to the community, same as
+  // liking. False if not found/shared.
+  rateExercise(exerciseId: number, accountId: number, rating: number): Promise<boolean>;
+  unrateExercise(exerciseId: number, accountId: number): Promise<void>;
   // Idempotent — following twice is a no-op. False if the target account
   // doesn't exist or hasn't set a public name (not followable).
   followCoach(followerAccountId: number, followingAccountId: number): Promise<boolean>;
@@ -651,7 +658,7 @@ export class DatabaseStorage implements IStorage {
     return exercise || undefined;
   }
 
-  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+  async getCommunityExercises(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(Exercise & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; avgRating: number | null; ratingCount: number; myRating: number | null; publishedBy: { accountId: number; publicName: string | null } })[]> {
     let shared = await db.select().from(exercises).where(eq(exercises.sharedToCommunity, 1));
     if (shared.length === 0) return [];
 
@@ -699,6 +706,19 @@ export class DatabaseStorage implements IStorage {
       .groupBy(exerciseComments.exerciseId);
     const commentCountByExerciseId = new Map(commentCounts.map((row) => [row.exerciseId, row.count]));
 
+    const ratingAggregates = await db
+      .select({ exerciseId: exerciseRatings.exerciseId, avg: sql<number>`avg(${exerciseRatings.rating})::float`, count: sql<number>`count(*)::int` })
+      .from(exerciseRatings)
+      .where(inArray(exerciseRatings.exerciseId, exerciseIds))
+      .groupBy(exerciseRatings.exerciseId);
+    const ratingAggregateByExerciseId = new Map(ratingAggregates.map((row) => [row.exerciseId, row]));
+
+    const myRatingRows = await db
+      .select({ exerciseId: exerciseRatings.exerciseId, rating: exerciseRatings.rating })
+      .from(exerciseRatings)
+      .where(and(inArray(exerciseRatings.exerciseId, exerciseIds), eq(exerciseRatings.accountId, accountId)));
+    const myRatingByExerciseId = new Map(myRatingRows.map((row) => [row.exerciseId, row.rating]));
+
     const publisherIds = Array.from(new Set(shared.map((exercise) => exercise.accountId)));
     const publishers = await db
       .select({ id: accounts.id, publicName: accounts.publicName })
@@ -712,6 +732,9 @@ export class DatabaseStorage implements IStorage {
       likedByMe: likedExerciseIds.has(exercise.id),
       savedByMe: savedExerciseIdsForViewer.has(exercise.id),
       commentCount: commentCountByExerciseId.get(exercise.id) ?? 0,
+      avgRating: ratingAggregateByExerciseId.get(exercise.id)?.avg ?? null,
+      ratingCount: ratingAggregateByExerciseId.get(exercise.id)?.count ?? 0,
+      myRating: myRatingByExerciseId.get(exercise.id) ?? null,
       publishedBy: {
         accountId: exercise.accountId,
         publicName: publisherById.get(exercise.accountId)?.publicName ?? null,
@@ -742,6 +765,27 @@ export class DatabaseStorage implements IStorage {
 
   async unlikeExercise(exerciseId: number, accountId: number): Promise<void> {
     await db.delete(exerciseLikes).where(and(eq(exerciseLikes.exerciseId, exerciseId), eq(exerciseLikes.accountId, accountId)));
+  }
+
+  async rateExercise(exerciseId: number, accountId: number, rating: number): Promise<boolean> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
+    if (!exercise) return false;
+
+    await db
+      .insert(exerciseRatings)
+      .values({ exerciseId, accountId, rating })
+      .onConflictDoUpdate({
+        target: [exerciseRatings.exerciseId, exerciseRatings.accountId],
+        set: { rating },
+      });
+    return true;
+  }
+
+  async unrateExercise(exerciseId: number, accountId: number): Promise<void> {
+    await db.delete(exerciseRatings).where(and(eq(exerciseRatings.exerciseId, exerciseId), eq(exerciseRatings.accountId, accountId)));
   }
 
   async saveExercise(exerciseId: number, accountId: number): Promise<boolean> {

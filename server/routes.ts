@@ -37,6 +37,7 @@ import {
   setPublicNameSchema,
   createExerciseCommentSchema,
   createReportSchema,
+  rateExerciseSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -576,8 +577,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const followingOnly = req.query.following === "true";
       const savedOnly = req.query.saved === "true";
       const shared = await storage.getCommunityExercises(accountId, { sort, followingOnly, savedOnly });
-      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
-        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
+      res.json(shared.map(({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, savedByMe, commentCount, avgRating, ratingCount, myRating, publishedBy }) =>
+        ({ id, name, description, category, duration, difficulty, instructions, imageUrl, minPlayers, nameEs, descriptionEs, instructionsEs, likeCount, likedByMe, savedByMe, commentCount, avgRating, ratingCount, myRating, publishedBy })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community exercises" });
@@ -610,6 +611,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to unlike exercise" });
+    }
+  });
+
+  // A public 1-5 star rating, distinct from liking — see exerciseRatings in
+  // shared/schema.ts. Free on every plan, same as liking; re-rating just
+  // updates the coach's own row (storage.rateExercise upserts).
+  app.put("/api/community-exercises/:id/rating", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { rating } = rateExerciseSchema.parse(req.body);
+      const rated = await storage.rateExercise(id, accountId, rating);
+      if (!rated) {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(400).json({ message: "Invalid rating" });
+    }
+  });
+
+  app.delete("/api/community-exercises/:id/rating", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unrateExercise(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove rating" });
     }
   });
 

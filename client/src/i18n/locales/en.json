@@ -812,7 +812,9 @@
     "followName": "Follow {{name}}",
     "couldntFollow": "Couldn't follow coach",
     "viewComments": "View comments on {{name}}",
-    "report": "Report {{name}}"
+    "report": "Report {{name}}",
+    "ratingSummary": "{{avg}} ({{count}})",
+    "couldntUpdateRating": "Couldn't update rating"
   },
   "exerciseCommentsDialog": {
     "title": "Comments",
@@ -1263,6 +1265,10 @@
     "send": "Send",
     "thinking": "Thinking…",
     "upgradeRequired": "The AI helper is available on paid plans."
+  },
+  "starRating": {
+    "rateStars": "Rate {{name}} {{count}} star",
+    "rateStars_other": "Rate {{name}} {{count}} stars"
   },
   "reportContentDialog": {
     "title": "Report content",

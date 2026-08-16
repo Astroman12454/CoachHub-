@@ -812,7 +812,9 @@
     "followName": "Seguir a {{name}}",
     "couldntFollow": "No se pudo seguir al entrenador",
     "viewComments": "Ver comentarios de {{name}}",
-    "report": "Reportar {{name}}"
+    "report": "Reportar {{name}}",
+    "ratingSummary": "{{avg}} ({{count}})",
+    "couldntUpdateRating": "No se pudo actualizar la valoración"
   },
   "exerciseCommentsDialog": {
     "title": "Comentarios",
@@ -1263,6 +1265,10 @@
     "send": "Enviar",
     "thinking": "Pensando…",
     "upgradeRequired": "El asistente de IA está disponible en los planes pagos."
+  },
+  "starRating": {
+    "rateStars": "Valorar {{name}} con {{count}} estrella",
+    "rateStars_other": "Valorar {{name}} con {{count}} estrellas"
   },
   "reportContentDialog": {
     "title": "Reportar contenido",
