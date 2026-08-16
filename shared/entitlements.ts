@@ -43,3 +43,7 @@ export function canGenerateAiSessionPlan(plan: Plan): boolean {
 export function canImportBoxScore(plan: Plan): boolean {
   return isPaidPlan(plan);
 }
+
+export function canUseAiHelp(plan: Plan): boolean {
+  return isPaidPlan(plan);
+}

@@ -1252,6 +1252,16 @@
     "done": "Continuar",
     "couldntSaveColor": "No se pudo guardar el color"
   },
+  "helpChat": {
+    "openHelp": "Preguntarle al asistente de IA",
+    "title": "Asistente de IA",
+    "description": "Preguntá cómo hacer algo en CoachHub — dónde está una función, o cómo funciona una pantalla.",
+    "emptyState": "Preguntá lo que quieras sobre cómo usar CoachHub — \"¿cómo armo un horario recurrente?\" o \"¿dónde comparto una jugada?\"",
+    "placeholder": "Escribí una pregunta…",
+    "send": "Enviar",
+    "thinking": "Pensando…",
+    "upgradeRequired": "El asistente de IA está disponible en los planes pagos."
+  },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
     "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."

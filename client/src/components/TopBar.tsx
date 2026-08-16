@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Menu, Search, X, Plus, Bell } from "lucide-react";
+import { Menu, Search, X, Plus, Bell, HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SessionModal from "./SessionModal";
 import NotificationsDialog from "./NotificationsDialog";
+import HelpChatDialog from "./HelpChatDialog";
 import { useSidebar } from "@/hooks/use-sidebar";
 
 interface NotificationsResponse {
@@ -30,6 +31,7 @@ export default function TopBar({
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { openMobile } = useSidebar();
 
@@ -118,6 +120,15 @@ export default function TopBar({
 
             <button
               type="button"
+              onClick={() => setIsHelpOpen(true)}
+              className="flex w-10 h-10 flex-shrink-0 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
+              aria-label={t("helpChat.openHelp")}
+            >
+              <HelpCircle className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsNotificationsOpen(true)}
               className="flex relative w-10 h-10 flex-shrink-0 items-center justify-center rounded-md border border-border hover:bg-muted transition-colors"
               aria-label={unreadCount > 0 ? t("common.notificationsUnread", { count: unreadCount }) : t("common.notifications")}
@@ -134,6 +145,7 @@ export default function TopBar({
       </header>
 
       <NotificationsDialog open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen} />
+      <HelpChatDialog open={isHelpOpen} onOpenChange={setIsHelpOpen} />
 
       {isModalOpen && (
         <SessionModal

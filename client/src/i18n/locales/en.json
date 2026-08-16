@@ -1252,6 +1252,16 @@
     "done": "Continue",
     "couldntSaveColor": "Couldn't save your color"
   },
+  "helpChat": {
+    "openHelp": "Ask the AI helper",
+    "title": "AI Helper",
+    "description": "Ask how to do something in CoachHub — where a feature lives, or how a screen works.",
+    "emptyState": "Ask anything about using CoachHub — \"how do I set up a recurring schedule?\" or \"where do I share a play?\"",
+    "placeholder": "Ask a question…",
+    "send": "Send",
+    "thinking": "Thinking…",
+    "upgradeRequired": "The AI helper is available on paid plans."
+  },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
     "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."

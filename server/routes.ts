@@ -9,6 +9,7 @@ import { registerCoachRoutes } from "./coaches";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, filterExercisesForPlayerCount, type SessionPlanContext } from "./ai-session-plan";
 import { parseCommand } from "./ai-command";
+import { answerHelpQuestion, type HelpChatMessage } from "./ai-help";
 import { isPushConfigured, getVapidPublicKey } from "./push";
 import { notifyTeam, notifyPlayer, formatNotifyDate } from "./notify";
 import { runNotificationSweep } from "./notifications-cron";
@@ -46,6 +47,7 @@ import {
   canUseCustomExercises,
   canGenerateAiSessionPlan,
   canImportBoxScore,
+  canUseAiHelp,
 } from "@shared/entitlements";
 import { computeEvaluationScore } from "@shared/evaluationScore";
 
@@ -1297,6 +1299,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       res.status(502).json({ message: "Couldn't understand that right now. Try again, or use the normal form." });
+    }
+  });
+
+  const helpChatSchema = z.object({
+    // Capped well below what a real back-and-forth needs (10 exchanges) —
+    // the client already trims its local history to the same bound before
+    // sending, this is just the server-side backstop against a hand-built
+    // request with a huge fabricated history running up the token bill.
+    messages: z.array(z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string().min(1).max(2000),
+    })).min(1).max(20),
+  });
+
+  // A conversational "how do I..." helper — see server/ai-help.ts for what
+  // it's told about the app. Stateless on the server: the client resends
+  // the whole visible conversation each turn (same pattern the Anthropic
+  // Messages API itself uses), so there's no chat history to store or
+  // clean up server-side.
+  app.post("/api/ai/help-chat", requireTeam, sessionPlanRateLimiter, async (req, res) => {
+    const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+    const account = await storage.getAccountById(accountId);
+    if (!canUseAiHelp(account?.plan ?? "free")) {
+      return res.status(403).json({ message: "Upgrade to a paid plan to ask the AI helper." });
+    }
+
+    const parseResult = helpChatSchema.safeParse(req.body ?? {});
+    if (!parseResult.success) {
+      return res.status(400).json({ message: "Invalid request." });
+    }
+
+    if (!isAIConfigured()) {
+      return res.status(503).json({ message: "The AI helper isn't configured yet." });
+    }
+
+    try {
+      const reply = await answerHelpQuestion(parseResult.data.messages as HelpChatMessage[]);
+      res.json({ reply });
+    } catch (error) {
+      res.status(502).json({ message: "Couldn't get an answer right now. Try again in a moment." });
     }
   });
 

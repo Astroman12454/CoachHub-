@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import Players from "./Players";
 import { SidebarProvider } from "@/hooks/use-sidebar";
-import { getQueryFn } from "@/lib/queryClient";
+import { AuthProvider } from "@/hooks/use-auth";
+import { getQueryFn, SESSION_QUERY_KEY } from "@/lib/queryClient";
 import type { Player } from "@shared/schema";
 
 // Covers the "mutaciones optimistas" leg of Fase 1: updatePlayerMutation's
@@ -25,10 +26,21 @@ function renderPlayers(players: Player[]) {
     },
   });
   queryClient.setQueryData(["/api/players"], players);
+  // TopBar (rendered by Players) mounts HelpChatDialog, which calls
+  // useAuth() unconditionally — AuthProvider's own useQuery needs a
+  // pre-seeded session so it doesn't fall back to a real network call.
+  queryClient.setQueryData([SESSION_QUERY_KEY], {
+    authenticated: true,
+    account: { id: 1, email: "test@test.com", plan: "free", isClubMember: false, publicName: null },
+    teams: [],
+    currentTeamId: undefined,
+  });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <SidebarProvider>{children}</SidebarProvider>
+      <AuthProvider>
+        <SidebarProvider>{children}</SidebarProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 
