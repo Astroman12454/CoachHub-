@@ -15,6 +15,15 @@ interface ThemePreset {
   accentDark: string;
 }
 
+// The app's actual default brand orange (client/src/index.css's
+// --basketball-orange) — hardcoded here rather than read from the CSS
+// variable because that variable is exactly what applyTeamTheme overrides,
+// so a "default" swatch styled with the `.basketball-orange` utility class
+// would itself change color the moment any other team color gets applied
+// (live, before the picker even closes) instead of always showing what
+// "default" actually looks like.
+export const DEFAULT_ORANGE = "hsl(16, 100%, 40%)";
+
 export const TEAM_THEME_PRESETS: Record<TeamThemeColor, ThemePreset> = {
   blue: { base: "hsl(217, 91%, 40%)", hover: "hsl(217, 91%, 34%)", accentLight: "hsl(217, 91%, 40%)", accentDark: "hsl(217, 91%, 68%)" },
   green: { base: "hsl(142, 71%, 29%)", hover: "hsl(142, 71%, 24%)", accentLight: "hsl(142, 71%, 29%)", accentDark: "hsl(142, 60%, 55%)" },

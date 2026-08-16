@@ -9,7 +9,7 @@ import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
 import { JUST_SIGNED_UP_KEY, useAuth } from "@/hooks/use-auth";
-import { TEAM_THEME_PRESETS } from "@/lib/teamTheme";
+import { TEAM_THEME_PRESETS, DEFAULT_ORANGE } from "@/lib/teamTheme";
 import { TEAM_THEME_COLORS, type TeamThemeColor } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
@@ -129,8 +129,9 @@ export default function WelcomeOnboardingDialog() {
                 aria-pressed={themeColor === null}
                 aria-label={t("coachSettings.defaultOrange")}
                 title={t("coachSettings.defaultOrange")}
+                style={{ backgroundColor: DEFAULT_ORANGE }}
                 className={cn(
-                  "w-10 h-10 rounded-full basketball-orange flex items-center justify-center border-2 transition-colors",
+                  "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors",
                   themeColor === null ? "border-foreground" : "border-transparent"
                 )}
               >

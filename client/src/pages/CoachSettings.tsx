@@ -15,7 +15,7 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { SESSION_QUERY_KEY } from "@/lib/queryClient";
-import { TEAM_THEME_PRESETS } from "@/lib/teamTheme";
+import { TEAM_THEME_PRESETS, DEFAULT_ORANGE } from "@/lib/teamTheme";
 import { cn } from "@/lib/utils";
 import { CLUB_PLAN_SEAT_LIMIT, TEAM_THEME_COLORS, type TeamThemeColor } from "@shared/schema";
 
@@ -242,8 +242,9 @@ export default function CoachSettings() {
                   aria-pressed={themeColor === null}
                   aria-label={t("coachSettings.defaultOrange")}
                   title={t("coachSettings.defaultOrange")}
+                  style={{ backgroundColor: DEFAULT_ORANGE }}
                   className={cn(
-                    "w-8 h-8 rounded-full basketball-orange flex items-center justify-center border-2 transition-colors",
+                    "w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors",
                     themeColor === null ? "border-foreground" : "border-transparent"
                   )}
                 >
