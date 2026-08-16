@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bookmark, ClipboardList, Compass, Download, Heart, MessageCircle, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Bookmark, ClipboardList, Compass, Download, Flag, Heart, MessageCircle, UserCheck, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import PlayCommentsDialog from "@/components/PlayCommentsDialog";
+import ReportContentDialog, { type ReportTarget } from "@/components/ReportContentDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,6 +58,7 @@ export default function CommunityPlays() {
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
   const [feedTab, setFeedTab] = useState<FeedTab>("discover");
   const [commentsPlay, setCommentsPlay] = useState<CommunityPlay | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   const queryKey = feedTab === "following"
     ? ['/api/community-plays?following=true']
@@ -385,6 +387,14 @@ export default function CommunityPlays() {
                     >
                       <Bookmark className={`w-3.5 h-3.5 ${play.savedByMe ? "text-basketball-orange fill-basketball-orange" : ""}`} aria-hidden="true" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setReportTarget({ endpoint: `/api/community-plays/${play.id}/report`, name: play.name })}
+                      className="flex items-center gap-1.5 hover:text-destructive transition-colors"
+                      aria-label={t("communityExercises.report", { name: play.name })}
+                    >
+                      <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
                   </div>
                   <Button
                     type="button"
@@ -410,6 +420,7 @@ export default function CommunityPlays() {
         onOpenChange={(next) => { if (!next) setCommentsPlay(null); }}
         onCommentCountChange={handleCommentCountChange}
       />
+      <ReportContentDialog target={reportTarget} onOpenChange={(next) => { if (!next) setReportTarget(null); }} />
     </div>
   );
 }

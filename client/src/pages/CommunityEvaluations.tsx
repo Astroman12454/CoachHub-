@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Target, Bookmark, Compass, Download, Heart, MessageCircle, Timer, Crosshair, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Target, Bookmark, Compass, Download, Flag, Heart, MessageCircle, Timer, Crosshair, UserCheck, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import EvaluationCommentsDialog from "@/components/EvaluationCommentsDialog";
+import ReportContentDialog, { type ReportTarget } from "@/components/ReportContentDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +56,7 @@ export default function CommunityEvaluations() {
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
   const [feedTab, setFeedTab] = useState<FeedTab>("discover");
   const [commentsTest, setCommentsTest] = useState<CommunityEvaluationTest | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   const queryKey = feedTab === "following"
     ? ['/api/community-evaluation-tests?following=true']
@@ -351,6 +353,14 @@ export default function CommunityEvaluations() {
                       >
                         <Bookmark className={`w-3.5 h-3.5 ${test.savedByMe ? "text-basketball-orange fill-basketball-orange" : ""}`} aria-hidden="true" />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportTarget({ endpoint: `/api/community-evaluation-tests/${test.id}/report`, name: test.name })}
+                        className="flex items-center gap-1.5 hover:text-destructive transition-colors"
+                        aria-label={t("communityExercises.report", { name: test.name })}
+                      >
+                        <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                      </button>
                     </div>
                     <Button
                       type="button"
@@ -377,6 +387,7 @@ export default function CommunityEvaluations() {
         onOpenChange={(next) => { if (!next) setCommentsTest(null); }}
         onCommentCountChange={handleCommentCountChange}
       />
+      <ReportContentDialog target={reportTarget} onOpenChange={(next) => { if (!next) setReportTarget(null); }} />
     </div>
   );
 }

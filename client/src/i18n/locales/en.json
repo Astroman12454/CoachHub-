@@ -45,7 +45,8 @@
     "evaluations": "Evaluations",
     "players": "Players",
     "coaches": "Coaches",
-    "account": "Account"
+    "account": "Account",
+    "adminReports": "Reports"
   },
   "sidebar": {
     "tagline": "Basketball Training",
@@ -810,7 +811,8 @@
     "suggestedCoachStats": "{{exercises}} exercises · {{likes}} likes",
     "followName": "Follow {{name}}",
     "couldntFollow": "Couldn't follow coach",
-    "viewComments": "View comments on {{name}}"
+    "viewComments": "View comments on {{name}}",
+    "report": "Report {{name}}"
   },
   "exerciseCommentsDialog": {
     "title": "Comments",
@@ -1261,6 +1263,43 @@
     "send": "Send",
     "thinking": "Thinking…",
     "upgradeRequired": "The AI helper is available on paid plans."
+  },
+  "reportContentDialog": {
+    "title": "Report content",
+    "description": "Report \"{{name}}\" to an admin for review.",
+    "reasonLabel": "Reason",
+    "reasons": {
+      "spam": "Spam",
+      "inappropriate": "Inappropriate",
+      "offensive": "Offensive",
+      "other": "Other"
+    },
+    "detailsPlaceholder": "Add details (optional)…",
+    "submit": "Report",
+    "submitted": "Thanks — an admin will take a look.",
+    "couldntSubmit": "Couldn't submit report"
+  },
+  "adminReports": {
+    "title": "Reports",
+    "subtitle": "Community content flagged for review",
+    "pendingCount": "{{count}} pending report",
+    "pendingCount_other": "{{count}} pending reports",
+    "notAuthorized": "Not authorized",
+    "notAuthorizedDescription": "This page is only available to admins.",
+    "emptyTitle": "No Pending Reports",
+    "emptyDescription": "Reported community content will show up here for review.",
+    "contentTypes": {
+      "exercise": "Exercise",
+      "play": "Play",
+      "evaluationTest": "Evaluation test"
+    },
+    "reportedBy": "Reported by {{name}}",
+    "publishedBy": "Published by {{email}}",
+    "dismiss": "Dismiss",
+    "removeContent": "Remove from community",
+    "dismissed": "Report dismissed",
+    "removed": "Content removed from community",
+    "couldntResolve": "Couldn't resolve report"
   },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",

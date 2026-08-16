@@ -19,6 +19,9 @@ interface AccountInfo {
   // coaches it follows/is followed by — null until the coach sets one
   // (see SetPublicNameDialog). Never the email, never a team name.
   publicName: string | null;
+  // Gates the /admin/reports nav item and page — set by hand in the
+  // database, never through the app itself.
+  isAdmin: boolean;
 }
 
 interface SessionResponse {

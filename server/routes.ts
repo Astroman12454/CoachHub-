@@ -36,6 +36,7 @@ import {
   recordEvaluationTestResultsSchema,
   setPublicNameSchema,
   createExerciseCommentSchema,
+  createReportSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -699,6 +700,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Flags an exercise for admin review — see server/storage.ts's
+  // reportExercise for the "already_reported" idempotency and GET
+  // /api/admin/reports for how an admin acts on it. Free on every plan,
+  // same as liking/commenting; not a publicName-gated action since the
+  // reporter's identity is never shown to anyone but an admin.
+  app.post("/api/community-exercises/:id/report", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { reason, details } = createReportSchema.parse(req.body);
+      const result = await storage.reportExercise(id, accountId, reason, details);
+      if (result === "not_found") {
+        return res.status(404).json({ message: "Community exercise not found" });
+      }
+      res.status(201).json({ status: result });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid report" });
+    }
+  });
+
   // Following is free on every plan, same as liking. accountId here is
   // always the *target* being followed — the follower is always resolved
   // from the session, same as everywhere else in this file.
@@ -1034,6 +1056,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // Same reporting mechanism as /api/community-exercises/:id/report.
+  app.post("/api/community-evaluation-tests/:id/report", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { reason, details } = createReportSchema.parse(req.body);
+      const result = await storage.reportEvaluationTest(id, accountId, reason, details);
+      if (result === "not_found") {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.status(201).json({ status: result });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid report" });
     }
   });
 
@@ -2344,6 +2383,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Same reporting mechanism as /api/community-exercises/:id/report.
+  app.post("/api/community-plays/:id/report", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { reason, details } = createReportSchema.parse(req.body);
+      const result = await storage.reportPlay(id, accountId, reason, details);
+      if (result === "not_found") {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.status(201).json({ status: result });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid report" });
+    }
+  });
+
   // Importing consumes a play slot exactly like drawing up a new one from
   // scratch — plays were never behind the exercises-style "custom content
   // requires paid" gate, just the free plan's play-count cap, so importing
@@ -2431,6 +2487,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Notification sweep failed" });
+    }
+  });
+
+  // Admin content moderation — gated on accounts.isAdmin (set by hand in
+  // the database, never through the API; see shared/schema.ts). Every
+  // other route in this file only ever acts on the caller's own data, so
+  // this is deliberately the one place that reads across every account's
+  // published content.
+  app.get("/api/admin/reports", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (account?.isAdmin !== 1) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const reports = await storage.getPendingReports();
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reports" });
+    }
+  });
+
+  const reportContentTypes = ["exercise", "play", "evaluationTest"] as const;
+  const resolveReportSchema = z.object({ action: z.enum(["dismiss", "remove"]) });
+
+  app.post("/api/admin/reports/:contentType/:id/resolve", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (account?.isAdmin !== 1) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const contentType = req.params.contentType as typeof reportContentTypes[number];
+      if (!reportContentTypes.includes(contentType)) {
+        return res.status(400).json({ message: "Invalid content type" });
+      }
+      const id = parseId(req, res);
+      if (id === null) return;
+      const { action } = resolveReportSchema.parse(req.body);
+
+      const resolved = await storage.resolveReport(contentType, id, action);
+      if (!resolved) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(400).json({ message: "Failed to resolve report" });
     }
   });
 

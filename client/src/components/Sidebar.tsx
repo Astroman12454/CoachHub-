@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -112,6 +112,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     // account-level "delete my account" action lives (see AccountSettings),
     // and every coach needs a way to reach it, not just Club owners.
     { key: "nav.account", href: "/settings/account", icon: Settings },
+    // Only the handful of accounts with accounts.isAdmin set in the
+    // database ever see this — everyone else's items array is unaffected.
+    ...(account?.isAdmin ? [{ key: "nav.adminReports", href: "/admin/reports", icon: Flag }] : []),
   ];
 
   const handlePlanClick = async () => {

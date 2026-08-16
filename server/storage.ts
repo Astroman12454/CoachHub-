@@ -6,12 +6,15 @@ import {
   exerciseLikes,
   exerciseComments,
   exerciseSaves,
+  exerciseReports,
   playLikes,
   playComments,
   playSaves,
+  playReports,
   evaluationTestLikes,
   evaluationTestComments,
   evaluationTestSaves,
+  evaluationTestReports,
   coachFollows,
   notifications,
   trainingSessions,
@@ -77,6 +80,9 @@ import {
   type ExerciseCommentView,
   type PlayCommentView,
   type EvaluationTestCommentView,
+  type ReportReason,
+  type ReportStatus,
+  type AdminReportView,
 } from "@shared/schema";
 import { computeEvaluationScore } from "@shared/evaluationScore";
 import { db } from "./db";
@@ -221,6 +227,19 @@ export interface IStorage {
   createEvaluationTestComment(testId: number, accountId: number, body: string): Promise<EvaluationTestCommentView | undefined>;
   getEvaluationTestComments(testId: number, viewerAccountId: number): Promise<EvaluationTestCommentView[] | undefined>;
   deleteEvaluationTestComment(commentId: number, accountId: number): Promise<boolean>;
+
+  // Community content moderation. Reporting requires the content to
+  // currently be shared (same as commenting); "already_reported" lets a
+  // reporter who already flagged this content see that instead of a
+  // generic error. Resolving is admin-only (gated in the route, not here)
+  // — "remove" both marks the report and unpublishes the content itself
+  // (sharedToCommunity back to 0), never deletes the coach's own copy.
+  reportExercise(exerciseId: number, accountId: number, reason: ReportReason, details?: string): Promise<"created" | "already_reported" | "not_found">;
+  reportPlay(playId: number, accountId: number, reason: ReportReason, details?: string): Promise<"created" | "already_reported" | "not_found">;
+  reportEvaluationTest(testId: number, accountId: number, reason: ReportReason, details?: string): Promise<"created" | "already_reported" | "not_found">;
+  getPendingReports(): Promise<AdminReportView[]>;
+  resolveReport(contentType: "exercise" | "play" | "evaluationTest", reportId: number, action: "dismiss" | "remove"): Promise<boolean>;
+
   // An exercise's optional animated court diagram — same step-snapshot
   // model as plays (see getPlaySteps/*PlayWithSteps below), but edited on
   // its own page/endpoint since most exercises never get one.
@@ -1395,6 +1414,182 @@ export class DatabaseStorage implements IStorage {
 
     const result = await db.delete(evaluationTestComments).where(eq(evaluationTestComments.id, commentId));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async reportExercise(exerciseId: number, accountId: number, reason: ReportReason, details?: string): Promise<"created" | "already_reported" | "not_found"> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, exerciseId), eq(exercises.sharedToCommunity, 1)));
+    if (!exercise) return "not_found";
+
+    const [existing] = await db
+      .select()
+      .from(exerciseReports)
+      .where(and(eq(exerciseReports.exerciseId, exerciseId), eq(exerciseReports.accountId, accountId)));
+    if (existing) return "already_reported";
+
+    await db.insert(exerciseReports).values({ exerciseId, accountId, reason, details: details ?? null });
+    return "created";
+  }
+
+  async reportPlay(playId: number, accountId: number, reason: ReportReason, details?: string): Promise<"created" | "already_reported" | "not_found"> {
+    const [play] = await db
+      .select()
+      .from(plays)
+      .where(and(eq(plays.id, playId), eq(plays.sharedToCommunity, 1)));
+    if (!play) return "not_found";
+
+    const [existing] = await db
+      .select()
+      .from(playReports)
+      .where(and(eq(playReports.playId, playId), eq(playReports.accountId, accountId)));
+    if (existing) return "already_reported";
+
+    await db.insert(playReports).values({ playId, accountId, reason, details: details ?? null });
+    return "created";
+  }
+
+  async reportEvaluationTest(testId: number, accountId: number, reason: ReportReason, details?: string): Promise<"created" | "already_reported" | "not_found"> {
+    const [test] = await db
+      .select()
+      .from(evaluationTests)
+      .where(and(eq(evaluationTests.id, testId), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!test) return "not_found";
+
+    const [existing] = await db
+      .select()
+      .from(evaluationTestReports)
+      .where(and(eq(evaluationTestReports.testId, testId), eq(evaluationTestReports.accountId, accountId)));
+    if (existing) return "already_reported";
+
+    await db.insert(evaluationTestReports).values({ testId, accountId, reason, details: details ?? null });
+    return "created";
+  }
+
+  // Merges the three content types' pending reports into one admin feed.
+  // Each content type resolves "owner" differently (a play's owner is its
+  // team's account, the other two are scoped by accountId directly — same
+  // asymmetry as getCommunityPlays/getCommunityExercises), so they're
+  // queried separately and joined against a single batched accounts lookup
+  // rather than one shared query.
+  async getPendingReports(): Promise<AdminReportView[]> {
+    const [exerciseRows, playRows, evaluationTestRows] = await Promise.all([
+      db
+        .select({
+          id: exerciseReports.id,
+          contentId: exerciseReports.exerciseId,
+          contentName: exercises.name,
+          reason: exerciseReports.reason,
+          details: exerciseReports.details,
+          status: exerciseReports.status,
+          reporterAccountId: exerciseReports.accountId,
+          ownerAccountId: exercises.accountId,
+          createdAt: exerciseReports.createdAt,
+        })
+        .from(exerciseReports)
+        .innerJoin(exercises, eq(exercises.id, exerciseReports.exerciseId))
+        .where(eq(exerciseReports.status, "pending")),
+      db
+        .select({
+          id: playReports.id,
+          contentId: playReports.playId,
+          contentName: plays.name,
+          reason: playReports.reason,
+          details: playReports.details,
+          status: playReports.status,
+          reporterAccountId: playReports.accountId,
+          ownerAccountId: teams.accountId,
+          createdAt: playReports.createdAt,
+        })
+        .from(playReports)
+        .innerJoin(plays, eq(plays.id, playReports.playId))
+        .innerJoin(teams, eq(teams.id, plays.teamId))
+        .where(eq(playReports.status, "pending")),
+      db
+        .select({
+          id: evaluationTestReports.id,
+          contentId: evaluationTestReports.testId,
+          contentName: evaluationTests.name,
+          reason: evaluationTestReports.reason,
+          details: evaluationTestReports.details,
+          status: evaluationTestReports.status,
+          reporterAccountId: evaluationTestReports.accountId,
+          ownerAccountId: evaluationTests.accountId,
+          createdAt: evaluationTestReports.createdAt,
+        })
+        .from(evaluationTestReports)
+        .innerJoin(evaluationTests, eq(evaluationTests.id, evaluationTestReports.testId))
+        .where(eq(evaluationTestReports.status, "pending")),
+    ]);
+
+    const merged = [
+      ...exerciseRows.map((r) => ({ ...r, contentType: "exercise" as const })),
+      ...playRows.map((r) => ({ ...r, contentType: "play" as const })),
+      ...evaluationTestRows.map((r) => ({ ...r, contentType: "evaluationTest" as const })),
+    ];
+    if (merged.length === 0) return [];
+
+    const accountIds = new Set<number>();
+    merged.forEach((r) => {
+      accountIds.add(r.reporterAccountId);
+      accountIds.add(r.ownerAccountId);
+    });
+    const accountRows = await db
+      .select({ id: accounts.id, email: accounts.email, publicName: accounts.publicName })
+      .from(accounts)
+      .where(inArray(accounts.id, Array.from(accountIds)));
+    const accountById = new Map(accountRows.map((a) => [a.id, a]));
+
+    return merged
+      .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0))
+      .map((r) => ({
+        id: r.id,
+        contentType: r.contentType,
+        contentId: r.contentId,
+        contentName: r.contentName,
+        reason: r.reason as ReportReason,
+        details: r.details,
+        status: r.status as ReportStatus,
+        reporterAccountId: r.reporterAccountId,
+        reporterPublicName: accountById.get(r.reporterAccountId)?.publicName ?? null,
+        reporterEmail: accountById.get(r.reporterAccountId)?.email ?? "",
+        ownerAccountId: r.ownerAccountId,
+        ownerEmail: accountById.get(r.ownerAccountId)?.email ?? "",
+        createdAt: r.createdAt ? r.createdAt.toISOString() : null,
+      }));
+  }
+
+  async resolveReport(contentType: "exercise" | "play" | "evaluationTest", reportId: number, action: "dismiss" | "remove"): Promise<boolean> {
+    const status: ReportStatus = action === "remove" ? "removed" : "dismissed";
+
+    if (contentType === "exercise") {
+      const [report] = await db.select().from(exerciseReports).where(eq(exerciseReports.id, reportId));
+      if (!report) return false;
+      await db.update(exerciseReports).set({ status }).where(eq(exerciseReports.id, reportId));
+      if (action === "remove") {
+        await db.update(exercises).set({ sharedToCommunity: 0 }).where(eq(exercises.id, report.exerciseId));
+      }
+      return true;
+    }
+
+    if (contentType === "play") {
+      const [report] = await db.select().from(playReports).where(eq(playReports.id, reportId));
+      if (!report) return false;
+      await db.update(playReports).set({ status }).where(eq(playReports.id, reportId));
+      if (action === "remove") {
+        await db.update(plays).set({ sharedToCommunity: 0 }).where(eq(plays.id, report.playId));
+      }
+      return true;
+    }
+
+    const [report] = await db.select().from(evaluationTestReports).where(eq(evaluationTestReports.id, reportId));
+    if (!report) return false;
+    await db.update(evaluationTestReports).set({ status }).where(eq(evaluationTestReports.id, reportId));
+    if (action === "remove") {
+      await db.update(evaluationTests).set({ sharedToCommunity: 0 }).where(eq(evaluationTests.id, report.testId));
+    }
+    return true;
   }
 
   async importCommunityExercise(id: number, accountId: number): Promise<Exercise | undefined> {

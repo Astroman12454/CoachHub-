@@ -15,6 +15,18 @@ export const FREE_PLAN_TEAM_LIMIT = 1;
 export const FREE_PLAN_PLAY_LIMIT = 3;
 export const CLUB_PLAN_SEAT_LIMIT = 3;
 
+// Why a coach is reporting a piece of community content — shown as the
+// report dialog's reason picker and, on the admin side, as a filter/label
+// on each report row.
+export const REPORT_REASONS = ["spam", "inappropriate", "offensive", "other"] as const;
+export type ReportReason = typeof REPORT_REASONS[number];
+
+export const createReportSchema = z.object({
+  reason: z.enum(REPORT_REASONS),
+  details: z.string().trim().max(500).optional(),
+});
+export type CreateReport = z.infer<typeof createReportSchema>;
+
 // Owned and shaped by connect-pg-simple (server/auth.ts), not application
 // code — declared here only so `drizzle-kit push` recognizes the table and
 // doesn't try to drop it as "extra" on every push. Never read or written
@@ -46,6 +58,11 @@ export const accounts = pgTable("accounts", {
   // publish an exercise or follow another coach; those actions are the
   // only things gated on it being set (see insertPublicNameSchema below).
   publicName: text("public_name"),
+  // 1 for the handful of accounts that can see /admin/reports and act on
+  // community content reports — same integer-flag convention as
+  // isActive/isFavorite. Not settable through any API; flipped by hand in
+  // the database for whoever runs the app.
+  isAdmin: integer("is_admin").default(0),
 });
 
 // A pending invitation to join a Club account as a coach — consumed (row
@@ -190,6 +207,25 @@ export const exerciseSaves = pgTable("exercise_saves", {
   id: serial("id").primaryKey(),
   exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
+}));
+
+// A coach flagging a community-shared exercise for admin review — one
+// report per (exercise, reporter), same unique-pair convention as
+// exerciseLikes/exerciseSaves, so re-opening the report dialog on
+// something already reported can't create duplicates. status starts
+// "pending" and moves to "dismissed" or "removed" once an admin acts on
+// it (see storage.resolveReport) — rows are kept either way as a paper
+// trail rather than deleted.
+export const exerciseReports = pgTable("exercise_reports", {
+  id: serial("id").primaryKey(),
+  exerciseId: integer("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
@@ -421,6 +457,20 @@ export const evaluationTestSaves = pgTable("evaluation_test_saves", {
   testAccountUnique: unique().on(table.testId, table.accountId),
 }));
 
+// Same reporting mechanism as exerciseReports, for a community-shared
+// evaluation test — see its comment for the status lifecycle.
+export const evaluationTestReports = pgTable("evaluation_test_reports", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  testAccountUnique: unique().on(table.testId, table.accountId),
+}));
+
 // One player's result on one occasion a test was run — recorded in bulk
 // (the whole active roster at once) or as a single quick entry from the
 // player's own profile, same shape either way.
@@ -604,6 +654,20 @@ export const playSaves = pgTable("play_saves", {
   id: serial("id").primaryKey(),
   playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  playAccountUnique: unique().on(table.playId, table.accountId),
+}));
+
+// Same reporting mechanism as exerciseReports, for a community-shared play
+// — see its comment for the status lifecycle.
+export const playReports = pgTable("play_reports", {
+  id: serial("id").primaryKey(),
+  playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  details: text("details"),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   playAccountUnique: unique().on(table.playId, table.accountId),
@@ -978,6 +1042,28 @@ export interface EvaluationTestCommentView {
   body: string;
   createdAt: string | null;
   canDelete: boolean;
+}
+
+export const REPORT_STATUSES = ["pending", "dismissed", "removed"] as const;
+export type ReportStatus = typeof REPORT_STATUSES[number];
+
+// One row of GET /api/admin/reports — a report merged with just enough
+// context (what was reported, who reported it, who owns it) for an admin
+// to judge it without opening the database directly.
+export interface AdminReportView {
+  id: number;
+  contentType: "exercise" | "play" | "evaluationTest";
+  contentId: number;
+  contentName: string;
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  reporterAccountId: number;
+  reporterPublicName: string | null;
+  reporterEmail: string;
+  ownerAccountId: number;
+  ownerEmail: string;
+  createdAt: string | null;
 }
 
 export type InsertEvaluationTest = z.infer<typeof insertEvaluationTestSchema>;

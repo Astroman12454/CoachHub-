@@ -53,6 +53,10 @@ async function sessionPayload(accountId: number, currentTeamId?: number) {
       // account, same as plan above — a Club member publishes under the
       // club's chosen public name, not a personal one of their own.
       publicName: effectiveAccount?.publicName ?? account.publicName,
+      // Admin-ness belongs to the specific login, never inherited through
+      // a Club — a member seeing /admin/reports because the club owner
+      // happens to be an admin would be surprising and wrong.
+      isAdmin: account.isAdmin === 1,
     },
     teams: accountTeams,
     currentTeamId: currentTeamId ?? accountTeams[0]?.id,

@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bookmark, Clock, Compass, Download, Globe, Heart, MessageCircle, UserCheck, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Bookmark, Clock, Compass, Download, Flag, Globe, Heart, MessageCircle, UserCheck, UserPlus, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import ExerciseCommentsDialog from "@/components/ExerciseCommentsDialog";
+import ReportContentDialog, { type ReportTarget } from "@/components/ReportContentDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -68,6 +69,7 @@ export default function CommunityExercises() {
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
   const [feedTab, setFeedTab] = useState<"discover" | "following" | "saved">("discover");
   const [commentsExercise, setCommentsExercise] = useState<CommunityExercise | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
 
   // Each tab is its own cached query (server-filtered, not client-filtered)
   // since "coaches I follow"/"what I've saved" isn't data this page has any
@@ -494,6 +496,14 @@ export default function CommunityExercises() {
                       >
                         <Bookmark className={`w-3.5 h-3.5 ${exercise.savedByMe ? "text-basketball-orange fill-basketball-orange" : ""}`} aria-hidden="true" />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportTarget({ endpoint: `/api/community-exercises/${exercise.id}/report`, name: localized.name })}
+                        className="flex items-center gap-1.5 hover:text-destructive transition-colors"
+                        aria-label={t("communityExercises.report", { name: localized.name })}
+                      >
+                        <Flag className="w-3.5 h-3.5" aria-hidden="true" />
+                      </button>
                     </div>
                     <Button
                       type="button"
@@ -520,6 +530,7 @@ export default function CommunityExercises() {
         onOpenChange={(next) => { if (!next) setCommentsExercise(null); }}
         onCommentCountChange={handleCommentCountChange}
       />
+      <ReportContentDialog target={reportTarget} onOpenChange={(next) => { if (!next) setReportTarget(null); }} />
     </div>
   );
 }

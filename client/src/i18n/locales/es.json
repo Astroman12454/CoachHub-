@@ -45,7 +45,8 @@
     "evaluations": "Evaluaciones",
     "players": "Jugadores",
     "coaches": "Entrenadores",
-    "account": "Cuenta"
+    "account": "Cuenta",
+    "adminReports": "Reportes"
   },
   "sidebar": {
     "tagline": "Entrenamiento de Baloncesto",
@@ -810,7 +811,8 @@
     "suggestedCoachStats": "{{exercises}} ejercicios · {{likes}} likes",
     "followName": "Seguir a {{name}}",
     "couldntFollow": "No se pudo seguir al entrenador",
-    "viewComments": "Ver comentarios de {{name}}"
+    "viewComments": "Ver comentarios de {{name}}",
+    "report": "Reportar {{name}}"
   },
   "exerciseCommentsDialog": {
     "title": "Comentarios",
@@ -1261,6 +1263,43 @@
     "send": "Enviar",
     "thinking": "Pensando…",
     "upgradeRequired": "El asistente de IA está disponible en los planes pagos."
+  },
+  "reportContentDialog": {
+    "title": "Reportar contenido",
+    "description": "Reportar \"{{name}}\" para que un admin lo revise.",
+    "reasonLabel": "Motivo",
+    "reasons": {
+      "spam": "Spam",
+      "inappropriate": "Inapropiado",
+      "offensive": "Ofensivo",
+      "other": "Otro"
+    },
+    "detailsPlaceholder": "Agregar detalles (opcional)…",
+    "submit": "Reportar",
+    "submitted": "Gracias — un admin lo va a revisar.",
+    "couldntSubmit": "No se pudo enviar el reporte"
+  },
+  "adminReports": {
+    "title": "Reportes",
+    "subtitle": "Contenido de la comunidad marcado para revisión",
+    "pendingCount": "{{count}} reporte pendiente",
+    "pendingCount_other": "{{count}} reportes pendientes",
+    "notAuthorized": "No autorizado",
+    "notAuthorizedDescription": "Esta página solo está disponible para admins.",
+    "emptyTitle": "No Hay Reportes Pendientes",
+    "emptyDescription": "El contenido de la comunidad que se reporte va a aparecer acá para revisión.",
+    "contentTypes": {
+      "exercise": "Ejercicio",
+      "play": "Jugada",
+      "evaluationTest": "Evaluación"
+    },
+    "reportedBy": "Reportado por {{name}}",
+    "publishedBy": "Publicado por {{email}}",
+    "dismiss": "Descartar",
+    "removeContent": "Quitar de la comunidad",
+    "dismissed": "Reporte descartado",
+    "removed": "Contenido quitado de la comunidad",
+    "couldntResolve": "No se pudo resolver el reporte"
   },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
