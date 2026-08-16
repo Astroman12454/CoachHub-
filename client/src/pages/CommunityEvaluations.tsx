@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import EvaluationCommentsDialog from "@/components/EvaluationCommentsDialog";
 import ReportContentDialog, { type ReportTarget } from "@/components/ReportContentDialog";
+import StarRatingInput from "@/components/StarRatingInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,9 @@ interface CommunityEvaluationTest {
   likedByMe: boolean;
   savedByMe: boolean;
   commentCount: number;
+  avgRating: number | null;
+  ratingCount: number;
+  myRating: number | null;
   publishedBy: { accountId: number; publicName: string | null };
 }
 
@@ -53,7 +57,7 @@ export default function CommunityEvaluations() {
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "popular" | "rating">("recent");
   const [feedTab, setFeedTab] = useState<FeedTab>("discover");
   const [commentsTest, setCommentsTest] = useState<CommunityEvaluationTest | null>(null);
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
@@ -139,6 +143,41 @@ export default function CommunityEvaluations() {
     },
   });
 
+  // A 1-5 star rating, distinct from liking — see the matching mutation in
+  // CommunityExercises.tsx for why the optimistic patch recomputes the
+  // average instead of just incrementing a counter.
+  const rateMutation = useMutation({
+    mutationFn: async ({ id, rating }: { id: number; rating: number }) =>
+      apiRequest("PUT", `/api/community-evaluation-tests/${id}/rating`, { rating }),
+    onMutate: async ({ id, rating }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<CommunityEvaluationTest[]>(queryKey);
+      queryClient.setQueryData<CommunityEvaluationTest[]>(queryKey, (old = []) =>
+        old.map((t) => {
+          if (t.id !== id) return t;
+          const priorSum = (t.avgRating ?? 0) * t.ratingCount;
+          const nextCount = t.myRating === null ? t.ratingCount + 1 : t.ratingCount;
+          const nextSum = t.myRating === null ? priorSum + rating : priorSum - t.myRating + rating;
+          return { ...t, myRating: rating, ratingCount: nextCount, avgRating: nextSum / nextCount };
+        })
+      );
+      return { previous, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) queryClient.setQueryData(context.queryKey, context.previous);
+      toast({
+        title: t("communityExercises.couldntUpdateRating"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => typeof query.queryKey[0] === "string" && (query.queryKey[0] as string).startsWith("/api/community-evaluation-tests") && query.queryKey[0] !== queryKey[0],
+      });
+    },
+  });
+
   const toggleSaveMutation = useMutation({
     mutationFn: async ({ id, saved }: { id: number; saved: boolean }) =>
       apiRequest(saved ? "POST" : "DELETE", `/api/community-evaluation-tests/${id}/save`),
@@ -180,6 +219,9 @@ export default function CommunityEvaluations() {
 
     if (sortBy === "popular") {
       return [...filtered].sort((a, b) => b.likeCount - a.likeCount || b.id - a.id);
+    }
+    if (sortBy === "rating") {
+      return [...filtered].sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount || b.id - a.id);
     }
     return filtered;
   }, [communityTests, searchQuery, sortBy]);
@@ -286,13 +328,14 @@ export default function CommunityEvaluations() {
               {t("communityEvaluations.backToTests")}
             </Button>
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular")}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular" | "rating")}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("communityExercises.sortBy")}>
                 <SelectValue placeholder={t("communityExercises.sortBy")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="recent">{t("communityExercises.sortRecent")}</SelectItem>
                 <SelectItem value="popular">{t("communityExercises.sortPopular")}</SelectItem>
+                <SelectItem value="rating">{t("communityExercises.sortRating")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -322,6 +365,19 @@ export default function CommunityEvaluations() {
                     </Link>
                   )}
                   {test.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{test.description}</p>}
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <StarRatingInput
+                      value={test.myRating ?? 0}
+                      onChange={(rating) => rateMutation.mutate({ id: test.id, rating })}
+                      ariaLabelPrefix={test.name}
+                    />
+                    {test.ratingCount > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {t("communityExercises.ratingSummary", { avg: test.avgRating!.toFixed(1), count: test.ratingCount })}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 text-muted-foreground">

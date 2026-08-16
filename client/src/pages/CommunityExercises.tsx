@@ -70,7 +70,7 @@ export default function CommunityExercises() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "popular" | "rating">("recent");
   const [feedTab, setFeedTab] = useState<"discover" | "following" | "saved">("discover");
   const [commentsExercise, setCommentsExercise] = useState<CommunityExercise | null>(null);
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
@@ -286,6 +286,9 @@ export default function CommunityExercises() {
     if (sortBy === "popular") {
       return [...filtered].sort((a, b) => b.likeCount - a.likeCount || b.id - a.id);
     }
+    if (sortBy === "rating") {
+      return [...filtered].sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount || b.id - a.id);
+    }
     return filtered;
   }, [exercises, searchQuery, categoryFilter, difficultyFilter, sortBy, i18n.language]);
 
@@ -431,13 +434,14 @@ export default function CommunityExercises() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular")}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular" | "rating")}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("communityExercises.sortBy")}>
                 <SelectValue placeholder={t("communityExercises.sortBy")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="recent">{t("communityExercises.sortRecent")}</SelectItem>
                 <SelectItem value="popular">{t("communityExercises.sortPopular")}</SelectItem>
+                <SelectItem value="rating">{t("communityExercises.sortRating")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

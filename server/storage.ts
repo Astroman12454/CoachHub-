@@ -12,10 +12,12 @@ import {
   playComments,
   playSaves,
   playReports,
+  playRatings,
   evaluationTestLikes,
   evaluationTestComments,
   evaluationTestSaves,
   evaluationTestReports,
+  evaluationTestRatings,
   coachFollows,
   notifications,
   trainingSessions,
@@ -206,7 +208,7 @@ export interface IStorage {
   // except a play's "owner" for social purposes is resolved through
   // teams.accountId (a play belongs to a team, not directly to an account).
   setPlayCommunityShare(id: number, teamId: number, shared: boolean): Promise<Play | undefined>;
-  getCommunityPlays(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(Play & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  getCommunityPlays(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(Play & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; avgRating: number | null; ratingCount: number; myRating: number | null; publishedBy: { accountId: number; publicName: string | null } })[]>;
   // Copies a shared play (with its steps) into the importing team's own
   // playbook as a brand-new row — same "fresh copy, never linked back" model
   // as importCommunityExercise.
@@ -217,6 +219,10 @@ export interface IStorage {
   // on a currently-shared play.
   savePlay(playId: number, accountId: number): Promise<boolean>;
   unsavePlay(playId: number, accountId: number): Promise<void>;
+  // A public 1-5 star rating — see storage.rateExercise for the upsert
+  // behavior this mirrors.
+  ratePlay(playId: number, accountId: number, rating: number): Promise<boolean>;
+  unratePlay(playId: number, accountId: number): Promise<void>;
   createPlayComment(playId: number, accountId: number, body: string): Promise<PlayCommentView | undefined>;
   getPlayComments(playId: number, viewerAccountId: number): Promise<PlayCommentView[] | undefined>;
   deletePlayComment(commentId: number, accountId: number): Promise<boolean>;
@@ -225,12 +231,14 @@ export interface IStorage {
   // exercises (no team indirection to resolve, unlike plays above). Covers
   // general player evaluation, physical and skill tests alike.
   setEvaluationTestCommunityShare(id: number, accountId: number, shared: boolean): Promise<EvaluationTest | undefined>;
-  getCommunityEvaluationTests(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]>;
+  getCommunityEvaluationTests(accountId: number, opts?: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean }): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; avgRating: number | null; ratingCount: number; myRating: number | null; publishedBy: { accountId: number; publicName: string | null } })[]>;
   importCommunityEvaluationTest(id: number, accountId: number): Promise<EvaluationTest | undefined>;
   likeEvaluationTest(testId: number, accountId: number): Promise<boolean>;
   unlikeEvaluationTest(testId: number, accountId: number): Promise<void>;
   saveEvaluationTest(testId: number, accountId: number): Promise<boolean>;
   unsaveEvaluationTest(testId: number, accountId: number): Promise<void>;
+  rateEvaluationTest(testId: number, accountId: number, rating: number): Promise<boolean>;
+  unrateEvaluationTest(testId: number, accountId: number): Promise<void>;
   createEvaluationTestComment(testId: number, accountId: number, body: string): Promise<EvaluationTestCommentView | undefined>;
   getEvaluationTestComments(testId: number, viewerAccountId: number): Promise<EvaluationTestCommentView[] | undefined>;
   deleteEvaluationTestComment(commentId: number, accountId: number): Promise<boolean>;
@@ -1048,7 +1056,7 @@ export class DatabaseStorage implements IStorage {
     return play || undefined;
   }
 
-  async getCommunityPlays(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(Play & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+  async getCommunityPlays(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(Play & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; avgRating: number | null; ratingCount: number; myRating: number | null; publishedBy: { accountId: number; publicName: string | null } })[]> {
     let shared = await db
       .select({ play: plays, ownerAccountId: teams.accountId })
       .from(plays)
@@ -1100,6 +1108,19 @@ export class DatabaseStorage implements IStorage {
       .groupBy(playComments.playId);
     const commentCountByPlayId = new Map(commentCounts.map((row) => [row.playId, row.count]));
 
+    const ratingAggregates = await db
+      .select({ playId: playRatings.playId, avg: sql<number>`avg(${playRatings.rating})::float`, count: sql<number>`count(*)::int` })
+      .from(playRatings)
+      .where(inArray(playRatings.playId, playIds))
+      .groupBy(playRatings.playId);
+    const ratingAggregateByPlayId = new Map(ratingAggregates.map((row) => [row.playId, row]));
+
+    const myRatingRows = await db
+      .select({ playId: playRatings.playId, rating: playRatings.rating })
+      .from(playRatings)
+      .where(and(inArray(playRatings.playId, playIds), eq(playRatings.accountId, accountId)));
+    const myRatingByPlayId = new Map(myRatingRows.map((row) => [row.playId, row.rating]));
+
     const publisherIds = Array.from(new Set(shared.map((row) => row.ownerAccountId)));
     const publishers = await db
       .select({ id: accounts.id, publicName: accounts.publicName })
@@ -1113,6 +1134,9 @@ export class DatabaseStorage implements IStorage {
       likedByMe: likedPlayIds.has(row.play.id),
       savedByMe: savedPlayIdsForViewer.has(row.play.id),
       commentCount: commentCountByPlayId.get(row.play.id) ?? 0,
+      avgRating: ratingAggregateByPlayId.get(row.play.id)?.avg ?? null,
+      ratingCount: ratingAggregateByPlayId.get(row.play.id)?.count ?? 0,
+      myRating: myRatingByPlayId.get(row.play.id) ?? null,
       publishedBy: {
         accountId: row.ownerAccountId,
         publicName: publisherById.get(row.ownerAccountId)?.publicName ?? null,
@@ -1178,6 +1202,24 @@ export class DatabaseStorage implements IStorage {
 
   async unlikePlay(playId: number, accountId: number): Promise<void> {
     await db.delete(playLikes).where(and(eq(playLikes.playId, playId), eq(playLikes.accountId, accountId)));
+  }
+
+  async ratePlay(playId: number, accountId: number, rating: number): Promise<boolean> {
+    const [play] = await db.select().from(plays).where(and(eq(plays.id, playId), eq(plays.sharedToCommunity, 1)));
+    if (!play) return false;
+
+    await db
+      .insert(playRatings)
+      .values({ playId, accountId, rating })
+      .onConflictDoUpdate({
+        target: [playRatings.playId, playRatings.accountId],
+        set: { rating },
+      });
+    return true;
+  }
+
+  async unratePlay(playId: number, accountId: number): Promise<void> {
+    await db.delete(playRatings).where(and(eq(playRatings.playId, playId), eq(playRatings.accountId, accountId)));
   }
 
   async savePlay(playId: number, accountId: number): Promise<boolean> {
@@ -1278,7 +1320,7 @@ export class DatabaseStorage implements IStorage {
     return test || undefined;
   }
 
-  async getCommunityEvaluationTests(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; publishedBy: { accountId: number; publicName: string | null } })[]> {
+  async getCommunityEvaluationTests(accountId: number, opts: { sort?: "recent" | "popular"; followingOnly?: boolean; savedOnly?: boolean } = {}): Promise<(EvaluationTest & { likeCount: number; likedByMe: boolean; savedByMe: boolean; commentCount: number; avgRating: number | null; ratingCount: number; myRating: number | null; publishedBy: { accountId: number; publicName: string | null } })[]> {
     let shared = await db.select().from(evaluationTests).where(eq(evaluationTests.sharedToCommunity, 1));
     if (shared.length === 0) return [];
 
@@ -1326,6 +1368,19 @@ export class DatabaseStorage implements IStorage {
       .groupBy(evaluationTestComments.testId);
     const commentCountByTestId = new Map(commentCounts.map((row) => [row.testId, row.count]));
 
+    const ratingAggregates = await db
+      .select({ testId: evaluationTestRatings.testId, avg: sql<number>`avg(${evaluationTestRatings.rating})::float`, count: sql<number>`count(*)::int` })
+      .from(evaluationTestRatings)
+      .where(inArray(evaluationTestRatings.testId, testIds))
+      .groupBy(evaluationTestRatings.testId);
+    const ratingAggregateByTestId = new Map(ratingAggregates.map((row) => [row.testId, row]));
+
+    const myRatingRows = await db
+      .select({ testId: evaluationTestRatings.testId, rating: evaluationTestRatings.rating })
+      .from(evaluationTestRatings)
+      .where(and(inArray(evaluationTestRatings.testId, testIds), eq(evaluationTestRatings.accountId, accountId)));
+    const myRatingByTestId = new Map(myRatingRows.map((row) => [row.testId, row.rating]));
+
     const publisherIds = Array.from(new Set(shared.map((test) => test.accountId)));
     const publishers = await db
       .select({ id: accounts.id, publicName: accounts.publicName })
@@ -1339,6 +1394,9 @@ export class DatabaseStorage implements IStorage {
       likedByMe: likedTestIds.has(test.id),
       savedByMe: savedTestIdsForViewer.has(test.id),
       commentCount: commentCountByTestId.get(test.id) ?? 0,
+      avgRating: ratingAggregateByTestId.get(test.id)?.avg ?? null,
+      ratingCount: ratingAggregateByTestId.get(test.id)?.count ?? 0,
+      myRating: myRatingByTestId.get(test.id) ?? null,
       publishedBy: {
         accountId: test.accountId,
         publicName: publisherById.get(test.accountId)?.publicName ?? null,
@@ -1382,6 +1440,24 @@ export class DatabaseStorage implements IStorage {
 
   async unlikeEvaluationTest(testId: number, accountId: number): Promise<void> {
     await db.delete(evaluationTestLikes).where(and(eq(evaluationTestLikes.testId, testId), eq(evaluationTestLikes.accountId, accountId)));
+  }
+
+  async rateEvaluationTest(testId: number, accountId: number, rating: number): Promise<boolean> {
+    const [test] = await db.select().from(evaluationTests).where(and(eq(evaluationTests.id, testId), eq(evaluationTests.sharedToCommunity, 1)));
+    if (!test) return false;
+
+    await db
+      .insert(evaluationTestRatings)
+      .values({ testId, accountId, rating })
+      .onConflictDoUpdate({
+        target: [evaluationTestRatings.testId, evaluationTestRatings.accountId],
+        set: { rating },
+      });
+    return true;
+  }
+
+  async unrateEvaluationTest(testId: number, accountId: number): Promise<void> {
+    await db.delete(evaluationTestRatings).where(and(eq(evaluationTestRatings.testId, testId), eq(evaluationTestRatings.accountId, accountId)));
   }
 
   async saveEvaluationTest(testId: number, accountId: number): Promise<boolean> {

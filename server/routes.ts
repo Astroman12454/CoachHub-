@@ -37,7 +37,7 @@ import {
   setPublicNameSchema,
   createExerciseCommentSchema,
   createReportSchema,
-  rateExerciseSchema,
+  rateContentSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -622,7 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseId(req, res);
       if (id === null) return;
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
-      const { rating } = rateExerciseSchema.parse(req.body);
+      const { rating } = rateContentSchema.parse(req.body);
       const rated = await storage.rateExercise(id, accountId, rating);
       if (!rated) {
         return res.status(404).json({ message: "Community exercise not found" });
@@ -978,8 +978,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const followingOnly = req.query.following === "true";
       const savedOnly = req.query.saved === "true";
       const shared = await storage.getCommunityEvaluationTests(accountId, { sort, followingOnly, savedOnly });
-      res.json(shared.map(({ id, name, type, unit, worstValue, bestValue, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
-        ({ id, name, type, unit, worstValue, bestValue, description, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
+      res.json(shared.map(({ id, name, type, unit, worstValue, bestValue, description, likeCount, likedByMe, savedByMe, commentCount, avgRating, ratingCount, myRating, publishedBy }) =>
+        ({ id, name, type, unit, worstValue, bestValue, description, likeCount, likedByMe, savedByMe, commentCount, avgRating, ratingCount, myRating, publishedBy })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community evaluation tests" });
@@ -1010,6 +1010,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to unlike evaluation test" });
+    }
+  });
+
+  // A public 1-5 star rating, distinct from liking — see
+  // /api/community-exercises/:id/rating for the same pattern.
+  app.put("/api/community-evaluation-tests/:id/rating", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { rating } = rateContentSchema.parse(req.body);
+      const rated = await storage.rateEvaluationTest(id, accountId, rating);
+      if (!rated) {
+        return res.status(404).json({ message: "Community evaluation test not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(400).json({ message: "Invalid rating" });
+    }
+  });
+
+  app.delete("/api/community-evaluation-tests/:id/rating", async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unrateEvaluationTest(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove rating" });
     }
   });
 
@@ -2300,8 +2330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const followingOnly = req.query.following === "true";
       const savedOnly = req.query.saved === "true";
       const shared = await storage.getCommunityPlays(accountId, { sort, followingOnly, savedOnly });
-      res.json(shared.map(({ id, name, category, courtType, situation, notes, likeCount, likedByMe, savedByMe, commentCount, publishedBy }) =>
-        ({ id, name, category, courtType, situation, notes, likeCount, likedByMe, savedByMe, commentCount, publishedBy })
+      res.json(shared.map(({ id, name, category, courtType, situation, notes, likeCount, likedByMe, savedByMe, commentCount, avgRating, ratingCount, myRating, publishedBy }) =>
+        ({ id, name, category, courtType, situation, notes, likeCount, likedByMe, savedByMe, commentCount, avgRating, ratingCount, myRating, publishedBy })
       ));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch community plays" });
@@ -2332,6 +2362,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to unlike play" });
+    }
+  });
+
+  // A public 1-5 star rating, distinct from liking — see
+  // /api/community-exercises/:id/rating for the same pattern.
+  app.put("/api/community-plays/:id/rating", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const { rating } = rateContentSchema.parse(req.body);
+      const rated = await storage.ratePlay(id, accountId, rating);
+      if (!rated) {
+        return res.status(404).json({ message: "Community play not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(400).json({ message: "Invalid rating" });
+    }
+  });
+
+  app.delete("/api/community-plays/:id/rating", requireTeam, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      await storage.unratePlay(id, accountId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove rating" });
     }
   });
 

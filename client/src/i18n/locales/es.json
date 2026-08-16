@@ -794,6 +794,7 @@
     "sortBy": "Ordenar por",
     "sortRecent": "Más recientes",
     "sortPopular": "Más gustados",
+    "sortRating": "Mejor valorados",
     "like": "Me gusta {{name}}",
     "unlike": "Ya no me gusta {{name}}",
     "couldntUpdateLike": "No se pudo actualizar el me gusta",

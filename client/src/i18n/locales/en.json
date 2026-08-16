@@ -794,6 +794,7 @@
     "sortBy": "Sort by",
     "sortRecent": "Most recent",
     "sortPopular": "Most liked",
+    "sortRating": "Top rated",
     "like": "Like {{name}}",
     "unlike": "Unlike {{name}}",
     "couldntUpdateLike": "Couldn't update like",

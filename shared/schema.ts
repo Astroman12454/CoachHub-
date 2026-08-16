@@ -214,10 +214,13 @@ export const exerciseRatings = pgTable("exercise_ratings", {
   exerciseAccountUnique: unique().on(table.exerciseId, table.accountId),
 }));
 
-export const rateExerciseSchema = z.object({
+// Shared by the exercise/play/evaluation-test rating endpoints alike — a
+// rating is always just a 1-5 int, so one schema covers all three content
+// types instead of three identical copies.
+export const rateContentSchema = z.object({
   rating: z.number().int().min(1).max(5),
 });
-export type RateExercise = z.infer<typeof rateExerciseSchema>;
+export type RateContent = z.infer<typeof rateContentSchema>;
 
 // A private bookmark — "guardado" — on a community-shared exercise, added
 // after plays already had one (see playSaves) so both content types reach
@@ -491,6 +494,18 @@ export const evaluationTestReports = pgTable("evaluation_test_reports", {
   testAccountUnique: unique().on(table.testId, table.accountId),
 }));
 
+// Same reporting mechanism as exerciseRatings, for a community-shared
+// evaluation test — see its comment for why re-rating upserts.
+export const evaluationTestRatings = pgTable("evaluation_test_ratings", {
+  id: serial("id").primaryKey(),
+  testId: integer("test_id").notNull().references(() => evaluationTests.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  testAccountUnique: unique().on(table.testId, table.accountId),
+}));
+
 // One player's result on one occasion a test was run — recorded in bulk
 // (the whole active roster at once) or as a single quick entry from the
 // player's own profile, same shape either way.
@@ -688,6 +703,18 @@ export const playReports = pgTable("play_reports", {
   reason: text("reason").notNull(),
   details: text("details"),
   status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  playAccountUnique: unique().on(table.playId, table.accountId),
+}));
+
+// Same reporting mechanism as exerciseRatings, for a community-shared play
+// — see its comment for why re-rating upserts.
+export const playRatings = pgTable("play_ratings", {
+  id: serial("id").primaryKey(),
+  playId: integer("play_id").notNull().references(() => plays.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   playAccountUnique: unique().on(table.playId, table.accountId),

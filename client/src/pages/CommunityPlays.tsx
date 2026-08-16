@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import ErrorState from "@/components/ErrorState";
 import PlayCommentsDialog from "@/components/PlayCommentsDialog";
 import ReportContentDialog, { type ReportTarget } from "@/components/ReportContentDialog";
+import StarRatingInput from "@/components/StarRatingInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +28,9 @@ interface CommunityPlay {
   likedByMe: boolean;
   savedByMe: boolean;
   commentCount: number;
+  avgRating: number | null;
+  ratingCount: number;
+  myRating: number | null;
   publishedBy: { accountId: number; publicName: string | null };
 }
 
@@ -55,7 +59,7 @@ export default function CommunityPlays() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [situationFilter, setSituationFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
+  const [sortBy, setSortBy] = useState<"recent" | "popular" | "rating">("recent");
   const [feedTab, setFeedTab] = useState<FeedTab>("discover");
   const [commentsPlay, setCommentsPlay] = useState<CommunityPlay | null>(null);
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
@@ -142,6 +146,41 @@ export default function CommunityPlays() {
     },
   });
 
+  // A 1-5 star rating, distinct from liking — see the matching mutation in
+  // CommunityExercises.tsx for why the optimistic patch recomputes the
+  // average instead of just incrementing a counter.
+  const rateMutation = useMutation({
+    mutationFn: async ({ id, rating }: { id: number; rating: number }) =>
+      apiRequest("PUT", `/api/community-plays/${id}/rating`, { rating }),
+    onMutate: async ({ id, rating }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<CommunityPlay[]>(queryKey);
+      queryClient.setQueryData<CommunityPlay[]>(queryKey, (old = []) =>
+        old.map((p) => {
+          if (p.id !== id) return p;
+          const priorSum = (p.avgRating ?? 0) * p.ratingCount;
+          const nextCount = p.myRating === null ? p.ratingCount + 1 : p.ratingCount;
+          const nextSum = p.myRating === null ? priorSum + rating : priorSum - p.myRating + rating;
+          return { ...p, myRating: rating, ratingCount: nextCount, avgRating: nextSum / nextCount };
+        })
+      );
+      return { previous, queryKey };
+    },
+    onError: (error, _variables, context) => {
+      if (context) queryClient.setQueryData(context.queryKey, context.previous);
+      toast({
+        title: t("communityExercises.couldntUpdateRating"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        predicate: (query) => typeof query.queryKey[0] === "string" && (query.queryKey[0] as string).startsWith("/api/community-plays") && query.queryKey[0] !== queryKey[0],
+      });
+    },
+  });
+
   // "Guardado" is a private bookmark, distinct from liking — see playSaves
   // in shared/schema.ts. Toggling it also invalidates the Saved tab's own
   // cached query (this page has no other copy of "what's saved").
@@ -191,6 +230,9 @@ export default function CommunityPlays() {
 
     if (sortBy === "popular") {
       return [...filtered].sort((a, b) => b.likeCount - a.likeCount || b.id - a.id);
+    }
+    if (sortBy === "rating") {
+      return [...filtered].sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1) || b.ratingCount - a.ratingCount || b.id - a.id);
     }
     return filtered;
   }, [communityPlays, searchQuery, categoryFilter, situationFilter, sortBy]);
@@ -321,13 +363,14 @@ export default function CommunityPlays() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular")}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as "recent" | "popular" | "rating")}>
               <SelectTrigger className="w-full sm:w-48" aria-label={t("communityExercises.sortBy")}>
                 <SelectValue placeholder={t("communityExercises.sortBy")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="recent">{t("communityExercises.sortRecent")}</SelectItem>
                 <SelectItem value="popular">{t("communityExercises.sortPopular")}</SelectItem>
+                <SelectItem value="rating">{t("communityExercises.sortRating")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -356,6 +399,19 @@ export default function CommunityPlays() {
                   </Link>
                 )}
                 {play.notes && <p className="text-sm text-muted-foreground mb-4 line-clamp-2 mt-1">{play.notes}</p>}
+
+                <div className="flex items-center gap-2 mb-1">
+                  <StarRatingInput
+                    value={play.myRating ?? 0}
+                    onChange={(rating) => rateMutation.mutate({ id: play.id, rating })}
+                    ariaLabelPrefix={play.name}
+                  />
+                  {play.ratingCount > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {t("communityExercises.ratingSummary", { avg: play.avgRating!.toFixed(1), count: play.ratingCount })}
+                    </span>
+                  )}
+                </div>
 
                 <div className="flex items-center justify-between gap-2 mt-4">
                   <div className="flex items-center gap-3 text-muted-foreground">
