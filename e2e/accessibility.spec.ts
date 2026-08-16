@@ -93,14 +93,26 @@ test.describe("accessibility (axe)", () => {
       await page.check("#age-confirmation");
       await page.click('button:has-text("Create Account")');
 
-      // Step 1: pick a team color, then move to the follow-a-coach step.
+      // Step 1: pick a team color, then move into the tour.
       await page.waitForSelector("text=Welcome to CoachHub!");
       await page.click('button[aria-label="Teal"]');
       const colorScan = await scan(page);
       expect(summarize(colorScan.violations)).toEqual([]);
       await page.click('button:has-text("Next")');
 
-      // Step 2: the suggested-coach row.
+      // Step 2: a short 4-slide tour of the app's main sections.
+      await page.waitForSelector("text=Plan your week");
+      const tourScan = await scan(page);
+      expect(summarize(tourScan.violations)).toEqual([]);
+      await page.click('button:has-text("Next")');
+      await page.waitForSelector("text=Build your drill library");
+      await page.click('button:has-text("Next")');
+      await page.waitForSelector("text=Draw and animate plays");
+      await page.click('button:has-text("Next")');
+      await page.waitForSelector("text=Score your roster automatically");
+      await page.click('button:has-text("Next")');
+
+      // Step 3: the suggested-coach row.
       await page.waitForSelector("text=Follow a coach or two");
       // Not asserting our own throwaway coach specifically appears — ranking
       // is by likes/exercise count across every coach ever shared in this
