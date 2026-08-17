@@ -1045,6 +1045,33 @@ test.describe("accessibility (axe)", () => {
     await page.request.delete(`/api/exercises/${exercise.id}`);
   });
 
+  test("community exercises page — rates a shared drill and shows the average", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/exercises", {
+      data: { name: "E2E Rated Drill", description: "Shared for rating testing", category: "shooting", duration: 10, difficulty: "easy" },
+    });
+    const exercise = await create.json();
+    await page.request.put(`/api/exercises/${exercise.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/exercise-library/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Rated Drill");
+
+    await page.click('button[aria-label="Rate E2E Rated Drill 4 stars"]');
+    await expect(page.locator('button[aria-label="Rate E2E Rated Drill 4 stars"]')).toHaveAttribute("aria-pressed", "true");
+    await page.waitForSelector("text=4.0 (1)");
+
+    // Re-rating updates the same vote instead of adding a second one.
+    await page.click('button[aria-label="Rate E2E Rated Drill 2 stars"]');
+    await expect(page.locator('button[aria-label="Rate E2E Rated Drill 2 stars"]')).toHaveAttribute("aria-pressed", "true");
+    await page.waitForSelector("text=2.0 (1)");
+
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/exercises/${exercise.id}`);
+  });
+
   test("exercise share page (public, no session)", async ({ page }) => {
     await login(page);
     await page.goto("/exercise-library");
@@ -1316,6 +1343,27 @@ test.describe("accessibility (axe)", () => {
     await page.fill('textarea[aria-label="Add a comment…"]', "Solid test!");
     await page.click('button:has-text("Post")');
     await page.waitForSelector("text=Solid test!");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/evaluation-tests/${test.id}`);
+  });
+
+  test("community evaluations page — rates a shared test and shows the average", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/evaluation-tests", {
+      data: { name: "E2E Rated Evaluation", type: "time", unit: "seconds", worstValue: 15, bestValue: 5, description: "Shared for rating testing" },
+    });
+    const test = await create.json();
+    await page.request.put(`/api/evaluation-tests/${test.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/evaluations/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Rated Evaluation");
+
+    await page.click('button[aria-label="Rate E2E Rated Evaluation 3 stars"]');
+    await expect(page.locator('button[aria-label="Rate E2E Rated Evaluation 3 stars"]')).toHaveAttribute("aria-pressed", "true");
+    await page.waitForSelector("text=3.0 (1)");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
 
@@ -1884,6 +1932,32 @@ test.describe("accessibility (axe)", () => {
     await page.fill('textarea[aria-label="Add a comment…"]', "Great play!");
     await page.click('button:has-text("Post")');
     await page.waitForSelector("text=Great play!");
+    const results = await scan(page);
+    expect(summarize(results.violations)).toEqual([]);
+
+    await page.request.delete(`/api/plays/${play.id}`);
+  });
+
+  test("community plays page — rates a shared play and shows the average", async ({ page }) => {
+    await login(page);
+    const create = await page.request.post("/api/plays", {
+      data: {
+        name: "E2E Rated Play",
+        category: "offense",
+        courtType: "half",
+        steps: [{ tokens: [{ id: "o1", type: "offense", label: "1", x: 50, y: 90 }], drawings: [] }],
+      },
+    });
+    const play = await create.json();
+    await page.request.put(`/api/plays/${play.id}/share-community`, { data: { shared: true } });
+
+    await page.goto("/playbook/community");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("text=E2E Rated Play");
+
+    await page.click('button[aria-label="Rate E2E Rated Play 5 stars"]');
+    await expect(page.locator('button[aria-label="Rate E2E Rated Play 5 stars"]')).toHaveAttribute("aria-pressed", "true");
+    await page.waitForSelector("text=5.0 (1)");
     const results = await scan(page);
     expect(summarize(results.violations)).toEqual([]);
 
