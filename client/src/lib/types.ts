@@ -1,4 +1,9 @@
-import { Target, Hand, Shield, ArrowLeftRight, Activity } from "lucide-react";
+import {
+  Target, Hand, Shield, ArrowLeftRight, Activity,
+  Crosshair, CircleDot, Goal, Footprints, Move, Zap,
+  ShieldAlert, ShieldCheck, Users, ArrowRightLeft, Send,
+  MoveHorizontal, Flame, Timer,
+} from "lucide-react";
 import { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@shared/schema";
 
 export { EXERCISE_CATEGORIES, DIFFICULTY_LEVELS };
@@ -31,6 +36,24 @@ export const CATEGORY_ICONS = {
   passing: ArrowLeftRight,
   conditioning: Activity,
 } as const;
+
+// A handful of icons per category, so cards without a real photo (most of
+// the library today) don't all render as the exact same glyph — picked
+// deterministically from the exercise id below rather than at random, so a
+// given exercise's card looks the same on every render/reload.
+export const CATEGORY_ICON_VARIANTS = {
+  shooting: [Target, Crosshair, CircleDot, Goal],
+  dribbling: [Hand, Footprints, Move, Zap],
+  defense: [Shield, ShieldAlert, ShieldCheck, Users],
+  passing: [ArrowLeftRight, ArrowRightLeft, Send, MoveHorizontal],
+  conditioning: [Activity, Flame, Timer, Zap],
+} as const;
+
+export function getExerciseVisualIcon(category: string, id: number) {
+  const variants = CATEGORY_ICON_VARIANTS[category as keyof typeof CATEGORY_ICON_VARIANTS];
+  if (!variants) return CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS] ?? Target;
+  return variants[id % variants.length];
+}
 
 export const DIFFICULTY_COLORS = {
   easy: 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300',

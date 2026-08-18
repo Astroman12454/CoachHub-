@@ -3,7 +3,7 @@ import { Pencil, Trash2, Clock, ArrowRight, Star, Copy, Share2, Globe, Users, Wa
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import type { Exercise } from "@shared/schema";
-import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS } from "@/lib/types";
+import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS, getExerciseVisualIcon } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { localizedExerciseText } from "@/lib/exerciseI18n";
 
@@ -26,6 +26,7 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
   const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
   const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
   const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
+  const VisualIcon = getExerciseVisualIcon(exercise.category, exercise.id);
   const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
   const isFavorite = exercise.isFavorite === 1;
   const isSharedToCommunity = exercise.sharedToCommunity === 1;
@@ -145,8 +146,9 @@ export default function ExerciseCard({ exercise, onClick, onEdit, onDelete, onTo
           className="w-full h-32 object-cover rounded-md mb-4"
         />
       ) : (
-        <div className={`w-full h-32 ${categoryColorClass} rounded-md mb-4 flex items-center justify-center`}>
-          <CategoryIcon className="w-9 h-9 opacity-40" strokeWidth={1.5} />
+        <div className={`w-full h-32 ${categoryColorClass} rounded-md mb-4 flex items-center justify-center overflow-hidden relative`}>
+          <VisualIcon className="w-8 h-8 opacity-50 rotate-[-8deg]" strokeWidth={1.5} />
+          <CategoryIcon className="w-16 h-16 opacity-10 absolute -right-3 -bottom-3 rotate-12" strokeWidth={1} aria-hidden="true" />
         </div>
       )}
 

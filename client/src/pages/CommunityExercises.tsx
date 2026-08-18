@@ -19,7 +19,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import { canUseCustomExercises } from "@shared/entitlements";
-import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS, EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
+import { CATEGORY_COLORS, CATEGORY_SOLID_COLORS, DIFFICULTY_COLORS, CATEGORY_ICONS, getExerciseVisualIcon, EXERCISE_CATEGORIES, DIFFICULTY_LEVELS } from "@/lib/types";
 import { localizedExerciseText } from "@/lib/exerciseI18n";
 
 interface CommunityExercise {
@@ -469,6 +469,7 @@ export default function CommunityExercises() {
               const categoryColorClass = CATEGORY_COLORS[exercise.category as keyof typeof CATEGORY_COLORS];
               const categorySolidClass = CATEGORY_SOLID_COLORS[exercise.category as keyof typeof CATEGORY_SOLID_COLORS];
               const CategoryIcon = CATEGORY_ICONS[exercise.category as keyof typeof CATEGORY_ICONS];
+              const VisualIcon = getExerciseVisualIcon(exercise.category, exercise.id);
               const difficultyColorClass = DIFFICULTY_COLORS[exercise.difficulty as keyof typeof DIFFICULTY_COLORS];
               const localized = localizedExerciseText(exercise, i18n.language);
 
@@ -489,8 +490,9 @@ export default function CommunityExercises() {
                   {exercise.imageUrl ? (
                     <img src={exercise.imageUrl} alt={localized.name} loading="lazy" decoding="async" className="w-full h-32 object-cover rounded-md mb-4" />
                   ) : (
-                    <div className={`w-full h-32 ${categoryColorClass} rounded-md mb-4 flex items-center justify-center`}>
-                      <CategoryIcon className="w-9 h-9 opacity-40" strokeWidth={1.5} />
+                    <div className={`w-full h-32 ${categoryColorClass} rounded-md mb-4 flex items-center justify-center overflow-hidden relative`}>
+                      <VisualIcon className="w-8 h-8 opacity-50 rotate-[-8deg]" strokeWidth={1.5} />
+                      <CategoryIcon className="w-16 h-16 opacity-10 absolute -right-3 -bottom-3 rotate-12" strokeWidth={1} aria-hidden="true" />
                     </div>
                   )}
 
