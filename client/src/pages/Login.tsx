@@ -68,7 +68,7 @@ export default function Login() {
             <BrandMark className="w-7 h-7 text-white" />
           </div>
           <h1 className="font-display font-bold uppercase tracking-tight text-2xl text-foreground">Backboard</h1>
-          <p className="text-muted-foreground text-sm">{t("sidebar.tagline")}</p>
+          <p className="text-muted-foreground text-sm text-center mt-1">{t("login.tagline")}</p>
         </div>
 
         {mode === "forgot" && forgotPasswordMutation.isSuccess ? (

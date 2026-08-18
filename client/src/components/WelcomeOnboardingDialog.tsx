@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, Check, CalendarRange, Dumbbell, PencilRuler, Target, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -50,6 +50,7 @@ export default function WelcomeOnboardingDialog() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const { teams, currentTeamId } = useAuth();
   const currentTeam = teams.find((team) => team.id === currentTeamId);
   const [shouldCheck, setShouldCheck] = useState(false);
@@ -79,6 +80,15 @@ export default function WelcomeOnboardingDialog() {
     setOpen(next);
   };
 
+  // Closes the tour by sending the coach straight into adding their first
+  // player, instead of just dismissing back to a dashboard they still have
+  // to notice the checklist on — this account is guaranteed to have zero
+  // players at this point (the dialog only ever opens right after signup).
+  const finishToPlayers = () => {
+    handleOpenChange(false);
+    setLocation("/players");
+  };
+
   const saveColorMutation = useMutation({
     mutationFn: async (color: TeamThemeColor | null) => apiRequest("PUT", `/api/teams/${currentTeamId}`, { themeColor: color }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [SESSION_QUERY_KEY] }),
@@ -102,7 +112,7 @@ export default function WelcomeOnboardingDialog() {
     } else if (hasCoachesStep) {
       setStep("coaches");
     } else {
-      handleOpenChange(false);
+      finishToPlayers();
     }
   };
 
@@ -220,7 +230,7 @@ export default function WelcomeOnboardingDialog() {
               <Button type="button" onClick={goToNextTourSlide} className="basketball-orange basketball-orange-hover text-white">
                 {tourIndex < TOUR_SLIDES.length - 1
                   ? t("welcomeOnboardingDialog.nextStep")
-                  : hasCoachesStep ? t("welcomeOnboardingDialog.nextStep") : t("welcomeOnboardingDialog.done")}
+                  : hasCoachesStep ? t("welcomeOnboardingDialog.nextStep") : t("welcomeOnboardingDialog.addFirstPlayer")}
               </Button>
             </div>
           </>
@@ -260,8 +270,8 @@ export default function WelcomeOnboardingDialog() {
             </div>
 
             <div className="flex items-center justify-end pt-2 border-t border-border">
-              <Button type="button" onClick={() => handleOpenChange(false)} className="basketball-orange basketball-orange-hover text-white">
-                {t("welcomeOnboardingDialog.done")}
+              <Button type="button" onClick={finishToPlayers} className="basketball-orange basketball-orange-hover text-white">
+                {t("welcomeOnboardingDialog.addFirstPlayer")}
               </Button>
             </div>
           </>

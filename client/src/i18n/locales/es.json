@@ -62,6 +62,7 @@
     "more": "Más"
   },
   "login": {
+    "tagline": "Planifica entrenamientos, dirígelos en pista y sigue a cada jugador — todo en una app.",
     "email": "Correo electrónico",
     "password": "Contraseña",
     "passwordPlaceholderSignup": "Al menos 8 caracteres",
@@ -1281,7 +1282,7 @@
     "followDescription": "Seguí a algunos entrenadores para ver sus ejercicios, jugadas y pruebas de evaluación en tus feeds de Comunidad.",
     "nextStep": "Siguiente",
     "back": "Atrás",
-    "done": "Continuar",
+    "addFirstPlayer": "Añadir mi primer jugador",
     "couldntSaveColor": "No se pudo guardar el color"
   },
   "helpChat": {

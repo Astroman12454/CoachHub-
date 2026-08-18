@@ -62,6 +62,7 @@
     "more": "More"
   },
   "login": {
+    "tagline": "Plan practices, run them on the court, track every player — in one app.",
     "email": "Email",
     "password": "Password",
     "passwordPlaceholderSignup": "At least 8 characters",
@@ -1281,7 +1282,7 @@
     "followDescription": "Follow a few coaches to see their exercises, plays, and evaluation tests in your Community feeds.",
     "nextStep": "Next",
     "back": "Back",
-    "done": "Continue",
+    "addFirstPlayer": "Add my first player",
     "couldntSaveColor": "Couldn't save your color"
   },
   "helpChat": {

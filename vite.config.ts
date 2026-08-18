@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: "Backboard - Basketball Training",
         short_name: "Backboard",
-        description: "Planificador de entrenamientos de baloncesto: ejercicios, sesiones, jugadores y asistencia.",
+        description: "Plan basketball practices, run them on the court, and track every player — all in one app.",
         theme_color: "#CC3600",
         background_color: "#CC3600",
         display: "standalone",

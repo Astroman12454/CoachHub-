@@ -122,8 +122,11 @@ test.describe("accessibility (axe)", () => {
       const results = await scan(page);
       expect(summarize(results.violations)).toEqual([]);
 
-      await page.click('button:has-text("Continue")');
+      // Closing the dialog now sends the coach straight into adding their
+      // first player, instead of just dismissing back to the dashboard.
+      await page.click('button:has-text("Add my first player")');
       await expect(page.locator("text=Follow a coach or two")).toHaveCount(0);
+      await page.waitForURL("**/players");
     });
 
     test("accept-invite page with an invalid token", async ({ page }) => {
