@@ -17,17 +17,19 @@ import { useAuth } from "@/hooks/use-auth";
 import { SESSION_QUERY_KEY } from "@/lib/queryClient";
 import { TEAM_THEME_PRESETS, DEFAULT_ORANGE } from "@/lib/teamTheme";
 import { cn } from "@/lib/utils";
-import { CLUB_PLAN_SEAT_LIMIT, TEAM_THEME_COLORS, type TeamThemeColor, type Club } from "@shared/schema";
+import { CLUB_PLAN_SEAT_LIMIT, TEAM_THEME_COLORS, type TeamThemeColor, type Club, type AccountMembershipRole } from "@shared/schema";
 
 interface CoachMember {
   memberAccountId: number;
   email: string;
   createdAt: string | null;
+  role: AccountMembershipRole;
 }
 interface PendingInvite {
   id: number;
   email: string;
   expiresAt: string;
+  role: AccountMembershipRole;
 }
 interface CoachesResponse {
   members: CoachMember[];
@@ -42,6 +44,7 @@ export default function CoachSettings() {
   const { account, teams, currentTeamId } = useAuth();
   const currentTeam = teams.find((team) => team.id === currentTeamId);
   const [email, setEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<AccountMembershipRole>("coach");
   const [removeTarget, setRemoveTarget] = useState<CoachMember | null>(null);
   const [defaultDuration, setDefaultDuration] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string>("");
@@ -147,9 +150,11 @@ export default function CoachSettings() {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: async (email: string) => apiRequest("POST", "/api/coaches/invite", { email }),
+    mutationFn: async (vars: { email: string; role: AccountMembershipRole }) =>
+      apiRequest("POST", "/api/coaches/invite", vars),
     onSuccess: () => {
       setEmail("");
+      setInviteRole("coach");
       queryClient.invalidateQueries({ queryKey: ["/api/coaches"] });
       toast({ title: t("coachSettings.inviteSent") });
     },
@@ -193,7 +198,7 @@ export default function CoachSettings() {
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    inviteMutation.mutate(email.trim());
+    inviteMutation.mutate({ email: email.trim(), role: inviteRole });
   };
 
   const seatLimit = data?.seatLimit ?? CLUB_PLAN_SEAT_LIMIT;
@@ -434,12 +439,25 @@ export default function CoachSettings() {
                 placeholder={t("coachSettings.emailPlaceholder")}
                 aria-label={t("coachSettings.emailPlaceholder")}
                 disabled={atSeatLimit || inviteMutation.isPending}
+                className="sm:flex-1"
               />
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as AccountMembershipRole)} disabled={atSeatLimit || inviteMutation.isPending}>
+                <SelectTrigger className="sm:w-44" aria-label={t("coachSettings.role")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="coach">{t("coachSettings.roleCoach")}</SelectItem>
+                  <SelectItem value="assistant">{t("coachSettings.roleAssistant")}</SelectItem>
+                </SelectContent>
+              </Select>
               <Button type="submit" disabled={atSeatLimit || inviteMutation.isPending || !email.trim()}>
                 <UserPlus className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
                 {inviteMutation.isPending ? t("coachSettings.sendingEllipsis") : t("coachSettings.sendInvite")}
               </Button>
             </form>
+            <p className="text-xs text-muted-foreground mt-2">
+              {inviteRole === "assistant" ? t("coachSettings.roleAssistantDescription") : t("coachSettings.roleCoachDescription")}
+            </p>
             {atSeatLimit && <p className="text-sm text-muted-foreground mt-2">{t("coachSettings.atSeatLimit")}</p>}
           </CardContent>
         </Card>
@@ -455,6 +473,9 @@ export default function CoachSettings() {
                   <div className="flex items-center gap-2 min-w-0">
                     <Mail className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     <span className="text-sm truncate">{invite.email}</span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {invite.role === "assistant" ? t("coachSettings.roleAssistant") : t("coachSettings.roleCoach")}
+                    </Badge>
                   </div>
                   <Button
                     variant="ghost"
@@ -488,7 +509,12 @@ export default function CoachSettings() {
             ) : data && data.members.length > 0 ? (
               data.members.map((member) => (
                 <div key={member.memberAccountId} className="flex items-center justify-between gap-2 border border-border rounded-lg p-3">
-                  <span className="text-sm truncate">{member.email}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm truncate">{member.email}</span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {member.role === "assistant" ? t("coachSettings.roleAssistant") : t("coachSettings.roleCoach")}
+                    </Badge>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"

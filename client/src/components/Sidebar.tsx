@@ -211,6 +211,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 : isPaidPlan(account?.plan ?? "free") ? t("common.paidPlan") : t("common.freePlanUpgrade")}
             </Badge>
           </button>
+          {account?.membershipRole === "assistant" && (
+            <Badge variant="outline" className="mt-1 ml-1 text-[10px] uppercase tracking-wide border-white/30 text-white/70">
+              {t("common.readOnly")}
+            </Badge>
+          )}
         </div>
         <LanguageToggle />
         <ThemeToggle />

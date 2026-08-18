@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
 import { applyTeamTheme } from "@/lib/teamTheme";
-import type { Team, Plan } from "@shared/schema";
+import type { Team, Plan, AccountMembershipRole } from "@shared/schema";
 
 interface AccountInfo {
   id: number;
@@ -14,6 +14,11 @@ interface AccountInfo {
   // client still needs this to know whether to show billing/coach-
   // management actions (owner-only) versus a "managed by" note.
   isClubMember: boolean;
+  // Null for the owner or a standalone account — only set for a joined
+  // member. "assistant" is read-only server-side (requireTeam/
+  // blockReadOnlyMembers, server/auth.ts); the client uses this only to
+  // show that status, not as its own enforcement.
+  membershipRole: AccountMembershipRole | null;
   ownerEmail?: string;
   // The name this account shows on published community exercises and to
   // coaches it follows/is followed by — null until the coach sets one

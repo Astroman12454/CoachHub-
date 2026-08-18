@@ -42,6 +42,10 @@ async function sessionPayload(accountId: number, currentTeamId?: number) {
   const effectiveAccount = isClubMember ? await storage.getAccountById(effectiveAccountId) : account;
 
   const accountTeams = await storage.getTeamsByAccount(effectiveAccountId);
+  // Only a joined member has a role at all — the owner's own login has full
+  // access by definition, so this stays null for them (and for a standalone
+  // account with no club). See ACCOUNT_MEMBERSHIP_ROLES in shared/schema.ts.
+  const membershipRole = isClubMember ? await storage.getMembershipRoleForMember(accountId) : null;
   return {
     authenticated: true as const,
     account: {
@@ -49,6 +53,7 @@ async function sessionPayload(accountId: number, currentTeamId?: number) {
       email: account.email,
       plan: effectiveAccount?.plan ?? account.plan,
       isClubMember,
+      membershipRole,
       ownerEmail: isClubMember ? effectiveAccount?.email : undefined,
       // Published exercises are always attributed to the effective (owner)
       // account, same as plan above — a Club member publishes under the
@@ -337,15 +342,44 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   res.status(401).json({ message: "Not authenticated" });
 }
 
+// True only for a joined "assistant" member — the owner and "coach"-role
+// members both get full read/write access, so this is the one case that
+// needs blocking. Shared by requireTeam below and blockReadOnlyMembers
+// (server/routes.ts's exercise-content routes, which aren't team-scoped so
+// don't go through requireTeam at all).
+async function isReadOnlyMember(accountId: number): Promise<boolean> {
+  return (await storage.getMembershipRoleForMember(accountId)) === "assistant";
+}
+
 // For routes that operate on a specific team (players, sessions, attendance):
 // requires both an authenticated account and a valid "current team" selected
-// in the session, and exposes both ids on req for handlers to use.
-export function requireTeam(req: Request, res: Response, next: NextFunction) {
+// in the session, and exposes both ids on req for handlers to use. Also the
+// single choke point for the "assistant" read-only role (76 routes route
+// through this), so GET passes through untouched but every write 403s for
+// an assistant instead of silently succeeding.
+export async function requireTeam(req: Request, res: Response, next: NextFunction) {
   if (!req.session.accountId) {
     return res.status(401).json({ message: "Not authenticated" });
   }
   if (!req.session.currentTeamId) {
     return res.status(400).json({ message: "No team selected" });
+  }
+  if (req.method !== "GET" && (await isReadOnlyMember(req.session.accountId))) {
+    return res.status(403).json({ message: "Assistants have read-only access to the club." });
+  }
+  next();
+}
+
+// For the handful of account-scoped write routes that fall outside
+// requireTeam (exercise content — exercises aren't team-scoped, see
+// shared/schema.ts). Same rule as requireTeam's write check, just without
+// the team requirement.
+export async function blockReadOnlyMembers(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.accountId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  if (await isReadOnlyMember(req.session.accountId)) {
+    return res.status(403).json({ message: "Assistants have read-only access to the club." });
   }
   next();
 }

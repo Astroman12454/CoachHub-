@@ -187,6 +187,44 @@ describe("Club coach invites", () => {
       expect(exercises.body.some((e: { name: string }) => e.name === "Owner's Drill")).toBe(true);
     });
 
+    it("defaults to the coach role — full read/write access to the club's teams", async () => {
+      const { agent: ownerAgent } = await signedInClubAgent(app);
+      const { agent: coachAgent, email: coachEmail } = await signedInAgent(app);
+      await ownerAgent.post("/api/coaches/invite").send({ email: coachEmail });
+      const token = tokenFromMockedInvite();
+      await coachAgent.post(`/api/invites/${token}/accept`);
+
+      const session = await coachAgent.get("/api/session");
+      expect(session.body.account.membershipRole).toBe("coach");
+      await coachAgent.put("/api/session/team").send({ teamId: session.body.teams[0].id });
+
+      const created = await coachAgent.post("/api/players").send({ name: "New Player" });
+      expect(created.status).toBe(201);
+    });
+
+    it("an assistant-role invite grants read access but blocks every write", async () => {
+      const { agent: ownerAgent } = await signedInClubAgent(app);
+      const { agent: coachAgent, email: coachEmail } = await signedInAgent(app);
+      await ownerAgent.post("/api/coaches/invite").send({ email: coachEmail, role: "assistant" });
+      const token = tokenFromMockedInvite();
+      await coachAgent.post(`/api/invites/${token}/accept`);
+
+      const session = await coachAgent.get("/api/session");
+      expect(session.body.account.membershipRole).toBe("assistant");
+      await coachAgent.put("/api/session/team").send({ teamId: session.body.teams[0].id });
+
+      const listRes = await coachAgent.get("/api/players");
+      expect(listRes.status).toBe(200);
+
+      const createRes = await coachAgent.post("/api/players").send({ name: "Blocked Player" });
+      expect(createRes.status).toBe(403);
+
+      const exerciseCreate = await coachAgent.post("/api/exercises").send({
+        name: "Blocked Drill", description: "d", category: "shooting", duration: 10, difficulty: "easy",
+      });
+      expect(exerciseCreate.status).toBe(403);
+    });
+
     it("consumes the invite — it can't be accepted twice", async () => {
       const { agent: ownerAgent } = await signedInClubAgent(app);
       const { agent: coachAgent, email: coachEmail } = await signedInAgent(app);

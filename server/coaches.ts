@@ -3,6 +3,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { isEmailConfigured, sendCoachInviteEmail } from "./email";
 import { inviteCoachSchema, upsertClubSchema, CLUB_PLAN_SEAT_LIMIT } from "@shared/schema";
+import type { AccountMembershipRole } from "@shared/schema";
 import { isClubPlan } from "@shared/entitlements";
 
 function originOf(req: Request): string {
@@ -86,7 +87,7 @@ export function registerCoachRoutes(app: Express) {
       ]);
       res.json({
         members,
-        pendingInvites: invites.map((i) => ({ id: i.id, email: i.email, expiresAt: i.expiresAt })),
+        pendingInvites: invites.map((i) => ({ id: i.id, email: i.email, expiresAt: i.expiresAt, role: i.role })),
         seatLimit: CLUB_PLAN_SEAT_LIMIT,
       });
     } catch {
@@ -121,10 +122,11 @@ export function registerCoachRoutes(app: Express) {
         return res.status(409).json({ message: "This email already has access or a pending invite." });
       }
 
+      const role: AccountMembershipRole = parsed.data.role ?? "coach";
       const token = crypto.randomBytes(32).toString("hex");
       const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const invite = await storage.createAccountInvite(accountId, email, tokenHash, expiresAt);
+      const invite = await storage.createAccountInvite(accountId, email, tokenHash, expiresAt, role);
 
       if (isEmailConfigured()) {
         const acceptUrl = `${originOf(req)}/accept-invite?token=${token}`;
@@ -136,7 +138,7 @@ export function registerCoachRoutes(app: Express) {
         }
       }
 
-      res.status(201).json({ id: invite.id, email: invite.email, expiresAt: invite.expiresAt });
+      res.status(201).json({ id: invite.id, email: invite.email, expiresAt: invite.expiresAt, role: invite.role });
     } catch {
       res.status(500).json({ message: "Failed to send invite" });
     }
@@ -180,7 +182,7 @@ export function registerCoachRoutes(app: Express) {
       const invite = await storage.getAccountInviteByValidTokenHash(tokenHash);
       if (!invite) return res.status(404).json({ message: "This invite is invalid or has expired." });
       const owner = await storage.getAccountById(invite.ownerAccountId);
-      res.json({ email: invite.email, ownerEmail: owner?.email ?? "" });
+      res.json({ email: invite.email, ownerEmail: owner?.email ?? "", role: invite.role });
     } catch {
       res.status(500).json({ message: "Failed to look up invite" });
     }
@@ -216,7 +218,7 @@ export function registerCoachRoutes(app: Express) {
         return res.status(403).json({ message: "This club's coach seats are full." });
       }
 
-      await storage.createAccountMembership(invite.ownerAccountId, account.id);
+      await storage.createAccountMembership(invite.ownerAccountId, account.id, invite.role);
       await storage.deleteAccountInvite(invite.id);
       // The session's currentTeamId still points at this account's own
       // (now-irrelevant) team — clear it so the next /api/session fetch

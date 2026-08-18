@@ -109,6 +109,17 @@ export const analyticsEvents = pgTable("analytics_events", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// "coach" (default) keeps today's behavior: full read/write access to every
+// team the club owns, same as the owner except for club-level administration
+// (seats, identity — still requireClubOwner-only, see server/coaches.ts).
+// "assistant" is new: read access only, enforced centrally in requireTeam
+// (server/auth.ts) plus a handful of account-scoped write routes that fall
+// outside requireTeam (server/routes.ts's exercise-content routes). Not a
+// full per-resource permission matrix — a deliberate v1 scope, the same way
+// Club v1 shipped identity+overview without roles at all.
+export const ACCOUNT_MEMBERSHIP_ROLES = ["coach", "assistant"] as const;
+export type AccountMembershipRole = typeof ACCOUNT_MEMBERSHIP_ROLES[number];
+
 // A pending invitation to join a Club account as a coach — consumed (row
 // deleted) the moment it's accepted, turning into an accountMemberships row.
 // Mirrors accounts' password-reset token fields: a sha256 hash of the raw
@@ -121,6 +132,10 @@ export const accountInvites = pgTable("account_invites", {
   tokenHash: text("token_hash").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // The role the invite will grant once accepted — decided by the inviter
+  // up front rather than editable after the fact (changing an existing
+  // member's role isn't supported yet; revoke and re-invite instead).
+  role: text("role").notNull().default("coach").$type<AccountMembershipRole>(),
 });
 
 // Grants memberAccountId (a coach's own login) access to ownerAccountId's
@@ -131,6 +146,7 @@ export const accountMemberships = pgTable("account_memberships", {
   ownerAccountId: integer("owner_account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
   memberAccountId: integer("member_account_id").notNull().unique().references(() => accounts.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
+  role: text("role").notNull().default("coach").$type<AccountMembershipRole>(),
 });
 
 // A club's own identity — name and logo — layered on top of the existing
@@ -957,6 +973,7 @@ export const deleteAccountSchema = z.object({
 
 export const inviteCoachSchema = z.object({
   email: z.string().email("Enter a valid email address"),
+  role: z.enum(ACCOUNT_MEMBERSHIP_ROLES).optional(),
 });
 
 export const insertTeamSchema = createInsertSchema(teams).omit({
@@ -1166,6 +1183,7 @@ export interface CoachMember {
   memberAccountId: number;
   email: string;
   createdAt: string | null;
+  role: AccountMembershipRole;
 }
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;

@@ -75,6 +75,7 @@ import {
   type Plan,
   type AccountInvite,
   type AccountMembership,
+  type AccountMembershipRole,
   type Club,
   type UpsertClub,
   type ClubTeamOverview,
@@ -131,11 +132,15 @@ export interface IStorage {
   // is being decided.
   resolveEffectiveAccountId(accountId: number): Promise<number>;
   getOwnerAccountIdForMember(memberAccountId: number): Promise<number | null>;
-  createAccountInvite(ownerAccountId: number, email: string, tokenHash: string, expiresAt: Date): Promise<AccountInvite>;
+  // Null for an owner or a standalone (non-club) account — only a joined
+  // member has a role at all. Used to gate writes for "assistant" members;
+  // see isReadOnlyMember in server/auth.ts.
+  getMembershipRoleForMember(memberAccountId: number): Promise<AccountMembershipRole | null>;
+  createAccountInvite(ownerAccountId: number, email: string, tokenHash: string, expiresAt: Date, role: AccountMembershipRole): Promise<AccountInvite>;
   getAccountInviteByValidTokenHash(tokenHash: string): Promise<AccountInvite | undefined>;
   getPendingInvitesForAccount(ownerAccountId: number): Promise<AccountInvite[]>;
   deleteAccountInvite(id: number): Promise<void>;
-  createAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<AccountMembership>;
+  createAccountMembership(ownerAccountId: number, memberAccountId: number, role: AccountMembershipRole): Promise<AccountMembership>;
   getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]>;
   removeAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<boolean>;
   getClubByAccountId(accountId: number): Promise<Club | undefined>;
@@ -504,10 +509,18 @@ export class DatabaseStorage implements IStorage {
     return (await this.getOwnerAccountIdForMember(accountId)) ?? accountId;
   }
 
-  async createAccountInvite(ownerAccountId: number, email: string, tokenHash: string, expiresAt: Date): Promise<AccountInvite> {
+  async getMembershipRoleForMember(memberAccountId: number): Promise<AccountMembershipRole | null> {
+    const [membership] = await db
+      .select({ role: accountMemberships.role })
+      .from(accountMemberships)
+      .where(eq(accountMemberships.memberAccountId, memberAccountId));
+    return membership?.role ?? null;
+  }
+
+  async createAccountInvite(ownerAccountId: number, email: string, tokenHash: string, expiresAt: Date, role: AccountMembershipRole): Promise<AccountInvite> {
     const [invite] = await db
       .insert(accountInvites)
-      .values({ ownerAccountId, email, tokenHash, expiresAt })
+      .values({ ownerAccountId, email, tokenHash, expiresAt, role })
       .returning();
     return invite;
   }
@@ -531,10 +544,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(accountInvites).where(eq(accountInvites.id, id));
   }
 
-  async createAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<AccountMembership> {
+  async createAccountMembership(ownerAccountId: number, memberAccountId: number, role: AccountMembershipRole): Promise<AccountMembership> {
     const [membership] = await db
       .insert(accountMemberships)
-      .values({ ownerAccountId, memberAccountId })
+      .values({ ownerAccountId, memberAccountId, role })
       .returning();
     return membership;
   }
@@ -651,7 +664,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]> {
     const rows = await db
-      .select({ memberAccountId: accountMemberships.memberAccountId, email: accounts.email, createdAt: accountMemberships.createdAt })
+      .select({ memberAccountId: accountMemberships.memberAccountId, email: accounts.email, createdAt: accountMemberships.createdAt, role: accountMemberships.role })
       .from(accountMemberships)
       .innerJoin(accounts, eq(accountMemberships.memberAccountId, accounts.id))
       .where(eq(accountMemberships.ownerAccountId, ownerAccountId));

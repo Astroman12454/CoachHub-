@@ -12,6 +12,7 @@ import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryC
 interface InviteInfo {
   email: string;
   ownerEmail: string;
+  role: "coach" | "assistant";
 }
 
 // Public — a coach opens this from the invite email before necessarily
@@ -106,8 +107,11 @@ export default function AcceptInvite() {
           <p className="text-sm text-muted-foreground text-center">{t("acceptInvite.joining")}</p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground text-center mb-4">
+            <p className="text-sm text-muted-foreground text-center mb-1">
               {t("acceptInvite.invitedBy", { email: inviteQuery.data!.ownerEmail })}
+            </p>
+            <p className="text-xs text-muted-foreground text-center mb-4">
+              {inviteQuery.data!.role === "assistant" ? t("acceptInvite.roleAssistant") : t("acceptInvite.roleCoach")}
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>

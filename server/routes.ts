@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { requireTeam } from "./auth";
+import { requireTeam, blockReadOnlyMembers } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { registerCoachRoutes } from "./coaches";
 import { registerGuardianAuthorizationRoutes } from "./guardian-authorization";
@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/exercises", async (req, res) => {
+  app.post("/api/exercises", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/exercises/:id", async (req, res) => {
+  app.put("/api/exercises/:id", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/exercises/:id", async (req, res) => {
+  app.delete("/api/exercises/:id", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const account = await storage.getAccountById(accountId);
@@ -524,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Editing a diagram is "editing the exercise's content" the same as its
   // name/description, so it's gated the same way — unlike favoriting,
   // sharing, or community-toggling, which are personal actions.
-  app.put("/api/exercises/:id/diagram", async (req, res) => {
+  app.put("/api/exercises/:id/diagram", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
@@ -546,7 +546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/exercises/:id/diagram", async (req, res) => {
+  app.delete("/api/exercises/:id/diagram", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
