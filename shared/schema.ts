@@ -996,6 +996,19 @@ export const insertPlayerSchema = createInsertSchema(players).omit({
   medicalNotes: z.string().max(1000, "Notes are too long").nullish(),
 });
 
+// Fast roster entry: name + optional jersey number only, for a coach pasting
+// or typing a whole team at once instead of opening the full "Add Player"
+// dialog N times. Everything else (position, birth date, medical notes...)
+// stays reachable afterward from each player's own profile — capped at 50
+// per call, a generous margin over any real roster, mostly to keep a single
+// request bounded.
+export const bulkCreatePlayersSchema = z.object({
+  players: z.array(z.object({
+    name: z.string().trim().min(1).max(100),
+    jerseyNumber: z.number().int().min(0).max(99).nullish(),
+  })).min(1).max(50),
+});
+
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({
   id: true,
   markedAt: true,
@@ -1233,6 +1246,7 @@ export type InsertRecurringPracticeSlot = z.infer<typeof insertRecurringPractice
 export type RecurringPracticeSlot = typeof recurringPracticeSlots.$inferSelect;
 
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
+export type BulkCreatePlayers = z.infer<typeof bulkCreatePlayersSchema>;
 export type Player = typeof players.$inferSelect;
 
 export type PlayerNote = typeof playerNotes.$inferSelect;

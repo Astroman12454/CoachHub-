@@ -149,6 +149,20 @@
       "after_timeout": "After timeout"
     }
   },
+  "bulkAddPlayers": {
+    "openButton": "Bulk Add",
+    "title": "Bulk Add Players",
+    "description": "One player per line. Add a jersey number at the end if you want: \"Maria García, 7\". You can fill in position, birth date, and everything else later from each player's profile.",
+    "placeholder": "Maria García, 7\nJan Kowalski\nLuca Rossi, 23",
+    "playerCount_one": "{{count}} player will be added.",
+    "playerCount_other": "{{count}} players will be added.",
+    "addCount_one": "Add {{count}} Player",
+    "addCount_other": "Add {{count}} Players",
+    "adding": "Adding…",
+    "addedSuccessfully_one": "{{count}} player added.",
+    "addedSuccessfully_other": "{{count}} players added.",
+    "failedToAdd": "Couldn't add players"
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome back! Here's what's happening with your team.",
@@ -1158,7 +1172,9 @@
     "drillsTab": "Drills",
     "markAllPresent": "Mark all present",
     "reasonPlaceholder": "Reason (illness, travel, ...) — optional",
-    "reasonFor": "Reason for {{name}}"
+    "reasonFor": "Reason for {{name}}",
+    "inactiveHiddenNotice_one": "{{count}} inactive player not shown here. Activate them from Players to take their attendance.",
+    "inactiveHiddenNotice_other": "{{count}} inactive players not shown here. Activate them from Players to take their attendance."
   },
   "trainingMode": {
     "exit": "Exit training mode",

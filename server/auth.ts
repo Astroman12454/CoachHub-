@@ -68,9 +68,24 @@ export function setupAuth(app: Express) {
 
   // Signup and login are the endpoints worth throttling: without this, an
   // attacker can script unlimited account creation or password guesses.
+  // Separate instances (not one shared limiter) so a run of failed logins
+  // from one visitor on a shared IP — a gym's wifi, a school network, CGNAT
+  // — can't also lock out someone else on that IP trying to sign up.
   // Only failed attempts count against login, so a coach who mistypes once
   // and then logs in correctly on the next try never gets locked out.
-  const authRateLimiter = rateLimit({
+  const loginRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { message: "Too many attempts. Please try again later." },
+  });
+  // Same skipSuccessfulRequests choice as login: a burst of legitimate new
+  // accounts from one IP (a club signing up several coaches back to back)
+  // shouldn't get throttled — only repeated failed attempts (bad input,
+  // duplicate-email retries) count toward the limit.
+  const signupRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 10,
     standardHeaders: true,
@@ -112,7 +127,7 @@ export function setupAuth(app: Express) {
     res.json(await sessionPayload(req.session.accountId, req.session.currentTeamId));
   });
 
-  app.post("/api/signup", authRateLimiter, async (req: Request, res: Response) => {
+  app.post("/api/signup", signupRateLimiter, async (req: Request, res: Response) => {
     const parsed = insertAccountSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid signup data" });
@@ -145,7 +160,7 @@ export function setupAuth(app: Express) {
     res.status(201).json(await sessionPayload(account.id, team.id));
   });
 
-  app.post("/api/login", authRateLimiter, async (req: Request, res: Response) => {
+  app.post("/api/login", loginRateLimiter, async (req: Request, res: Response) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Enter a valid email and password" });

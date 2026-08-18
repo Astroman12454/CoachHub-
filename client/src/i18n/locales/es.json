@@ -149,6 +149,20 @@
       "after_timeout": "Después de tiempo muerto"
     }
   },
+  "bulkAddPlayers": {
+    "openButton": "Añadir Varios",
+    "title": "Añadir Varios Jugadores",
+    "description": "Un jugador por línea. Añade el dorsal al final si quieres: \"Maria García, 7\". Puedes rellenar posición, fecha de nacimiento y todo lo demás después desde el perfil de cada jugador.",
+    "placeholder": "Maria García, 7\nJan Kowalski\nLuca Rossi, 23",
+    "playerCount_one": "Se añadirá {{count}} jugador.",
+    "playerCount_other": "Se añadirán {{count}} jugadores.",
+    "addCount_one": "Añadir {{count}} Jugador",
+    "addCount_other": "Añadir {{count}} Jugadores",
+    "adding": "Añadiendo…",
+    "addedSuccessfully_one": "{{count}} jugador añadido.",
+    "addedSuccessfully_other": "{{count}} jugadores añadidos.",
+    "failedToAdd": "No se pudieron añadir los jugadores"
+  },
   "dashboard": {
     "title": "Panel",
     "subtitle": "¡Bienvenido de nuevo! Esto es lo que pasa con tu equipo.",
@@ -1158,7 +1172,9 @@
     "drillsTab": "Ejercicios",
     "markAllPresent": "Marcar todos presentes",
     "reasonPlaceholder": "Motivo (enfermedad, viaje, ...) — opcional",
-    "reasonFor": "Motivo de {{name}}"
+    "reasonFor": "Motivo de {{name}}",
+    "inactiveHiddenNotice_one": "{{count}} jugador inactivo no se muestra aquí. Actívalo desde Jugadores para tomar su asistencia.",
+    "inactiveHiddenNotice_other": "{{count}} jugadores inactivos no se muestran aquí. Actívalos desde Jugadores para tomar su asistencia."
   },
   "trainingMode": {
     "exit": "Salir del modo entrenamiento",

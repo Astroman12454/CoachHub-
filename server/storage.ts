@@ -339,6 +339,7 @@ export interface IStorage {
   getPlayerById(id: number, teamId: number): Promise<Player | undefined>;
   getPlayerByIdUnscoped(id: number): Promise<Player | undefined>;
   createPlayer(teamId: number, player: InsertPlayer): Promise<Player>;
+  createPlayers(teamId: number, newPlayers: { name: string; jerseyNumber?: number | null }[]): Promise<Player[]>;
   updatePlayer(id: number, teamId: number, player: Partial<InsertPlayer>): Promise<Player | undefined>;
   deletePlayer(id: number, teamId: number): Promise<boolean>;
   getActivePlayersCount(teamId: number): Promise<number>;
@@ -2274,10 +2275,24 @@ export class DatabaseStorage implements IStorage {
         ...insertPlayer,
         teamId,
         position: insertPlayer.position || null,
-        isActive: insertPlayer.isActive || null
+        // Default to active — a player with no explicit isActive shouldn't
+        // silently vanish from attendance/active-player counts. `?? 1`
+        // (not `|| 1`) so an explicit 0 (deliberately inactive) survives.
+        isActive: insertPlayer.isActive ?? 1
       })
       .returning();
     return player;
+  }
+
+  // Quick roster entry (see bulkCreatePlayersSchema) — one insert for the
+  // whole batch rather than N round trips, same active-by-default rule as
+  // the single-player path above.
+  async createPlayers(teamId: number, newPlayers: { name: string; jerseyNumber?: number | null }[]): Promise<Player[]> {
+    if (newPlayers.length === 0) return [];
+    return await db
+      .insert(players)
+      .values(newPlayers.map((p) => ({ name: p.name, jerseyNumber: p.jerseyNumber ?? null, teamId, isActive: 1 })))
+      .returning();
   }
 
   async updatePlayer(id: number, teamId: number, updateData: Partial<InsertPlayer>): Promise<Player | undefined> {

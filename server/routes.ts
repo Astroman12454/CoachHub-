@@ -21,6 +21,7 @@ import {
   saveExerciseDiagramSchema,
   insertTrainingSessionSchema,
   insertPlayerSchema,
+  bulkCreatePlayersSchema,
   insertAttendanceSchema,
   insertTeamSchema,
   createGameWithStatsSchema,
@@ -46,6 +47,7 @@ import {
   type TrainingSession,
 } from "@shared/schema";
 import {
+  isPaidPlan,
   canCreateTeam,
   canCreatePlayer,
   canCreatePlay,
@@ -1674,6 +1676,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const player = await storage.createPlayer(teamId, playerData);
       res.status(201).json({ ...player, medicalNotesWithheld });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid player data" });
+    }
+  });
+
+  // Quick roster entry — a coach pastes/types a whole team (name + optional
+  // jersey number) at once instead of opening "Add Player" N times. No
+  // medical/consent fields exist at this point, so there's nothing to gate
+  // on minors here (see the singular POST above for that logic).
+  app.post("/api/players/bulk", requireTeam, async (req, res) => {
+    try {
+      const teamId = req.session.currentTeamId!;
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(effectiveAccountId);
+
+      const { players: newPlayers } = bulkCreatePlayersSchema.parse(req.body);
+
+      const currentPlayerCount = await storage.getPlayerCount(teamId);
+      if (!isPaidPlan(account?.plan ?? "free")) {
+        const remaining = FREE_PLAN_PLAYER_LIMIT - currentPlayerCount;
+        if (newPlayers.length > Math.max(remaining, 0)) {
+          return res.status(403).json({
+            message: `Free plan is limited to ${FREE_PLAN_PLAYER_LIMIT} players — only room for ${Math.max(remaining, 0)} more. Upgrade to add the rest.`,
+          });
+        }
+      }
+
+      const created = await storage.createPlayers(teamId, newPlayers);
+      res.status(201).json(created);
     } catch (error) {
       res.status(400).json({ message: "Invalid player data" });
     }

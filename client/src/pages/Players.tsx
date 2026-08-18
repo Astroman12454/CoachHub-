@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle, Pencil, Crown } from "lucide-react";
+import { UserPlus, Users, CheckCircle2, Target, PieChart, Link2, HeartPulse, Shuffle, Pencil, Crown, ListPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import PlayerForm from "@/components/PlayerForm";
+import BulkAddPlayersDialog from "@/components/BulkAddPlayersDialog";
 import PlayerPortalDialog from "@/components/PlayerPortalDialog";
 import ScrimmageBalancerDialog from "@/components/ScrimmageBalancerDialog";
 import StatCard from "@/components/StatCard";
@@ -25,6 +26,7 @@ export default function Players() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [filterActive, setFilterActive] = useState<string>("all");
   const [filterPosition, setFilterPosition] = useState<string>("all");
@@ -205,6 +207,14 @@ export default function Players() {
             >
               <Shuffle className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
               {t("scrimmageBalancer.openButton")}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setIsBulkAddOpen(true)}
+            >
+              <ListPlus className="w-4 h-4 mr-1.5" strokeWidth={1.75} aria-hidden="true" />
+              {t("bulkAddPlayers.openButton")}
             </Button>
             <Button
               className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
@@ -391,6 +401,10 @@ export default function Players() {
       <PlayerPortalDialog player={portalPlayer} onOpenChange={(open) => !open && setPortalPlayer(null)} />
 
       <ScrimmageBalancerDialog open={isBalancerOpen} onOpenChange={setIsBalancerOpen} players={players} />
+
+      {isBulkAddOpen && (
+        <BulkAddPlayersDialog isOpen={isBulkAddOpen} onClose={() => setIsBulkAddOpen(false)} />
+      )}
     </div>
   );
 }
