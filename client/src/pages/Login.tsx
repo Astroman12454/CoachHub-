@@ -67,7 +67,7 @@ export default function Login() {
           <div className="w-14 h-14 basketball-orange rounded-lg flex items-center justify-center mb-4">
             <BrandMark className="w-7 h-7 text-white" />
           </div>
-          <h1 className="font-display font-bold uppercase tracking-tight text-2xl text-foreground">Coach Hub</h1>
+          <h1 className="font-display font-bold uppercase tracking-tight text-2xl text-foreground">Backboard</h1>
           <p className="text-muted-foreground text-sm">{t("sidebar.tagline")}</p>
         </div>
 

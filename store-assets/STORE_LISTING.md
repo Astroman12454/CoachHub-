@@ -1,4 +1,4 @@
-# Ficha de tienda — Coach Hub
+# Ficha de tienda — Backboard
 
 Todo lo necesario para rellenar App Store Connect y Google Play Console.
 Copia/pega directo; los tamaños de imagen y límites de caracteres ya están
@@ -8,7 +8,7 @@ respetados.
 
 **Nombre de la app** (iOS: máx. 30 car.) — 30/30
 ```
-Coach Hub: Basketball Training
+Backboard: Basketball Training
 ```
 
 **Subtítulo** (solo iOS, máx. 30 car.) — 27/30
@@ -23,7 +23,7 @@ Plan practices, track games and attendance, and run your basketball team.
 
 **Descripción larga** (ambas tiendas, máx. 4000 car.)
 ```
-Coach Hub is the simple way for amateur basketball coaches to run a team —
+Backboard is the simple way for amateur basketball coaches to run a team —
 no spreadsheets, no group chats full of "who's coming tonight?"
 
 ROSTER MANAGEMENT

@@ -94,7 +94,7 @@ test.describe("accessibility (axe)", () => {
       await page.click('button:has-text("Create Account")');
 
       // Step 1: pick a team color, then move into the tour.
-      await page.waitForSelector("text=Welcome to CoachHub!");
+      await page.waitForSelector("text=Welcome to Backboard!");
       await page.click('button[aria-label="Teal"]');
       const colorScan = await scan(page);
       expect(summarize(colorScan.violations)).toEqual([]);

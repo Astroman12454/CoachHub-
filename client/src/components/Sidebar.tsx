@@ -151,7 +151,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <BrandMark className="w-5 h-5 text-white" />
         </div>
         <div className="min-w-0">
-          <h1 className="font-display font-bold text-lg leading-tight tracking-tight truncate">Coach Hub</h1>
+          <h1 className="font-display font-bold text-lg leading-tight tracking-tight truncate">Backboard</h1>
           <p className="text-xs text-rail-muted truncate">{t("sidebar.tagline")}</p>
         </div>
       </div>

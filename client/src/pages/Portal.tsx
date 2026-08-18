@@ -224,7 +224,7 @@ export default function Portal() {
             {t("portal.poweredByPrefix")}
             <span className="inline-flex items-center gap-1 font-medium text-foreground">
               <BrandMark className="w-3 h-3" />
-              Coach Hub
+              Backboard
             </span>
           </p>
           <p className="text-xs text-muted-foreground">

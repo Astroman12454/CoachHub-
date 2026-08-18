@@ -69,7 +69,7 @@
     "creatingAccount": "Creando cuenta...",
     "logIn": "Iniciar Sesión",
     "createAccount": "Crear Cuenta",
-    "newToCoachHub": "¿Nuevo en Coach Hub?",
+    "newToCoachHub": "¿Nuevo en Backboard?",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "createAnAccount": "Crear una cuenta",
     "logInAction": "Iniciar sesión",
@@ -1266,7 +1266,7 @@
     "couldntSave": "No se pudo guardar tu nombre público"
   },
   "welcomeOnboardingDialog": {
-    "colorTitle": "¡Bienvenido a CoachHub!",
+    "colorTitle": "¡Bienvenido a Backboard!",
     "colorDescription": "Elegí un color para tu equipo — se va a ver en toda la app. Podés cambiarlo cuando quieras desde Ajustes del entrenador.",
     "tourScheduleTitle": "Planificá tu semana",
     "tourScheduleDescription": "Programá los entrenamientos, registrá quién asiste, y mirá de un vistazo el ritmo de tu equipo.",
@@ -1275,7 +1275,7 @@
     "tourPlaybookTitle": "Dibujá y animá jugadas",
     "tourPlaybookDescription": "Diagramá jugadas sobre una cancha real, agregá el movimiento de los jugadores, y mirá cómo se animan paso a paso.",
     "tourEvaluationsTitle": "Puntuá a tu plantel automáticamente",
-    "tourEvaluationsDescription": "Cronometrá un sprint o contá tiros encestados — CoachHub lo convierte en un puntaje de 1 a 100 para cada jugador.",
+    "tourEvaluationsDescription": "Cronometrá un sprint o contá tiros encestados — Backboard lo convierte en un puntaje de 1 a 100 para cada jugador.",
     "followTitle": "Seguí a algún entrenador",
     "followDescription": "Seguí a algunos entrenadores para ver sus ejercicios, jugadas y pruebas de evaluación en tus feeds de Comunidad.",
     "nextStep": "Siguiente",
@@ -1286,8 +1286,8 @@
   "helpChat": {
     "openHelp": "Preguntarle al asistente de IA",
     "title": "Asistente de IA",
-    "description": "Preguntá cómo hacer algo en CoachHub — dónde está una función, o cómo funciona una pantalla.",
-    "emptyState": "Preguntá lo que quieras sobre cómo usar CoachHub — \"¿cómo armo un horario recurrente?\" o \"¿dónde comparto una jugada?\"",
+    "description": "Preguntá cómo hacer algo en Backboard — dónde está una función, o cómo funciona una pantalla.",
+    "emptyState": "Preguntá lo que quieras sobre cómo usar Backboard — \"¿cómo armo un horario recurrente?\" o \"¿dónde comparto una jugada?\"",
     "placeholder": "Escribí una pregunta…",
     "send": "Enviar",
     "thinking": "Pensando…",
@@ -1351,7 +1351,7 @@
   },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",
-    "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Coach Hub en tu navegador y mejorá tu plan desde ahí."
+    "nativeUpgradeDescription": "Para mantener las cosas simples entre tiendas de apps, la mejora de plan se hace desde la web — abrí Backboard en tu navegador y mejorá tu plan desde ahí."
   },
   "accountSettings": {
     "title": "Cuenta",
@@ -1446,7 +1446,7 @@
     "perYear": "/año",
     "getStarted": "Empezar",
     "upgradeTo": "Mejorar a {{plan}}",
-    "backToApp": "Volver a Coach Hub",
+    "backToApp": "Volver a Backboard",
     "free": {
       "name": "Gratis",
       "price": "$0",
@@ -1492,8 +1492,8 @@
   "privacy": {
     "title": "Política de Privacidad",
     "lastUpdated": "Última actualización: {{date}}",
-    "intro": "Coach Hub está operado por Luis Barrionuevo, una persona física con domicilio en España (el \"responsable del tratamiento\", \"nosotros\"). Esta política explica qué datos personales recopilamos a través de la aplicación, por qué, y qué derechos tienes sobre ellos conforme al marco de protección de datos de la UE/España (RGPD y LOPDGDD).",
-    "backToCoachHub": "Volver a Coach Hub",
+    "intro": "Backboard está operado por Luis Barrionuevo, una persona física con domicilio en España (el \"responsable del tratamiento\", \"nosotros\"). Esta política explica qué datos personales recopilamos a través de la aplicación, por qué, y qué derechos tienes sobre ellos conforme al marco de protección de datos de la UE/España (RGPD y LOPDGDD).",
+    "backToCoachHub": "Volver a Backboard",
     "sections": {
       "dataCollection": {
         "heading": "1. Datos que recopilamos",
@@ -1511,7 +1511,7 @@
       },
       "minors": {
         "heading": "3. Datos de jugadores y menores",
-        "body": "Las cuentas de Coach Hub las crea y controla el entrenador, que debe ser mayor de edad (18+). Los jugadores no crean cuentas ni inician sesión por sí mismos — el entrenador introduce y gestiona su plantilla. Las plantillas de jugadores suelen incluir menores de edad. Si introduces datos de jugadores menores de 18 años, eres responsable de contar con una base legítima para hacerlo (por ejemplo, tu rol como entrenador/club y, cuando sea necesario, el consentimiento de un padre, madre o tutor) y de mantener esos datos exactos y eliminarlos cuando ya no sean necesarios. Coach Hub no dirige el servicio a menores y no permite conscientemente que registren sus propias cuentas. Las notas médicas (alergias, condiciones u otra información de salud) son una categoría especial de datos según el art. 9 del RGPD, con un nivel de protección más alto que el resto de la ficha del jugador: antes de registrarlas necesitas el consentimiento explícito del padre, madre o tutor (o del propio jugador si ya es mayor de edad), no basta con la base legítima general que cubre el resto de la plantilla."
+        "body": "Las cuentas de Backboard las crea y controla el entrenador, que debe ser mayor de edad (18+). Los jugadores no crean cuentas ni inician sesión por sí mismos — el entrenador introduce y gestiona su plantilla. Las plantillas de jugadores suelen incluir menores de edad. Si introduces datos de jugadores menores de 18 años, eres responsable de contar con una base legítima para hacerlo (por ejemplo, tu rol como entrenador/club y, cuando sea necesario, el consentimiento de un padre, madre o tutor) y de mantener esos datos exactos y eliminarlos cuando ya no sean necesarios. Backboard no dirige el servicio a menores y no permite conscientemente que registren sus propias cuentas. Las notas médicas (alergias, condiciones u otra información de salud) son una categoría especial de datos según el art. 9 del RGPD, con un nivel de protección más alto que el resto de la ficha del jugador: antes de registrarlas necesitas el consentimiento explícito del padre, madre o tutor (o del propio jugador si ya es mayor de edad), no basta con la base legítima general que cubre el resto de la plantilla."
       },
       "sharing": {
         "heading": "4. Con quién compartimos datos",
@@ -1558,15 +1558,15 @@
   },
   "terms": {
     "title": "Términos de Uso",
-    "intro": "Estos términos rigen tu uso de Coach Hub, operado por Luis Barrionuevo, una persona física con domicilio en España (\"nosotros\"). Al crear una cuenta los aceptas. Si no estás de acuerdo, no uses la aplicación.",
+    "intro": "Estos términos rigen tu uso de Backboard, operado por Luis Barrionuevo, una persona física con domicilio en España (\"nosotros\"). Al crear una cuenta los aceptas. Si no estás de acuerdo, no uses la aplicación.",
     "sections": {
       "service": {
         "heading": "1. El servicio",
-        "body": "Coach Hub ayuda a entrenadores de baloncesto amateur a gestionar un equipo: plantillas, sesiones de entrenamiento, una biblioteca de ejercicios y control de asistencia."
+        "body": "Backboard ayuda a entrenadores de baloncesto amateur a gestionar un equipo: plantillas, sesiones de entrenamiento, una biblioteca de ejercicios y control de asistencia."
       },
       "accounts": {
         "heading": "2. Cuentas",
-        "body": "Debes tener al menos 18 años para crear una cuenta — las cuentas de Coach Hub son para entrenadores, no para los propios jugadores. Eres responsable de mantener seguras tus credenciales de acceso y de toda la actividad realizada con tu cuenta. Avísanos de inmediato si sospechas de un acceso no autorizado."
+        "body": "Debes tener al menos 18 años para crear una cuenta — las cuentas de Backboard son para entrenadores, no para los propios jugadores. Eres responsable de mantener seguras tus credenciales de acceso y de toda la actividad realizada con tu cuenta. Avísanos de inmediato si sospechas de un acceso no autorizado."
       },
       "plans": {
         "heading": "3. Planes y pago",
@@ -1595,7 +1595,7 @@
       },
       "liability": {
         "heading": "7. Disponibilidad y responsabilidad",
-        "body": "Hacemos todo lo posible por mantener Coach Hub disponible y tus datos seguros, pero el servicio se presta \"tal cual\", sin garantizar disponibilidad ininterrumpida. En la máxima medida permitida por la ley, no somos responsables de daños indirectos ni de la pérdida de datos derivados de interrupciones, errores o fallos de servicios de terceros (por ejemplo, nuestro proveedor de alojamiento o de pagos). Nada aquí limita la responsabilidad cuando la ley no permita limitarla, ni afecta a los derechos legales que tengas como consumidor."
+        "body": "Hacemos todo lo posible por mantener Backboard disponible y tus datos seguros, pero el servicio se presta \"tal cual\", sin garantizar disponibilidad ininterrumpida. En la máxima medida permitida por la ley, no somos responsables de daños indirectos ni de la pérdida de datos derivados de interrupciones, errores o fallos de servicios de terceros (por ejemplo, nuestro proveedor de alojamiento o de pagos). Nada aquí limita la responsabilidad cuando la ley no permita limitarla, ni afecta a los derechos legales que tengas como consumidor."
       },
       "termination": {
         "heading": "8. Suspensión y cancelación",
@@ -1617,7 +1617,7 @@
   },
   "support": {
     "title": "Soporte",
-    "intro": "¿Necesitas ayuda con Coach Hub, encontraste un error, o tienes una pregunta sobre tu cuenta o facturación? Escríbenos y te responderemos lo antes posible:",
+    "intro": "¿Necesitas ayuda con Backboard, encontraste un error, o tienes una pregunta sobre tu cuenta o facturación? Escríbenos y te responderemos lo antes posible:",
     "commonQuestions": "Preguntas frecuentes",
     "faqItems": [
       { "bold": "¿Cómo mejoro o cancelo mi plan?", "text": "Abre el menú lateral en la aplicación y toca la insignia de tu plan — eso te lleva al checkout o portal de facturación de Stripe, donde puedes mejorar tu plan, cambiar los datos de pago o cancelar cuando quieras." },

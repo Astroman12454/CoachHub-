@@ -69,7 +69,7 @@
     "creatingAccount": "Creating account...",
     "logIn": "Log In",
     "createAccount": "Create Account",
-    "newToCoachHub": "New to Coach Hub?",
+    "newToCoachHub": "New to Backboard?",
     "alreadyHaveAccount": "Already have an account?",
     "createAnAccount": "Create an account",
     "logInAction": "Log in",
@@ -1266,7 +1266,7 @@
     "couldntSave": "Couldn't save your public name"
   },
   "welcomeOnboardingDialog": {
-    "colorTitle": "Welcome to CoachHub!",
+    "colorTitle": "Welcome to Backboard!",
     "colorDescription": "Pick a color for your team — it'll show up across the whole app. You can change it anytime from Coach Settings.",
     "tourScheduleTitle": "Plan your week",
     "tourScheduleDescription": "Schedule practices, track who shows up, and see your team's rhythm at a glance.",
@@ -1275,7 +1275,7 @@
     "tourPlaybookTitle": "Draw and animate plays",
     "tourPlaybookDescription": "Sketch plays on a real court, add player movement, and watch them animate step by step.",
     "tourEvaluationsTitle": "Score your roster automatically",
-    "tourEvaluationsDescription": "Time a sprint or count made shots — CoachHub turns it into a 1-100 score for every player.",
+    "tourEvaluationsDescription": "Time a sprint or count made shots — Backboard turns it into a 1-100 score for every player.",
     "followTitle": "Follow a coach or two",
     "followDescription": "Follow a few coaches to see their exercises, plays, and evaluation tests in your Community feeds.",
     "nextStep": "Next",
@@ -1286,8 +1286,8 @@
   "helpChat": {
     "openHelp": "Ask the AI helper",
     "title": "AI Helper",
-    "description": "Ask how to do something in CoachHub — where a feature lives, or how a screen works.",
-    "emptyState": "Ask anything about using CoachHub — \"how do I set up a recurring schedule?\" or \"where do I share a play?\"",
+    "description": "Ask how to do something in Backboard — where a feature lives, or how a screen works.",
+    "emptyState": "Ask anything about using Backboard — \"how do I set up a recurring schedule?\" or \"where do I share a play?\"",
     "placeholder": "Ask a question…",
     "send": "Send",
     "thinking": "Thinking…",
@@ -1351,7 +1351,7 @@
   },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",
-    "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Coach Hub in your browser and upgrade from there."
+    "nativeUpgradeDescription": "To keep things simple across app stores, upgrading happens on the web — open Backboard in your browser and upgrade from there."
   },
   "accountSettings": {
     "title": "Account",
@@ -1446,7 +1446,7 @@
     "perYear": "/year",
     "getStarted": "Get Started",
     "upgradeTo": "Upgrade to {{plan}}",
-    "backToApp": "Back to Coach Hub",
+    "backToApp": "Back to Backboard",
     "free": {
       "name": "Free",
       "price": "$0",
@@ -1492,8 +1492,8 @@
   "privacy": {
     "title": "Privacy Policy",
     "lastUpdated": "Last updated: {{date}}",
-    "intro": "Coach Hub is operated by Luis Barrionuevo, an individual based in Spain (the \"controller\", \"we\", \"us\"). This policy explains what personal data we collect through the app, why, and what rights you have over it under the EU/Spanish data protection framework (GDPR and LOPDGDD).",
-    "backToCoachHub": "Back to Coach Hub",
+    "intro": "Backboard is operated by Luis Barrionuevo, an individual based in Spain (the \"controller\", \"we\", \"us\"). This policy explains what personal data we collect through the app, why, and what rights you have over it under the EU/Spanish data protection framework (GDPR and LOPDGDD).",
+    "backToCoachHub": "Back to Backboard",
     "sections": {
       "dataCollection": {
         "heading": "1. Data we collect",
@@ -1511,7 +1511,7 @@
       },
       "minors": {
         "heading": "3. Player data and minors",
-        "body": "Coach Hub accounts are created and controlled by the coach, who must be an adult (18+). Players do not create accounts or log in themselves — the coach enters and manages their roster. Player rosters commonly include minors. If you enter data about players under 18, you are responsible for having a legitimate basis to do so (e.g. your role as coach/club and, where required, consent from a parent or guardian) and for keeping that data accurate and deleting it when it's no longer needed. Coach Hub does not direct the service at children and does not knowingly allow minors to register their own accounts. Medical notes (allergies, conditions, or other health information) are a special category of data under GDPR Article 9, held to a higher standard than the rest of a player's file: before recording them you need explicit consent from the parent or guardian (or from the player themselves if already an adult) — the general legitimate basis covering the rest of the roster isn't enough on its own."
+        "body": "Backboard accounts are created and controlled by the coach, who must be an adult (18+). Players do not create accounts or log in themselves — the coach enters and manages their roster. Player rosters commonly include minors. If you enter data about players under 18, you are responsible for having a legitimate basis to do so (e.g. your role as coach/club and, where required, consent from a parent or guardian) and for keeping that data accurate and deleting it when it's no longer needed. Backboard does not direct the service at children and does not knowingly allow minors to register their own accounts. Medical notes (allergies, conditions, or other health information) are a special category of data under GDPR Article 9, held to a higher standard than the rest of a player's file: before recording them you need explicit consent from the parent or guardian (or from the player themselves if already an adult) — the general legitimate basis covering the rest of the roster isn't enough on its own."
       },
       "sharing": {
         "heading": "4. Who we share data with",
@@ -1558,15 +1558,15 @@
   },
   "terms": {
     "title": "Terms of Use",
-    "intro": "These terms govern your use of Coach Hub, operated by Luis Barrionuevo, an individual based in Spain (\"we\", \"us\"). By creating an account you agree to them. If you don't agree, don't use the app.",
+    "intro": "These terms govern your use of Backboard, operated by Luis Barrionuevo, an individual based in Spain (\"we\", \"us\"). By creating an account you agree to them. If you don't agree, don't use the app.",
     "sections": {
       "service": {
         "heading": "1. The service",
-        "body": "Coach Hub helps amateur basketball coaches manage a team: rosters, training sessions, an exercise library, and attendance tracking."
+        "body": "Backboard helps amateur basketball coaches manage a team: rosters, training sessions, an exercise library, and attendance tracking."
       },
       "accounts": {
         "heading": "2. Accounts",
-        "body": "You must be at least 18 years old to create an account — Coach Hub accounts are for coaches, not for the players themselves. You're responsible for keeping your login credentials secure and for all activity under your account. Let us know right away if you suspect unauthorized access."
+        "body": "You must be at least 18 years old to create an account — Backboard accounts are for coaches, not for the players themselves. You're responsible for keeping your login credentials secure and for all activity under your account. Let us know right away if you suspect unauthorized access."
       },
       "plans": {
         "heading": "3. Plans and payment",
@@ -1595,7 +1595,7 @@
       },
       "liability": {
         "heading": "7. Availability and liability",
-        "body": "We do our best to keep Coach Hub available and your data safe, but the service is provided \"as is,\" without guaranteeing uninterrupted availability. To the maximum extent permitted by law, we're not liable for indirect damages or lost data resulting from outages, bugs, or third-party service failures (e.g. our hosting or payment provider). Nothing here limits liability where the law doesn't allow it to be limited, or affects the statutory rights you have as a consumer."
+        "body": "We do our best to keep Backboard available and your data safe, but the service is provided \"as is,\" without guaranteeing uninterrupted availability. To the maximum extent permitted by law, we're not liable for indirect damages or lost data resulting from outages, bugs, or third-party service failures (e.g. our hosting or payment provider). Nothing here limits liability where the law doesn't allow it to be limited, or affects the statutory rights you have as a consumer."
       },
       "termination": {
         "heading": "8. Suspension and termination",
@@ -1617,7 +1617,7 @@
   },
   "support": {
     "title": "Support",
-    "intro": "Need help with Coach Hub, found a bug, or have a question about your account or billing? Email us and we'll get back to you as soon as we can:",
+    "intro": "Need help with Backboard, found a bug, or have a question about your account or billing? Email us and we'll get back to you as soon as we can:",
     "commonQuestions": "Common questions",
     "faqItems": [
       { "bold": "How do I upgrade or cancel my plan?", "text": "Open the sidebar in the app and tap your plan badge — that takes you to Stripe's checkout or billing portal, where you can upgrade, change payment details, or cancel anytime." },

@@ -22,13 +22,13 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   await getClient().emails.send({
     from: FROM_EMAIL!,
     to,
-    subject: "Reset your Coach Hub password",
+    subject: "Reset your Backboard password",
     html: `
-      <p>Someone asked to reset the password for this Coach Hub account.</p>
+      <p>Someone asked to reset the password for this Backboard account.</p>
       <p><a href="${resetUrl}">Click here to choose a new password</a>. This link works for 1 hour.</p>
       <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
     `,
-    text: `Someone asked to reset the password for this Coach Hub account.\n\nOpen this link to choose a new password (works for 1 hour):\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
+    text: `Someone asked to reset the password for this Backboard account.\n\nOpen this link to choose a new password (works for 1 hour):\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
   });
 }
 
@@ -36,13 +36,13 @@ export async function sendCoachInviteEmail(to: string, ownerEmail: string, accep
   await getClient().emails.send({
     from: FROM_EMAIL!,
     to,
-    subject: `${ownerEmail} invited you to coach on Coach Hub`,
+    subject: `${ownerEmail} invited you to coach on Backboard`,
     html: `
-      <p><strong>${ownerEmail}</strong> invited you to join their team as a coach on Coach Hub.</p>
+      <p><strong>${ownerEmail}</strong> invited you to join their team as a coach on Backboard.</p>
       <p><a href="${acceptUrl}">Click here to accept the invitation</a>. This link works for 7 days.</p>
       <p>If you weren't expecting this, you can safely ignore this email.</p>
     `,
-    text: `${ownerEmail} invited you to join their team as a coach on Coach Hub.\n\nOpen this link to accept (works for 7 days):\n${acceptUrl}\n\nIf you weren't expecting this, you can safely ignore this email.`,
+    text: `${ownerEmail} invited you to join their team as a coach on Backboard.\n\nOpen this link to accept (works for 7 days):\n${acceptUrl}\n\nIf you weren't expecting this, you can safely ignore this email.`,
   });
 }
 
@@ -56,13 +56,13 @@ export async function sendGuardianAuthorizationEmail(
   await getClient().emails.send({
     from: FROM_EMAIL!,
     to,
-    subject: `${coachEmail} is requesting your authorization on Coach Hub`,
+    subject: `${coachEmail} is requesting your authorization on Backboard`,
     html: `
-      <p><strong>${coachEmail}</strong>, who coaches <strong>${playerName}</strong> on Coach Hub, is asking for your authorization to record: ${purposeLabel}.</p>
+      <p><strong>${coachEmail}</strong>, who coaches <strong>${playerName}</strong> on Backboard, is asking for your authorization to record: ${purposeLabel}.</p>
       <p><a href="${decisionUrl}">Click here to review and respond</a>. This link works for 7 days.</p>
       <p>If you weren't expecting this, you can safely ignore this email — nothing is recorded without your response.</p>
     `,
-    text: `${coachEmail}, who coaches ${playerName} on Coach Hub, is asking for your authorization to record: ${purposeLabel}.\n\nOpen this link to review and respond (works for 7 days):\n${decisionUrl}\n\nIf you weren't expecting this, you can safely ignore this email — nothing is recorded without your response.`,
+    text: `${coachEmail}, who coaches ${playerName} on Backboard, is asking for your authorization to record: ${purposeLabel}.\n\nOpen this link to review and respond (works for 7 days):\n${decisionUrl}\n\nIf you weren't expecting this, you can safely ignore this email — nothing is recorded without your response.`,
   });
 }
 
@@ -88,7 +88,7 @@ export async function sendWeeklyDigestEmail(to: string, data: WeeklyDigestData):
   await getClient().emails.send({
     from: FROM_EMAIL!,
     to,
-    subject: `${data.teamName} — your weekly Coach Hub update`,
+    subject: `${data.teamName} — your weekly Backboard update`,
     html: `
       <p>Here's how <strong>${data.teamName}</strong>'s week went:</p>
       <ul>
@@ -96,7 +96,7 @@ export async function sendWeeklyDigestEmail(to: string, data: WeeklyDigestData):
         <li>${attendanceLine}</li>
       </ul>
       <p>${nextLine}</p>
-      <p><a href="${data.appUrl}">Open Coach Hub</a></p>
+      <p><a href="${data.appUrl}">Open Backboard</a></p>
     `,
     text: `Here's how ${data.teamName}'s week went:\n\n- ${sessionsLine}\n- ${attendanceLine}\n\n${nextLine}\n\n${data.appUrl}`,
   });

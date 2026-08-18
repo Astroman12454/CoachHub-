@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["apple-touch-icon.png"],
       manifest: {
-        name: "Coach Hub - Basketball Training",
-        short_name: "Coach Hub",
+        name: "Backboard - Basketball Training",
+        short_name: "Backboard",
         description: "Planificador de entrenamientos de baloncesto: ejercicios, sesiones, jugadores y asistencia.",
         theme_color: "#CC3600",
         background_color: "#CC3600",

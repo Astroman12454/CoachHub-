@@ -15,7 +15,7 @@ interface InviteInfo {
 }
 
 // Public — a coach opens this from the invite email before necessarily
-// having a Coach Hub account at all. Signup/login happen inline here
+// having a Backboard account at all. Signup/login happen inline here
 // (reusing useAuth's mutations, same as Login.tsx) rather than bouncing
 // through the normal login page and back, since there's nowhere for that
 // page to remember "come back and accept this invite" afterward.

@@ -1,5 +1,5 @@
-// One-time convenience script: creates the "Coach Hub Paid Plan" and
-// "Coach Hub Club Plan" products, each with a monthly and an annual
+// One-time convenience script: creates the "Backboard Paid Plan" and
+// "Backboard Club Plan" products, each with a monthly and an annual
 // recurring price, in your Stripe account, so you don't have to click
 // through the dashboard. Run once, after setting STRIPE_SECRET_KEY:
 //
@@ -17,7 +17,7 @@ async function main() {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
   const paidProduct = await stripe.products.create({
-    name: "Coach Hub Paid Plan",
+    name: "Backboard Paid Plan",
     description: "Unlimited teams and players, a custom exercise library, and full attendance history.",
   });
   const paidMonthly = await stripe.prices.create({
@@ -34,7 +34,7 @@ async function main() {
   });
 
   const clubProduct = await stripe.products.create({
-    name: "Coach Hub Club Plan",
+    name: "Backboard Club Plan",
     description: "Everything in Paid, plus up to 3 coaches sharing access to the same teams.",
   });
   const clubMonthly = await stripe.prices.create({

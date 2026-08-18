@@ -1,8 +1,8 @@
-# Coach Hub - Basketball Training Planner
+# Backboard - Basketball Training Planner
 
 ## Overview
 
-Coach Hub is a full-stack web application designed to help basketball coaches plan and manage training sessions. The application provides tools for creating and organizing exercises, scheduling training sessions, and tracking team activities. Built with modern web technologies, it offers an intuitive interface for coaches to streamline their training preparation and management workflows.
+Backboard is a full-stack web application designed to help basketball coaches plan and manage training sessions. The application provides tools for creating and organizing exercises, scheduling training sessions, and tracking team activities. Built with modern web technologies, it offers an intuitive interface for coaches to streamline their training preparation and management workflows.
 
 ## System Architecture
 

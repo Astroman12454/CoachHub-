@@ -1,4 +1,4 @@
-# Coach Hub — App Store / Play Store
+# Backboard — App Store / Play Store
 
 Checklist para terminar de publicar la app. Capacitor ya está instalado y
 configurado; esto es lo que falta y en qué orden conviene hacerlo.

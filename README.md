@@ -1,6 +1,6 @@
-# Coach Hub
+# Backboard
 
-Coach Hub es una aplicación web full-stack para ayudar a entrenadores de baloncesto a planificar y gestionar sus entrenamientos: biblioteca de ejercicios, sesiones de entrenamiento, jugadores y asistencia.
+Backboard es una aplicación web full-stack para ayudar a entrenadores de baloncesto a planificar y gestionar sus entrenamientos: biblioteca de ejercicios, sesiones de entrenamiento, jugadores y asistencia.
 
 ## Stack
 

@@ -14,7 +14,7 @@ interface GuardianAuthorizationInfo {
 }
 
 // Completely standalone, no session — the guardian is never asked to
-// create a Coach Hub account. Mirrors Portal.tsx/AcceptInvite.tsx: a
+// create a Backboard account. Mirrors Portal.tsx/AcceptInvite.tsx: a
 // token-scoped GET for display, then one mutation for the guardian's
 // one-time decision (see server/guardian-authorization.ts).
 export default function GuardianAuthorization() {
