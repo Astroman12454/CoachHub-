@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings, Flag } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings, Flag, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -106,8 +106,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   // accepted an invite has full access to the club's teams but doesn't
   // manage who else is on it.
   const canManageCoaches = isClubPlan(account?.plan ?? "free") && !isClubMember;
+  // Visible to the owner AND any coach who joined via an invite — unlike
+  // Manage Coaches below, which stays owner-only (it's the seat-management
+  // action, not just visibility into the club).
+  const isInAClub = isClubPlan(account?.plan ?? "free") || isClubMember;
   const items = [
-    ...(canManageCoaches ? [...navigation, { key: "nav.coaches", href: "/settings/coaches", icon: UserCog }] : navigation),
+    ...(isInAClub ? [...navigation, { key: "nav.club", href: "/club", icon: Building2 }] : navigation),
+    ...(canManageCoaches ? [{ key: "nav.coaches", href: "/settings/coaches", icon: UserCog }] : []),
     // Every plan gets this one, unlike Coaches above — it's where the
     // account-level "delete my account" action lives (see AccountSettings),
     // and every coach needs a way to reach it, not just Club owners.

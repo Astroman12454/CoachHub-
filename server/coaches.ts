@@ -2,7 +2,7 @@ import crypto from "crypto";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { isEmailConfigured, sendCoachInviteEmail } from "./email";
-import { inviteCoachSchema, CLUB_PLAN_SEAT_LIMIT } from "@shared/schema";
+import { inviteCoachSchema, upsertClubSchema, CLUB_PLAN_SEAT_LIMIT } from "@shared/schema";
 import { isClubPlan } from "@shared/entitlements";
 
 function originOf(req: Request): string {
@@ -26,7 +26,57 @@ async function requireClubOwner(req: Request, res: Response, next: NextFunction)
   next();
 }
 
+// Looser than requireClubOwner: a coach who joined someone else's Club via
+// accountMemberships already sees all of that club's teams, so they should
+// also see its name/logo and the aggregate overview — just not rename it or
+// change its seats, which stays owner-only (requireClubOwner above).
+async function requireClubMember(req: Request, res: Response, next: NextFunction) {
+  const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+  const account = await storage.getAccountById(effectiveAccountId);
+  if (!account || !isClubPlan(account.plan)) {
+    return res.status(403).json({ message: "This is a Club plan feature." });
+  }
+  next();
+}
+
 export function registerCoachRoutes(app: Express) {
+  app.get("/api/club", requireClubMember, async (req: Request, res: Response) => {
+    try {
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const club = await storage.getClubByAccountId(effectiveAccountId);
+      res.json(club ?? null);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch club" });
+    }
+  });
+
+  // Owner-only (not requireClubMember) — same reasoning as every other
+  // write in this file: a joined coach can see the club, only its owner
+  // can rename it or change its logo.
+  app.put("/api/club", requireClubOwner, async (req: Request, res: Response) => {
+    try {
+      const parsed = upsertClubSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid club data" });
+      }
+      const club = await storage.upsertClub(req.session.accountId!, parsed.data);
+      res.json(club);
+    } catch {
+      res.status(500).json({ message: "Failed to save club" });
+    }
+  });
+
+  app.get("/api/club/overview", requireClubMember, async (req: Request, res: Response) => {
+    try {
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const overview = await storage.getClubOverview(effectiveAccountId);
+      res.json(overview);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch club overview" });
+    }
+  });
+
+
   app.get("/api/coaches", requireClubOwner, async (req: Request, res: Response) => {
     try {
       const accountId = req.session.accountId!;

@@ -45,6 +45,7 @@ const GuardianAuthorization = lazy(() => import("@/pages/GuardianAuthorization")
 const CoachSettings = lazy(() => import("@/pages/CoachSettings"));
 const AccountSettings = lazy(() => import("@/pages/AccountSettings"));
 const AdminReports = lazy(() => import("@/pages/AdminReports"));
+const ClubOverview = lazy(() => import("@/pages/ClubOverview"));
 
 function PageLoadingFallback() {
   return (
@@ -122,6 +123,7 @@ const WeeklyScheduleRoute = withLayout(WeeklySchedule);
 const CoachSettingsRoute = withLayout(CoachSettings);
 const AccountSettingsRoute = withLayout(AccountSettings);
 const AdminReportsRoute = withLayout(AdminReports);
+const ClubOverviewRoute = withLayout(ClubOverview);
 // BillingStatus takes a fixed `status` prop per route rather than one read
 // from the URL, so it gets its own two stable wrappers instead of routing
 // through withLayout's generic prop passthrough.
@@ -158,6 +160,7 @@ function Router() {
       <Route path="/players" component={PlayersRoute} />
       <Route path="/players/:id" component={PlayerProfileRoute} />
       <Route path="/weekly-schedule" component={WeeklyScheduleRoute} />
+      <Route path="/club" component={ClubOverviewRoute} />
       <Route path="/settings/coaches" component={CoachSettingsRoute} />
       <Route path="/settings/account" component={AccountSettingsRoute} />
       <Route path="/admin/reports" component={AdminReportsRoute} />

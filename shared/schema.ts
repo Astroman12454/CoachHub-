@@ -133,6 +133,43 @@ export const accountMemberships = pgTable("account_memberships", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// A club's own identity — name and logo — layered on top of the existing
+// Club-plan seat model above (accountMemberships) rather than replacing it:
+// a coach who joins via accountMemberships still just sees the owner
+// account's teams, same as before, but now that account can also have a
+// name and logo of its own instead of just being "whoever owns these
+// teams". One row per account, created lazily the first time a Club-plan
+// coach names their club (see upsertClub in storage.ts) — not eagerly on
+// upgrade, so an account that upgraded to Club before this existed doesn't
+// need a backfill.
+export const clubs = pgTable("clubs", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().unique().references(() => accounts.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  logoUrl: text("logo_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const upsertClubSchema = z.object({
+  name: z.string().trim().min(1, "Club name is required").max(100),
+  logoUrl: z.string().trim().url("Enter a valid image URL").max(500).nullish(),
+});
+export type UpsertClub = z.infer<typeof upsertClubSchema>;
+export type Club = typeof clubs.$inferSelect;
+
+// A club's roster across every team the account owns — the aggregate view
+// that was missing entirely before this: today a director/club-admin can
+// only see one team at a time by switching, with no way to compare or sum
+// across the whole club. Computed on the fly (see getClubOverview,
+// storage.ts), not stored.
+export interface ClubTeamOverview {
+  teamId: number;
+  teamName: string;
+  activePlayersCount: number;
+  totalSessions: number;
+  avgAttendance: number;
+}
+
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),

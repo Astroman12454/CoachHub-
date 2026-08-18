@@ -44,6 +44,7 @@
     "exerciseLibrary": "Exercise Library",
     "evaluations": "Evaluations",
     "players": "Players",
+    "club": "Club",
     "coaches": "Coaches",
     "account": "Account",
     "adminReports": "Reports"
@@ -1312,6 +1313,25 @@
     "submitted": "Thanks — an admin will take a look.",
     "couldntSubmit": "Couldn't submit report"
   },
+  "clubOverview": {
+    "title": "Club Overview",
+    "subtitle": "Every team under this club, side by side.",
+    "notAvailable": "Club plan feature",
+    "notAvailableDescription": "This page is only available on the Club plan.",
+    "couldntLoad": "Couldn't load club overview",
+    "couldntLoadDescription": "Something went wrong. Try refreshing the page.",
+    "emptyTitle": "No teams yet",
+    "emptyDescription": "Once your club has teams, they'll show up here side by side.",
+    "nameYourClubPrefix": "This club doesn't have a name yet.",
+    "nameYourClubLink": "Name it from Manage Coaches.",
+    "totalActivePlayers": "Active Players (Club-wide)",
+    "totalSessions": "Sessions (Club-wide)",
+    "avgAttendance": "Avg. Attendance",
+    "team": "Team",
+    "activePlayers": "Active Players",
+    "sessions": "Sessions",
+    "attendance": "Attendance"
+  },
   "adminReports": {
     "title": "Reports",
     "subtitle": "Community content flagged for review",
@@ -1368,6 +1388,13 @@
   "coachSettings": {
     "title": "Manage Coaches",
     "subtitle": "Invite other coaches to your club's teams.",
+    "clubIdentity": "Club Identity",
+    "clubName": "Club Name",
+    "clubNameDescription": "Shown to every coach who's part of this club, and on the club overview page.",
+    "clubNamePlaceholder": "e.g., Riverside Basketball Club",
+    "clubLogo": "Club Logo",
+    "clubSaved": "Club saved",
+    "couldntSaveClub": "Couldn't save club",
     "teamPreferences": "Team Preferences",
     "defaultSessionDuration": "Default Session Duration",
     "defaultSessionDurationDescription": "Prefills a new training session's duration when there's no recent session to copy from.",

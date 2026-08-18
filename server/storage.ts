@@ -36,6 +36,7 @@ import {
   recurringPracticeSlots,
   accountInvites,
   accountMemberships,
+  clubs,
   consents,
   guardianAuthorizationRequests,
   evaluationTests,
@@ -74,6 +75,9 @@ import {
   type Plan,
   type AccountInvite,
   type AccountMembership,
+  type Club,
+  type UpsertClub,
+  type ClubTeamOverview,
   type Consent,
   type ConsentPurpose,
   type GuardianAuthorizationRequest,
@@ -134,6 +138,9 @@ export interface IStorage {
   createAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<AccountMembership>;
   getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]>;
   removeAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<boolean>;
+  getClubByAccountId(accountId: number): Promise<Club | undefined>;
+  upsertClub(accountId: number, data: UpsertClub): Promise<Club>;
+  getClubOverview(accountId: number): Promise<ClubTeamOverview[]>;
   getActiveConsent(playerId: number, purpose: ConsentPurpose): Promise<Consent | undefined>;
   getConsentsForPlayer(playerId: number): Promise<Consent[]>;
   createConsent(playerId: number, purpose: ConsentPurpose, guardianEmail: string): Promise<Consent>;
@@ -656,6 +663,52 @@ export class DatabaseStorage implements IStorage {
       .delete(accountMemberships)
       .where(and(eq(accountMemberships.ownerAccountId, ownerAccountId), eq(accountMemberships.memberAccountId, memberAccountId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getClubByAccountId(accountId: number): Promise<Club | undefined> {
+    const [club] = await db.select().from(clubs).where(eq(clubs.accountId, accountId));
+    return club || undefined;
+  }
+
+  async upsertClub(accountId: number, data: UpsertClub): Promise<Club> {
+    const [club] = await db
+      .insert(clubs)
+      .values({ accountId, name: data.name, logoUrl: data.logoUrl ?? null })
+      .onConflictDoUpdate({
+        target: clubs.accountId,
+        set: { name: data.name, logoUrl: data.logoUrl ?? null },
+      })
+      .returning();
+    return club;
+  }
+
+  // One row per team under the account, each computed the same way the
+  // single-team GET /api/stats already does (attendanceCount/totalPlayers
+  // snapshotted on each training_sessions row, not a separate attendance
+  // join) — just repeated per team instead of for the one current team. A
+  // club-sized account has a handful of teams at most, so looping here
+  // instead of one giant aggregate query keeps this readable without a
+  // real performance cost.
+  async getClubOverview(accountId: number): Promise<ClubTeamOverview[]> {
+    const accountTeams = await this.getTeamsByAccount(accountId);
+    return Promise.all(
+      accountTeams.map(async (team) => {
+        const [sessions, activePlayersCount] = await Promise.all([
+          this.getAllTrainingSessions(team.id),
+          this.getActivePlayersCount(team.id),
+        ]);
+        const totalAttendance = sessions.reduce((acc, s) => acc + (s.attendanceCount || 0), 0);
+        const totalPossibleAttendance = sessions.reduce((acc, s) => acc + (s.totalPlayers || 0), 0);
+        const avgAttendance = totalPossibleAttendance > 0 ? Math.round((totalAttendance / totalPossibleAttendance) * 100) : 0;
+        return {
+          teamId: team.id,
+          teamName: team.name,
+          activePlayersCount,
+          totalSessions: sessions.length,
+          avgAttendance,
+        };
+      }),
+    );
   }
 
   // Team methods

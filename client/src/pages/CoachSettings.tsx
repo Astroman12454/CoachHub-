@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { UserPlus, X, Mail, Clock, Check, Download, Loader2, User } from "lucide-react";
+import { UserPlus, X, Mail, Clock, Check, Download, Loader2, User, Shield } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import ErrorState from "@/components/ErrorState";
@@ -17,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { SESSION_QUERY_KEY } from "@/lib/queryClient";
 import { TEAM_THEME_PRESETS, DEFAULT_ORANGE } from "@/lib/teamTheme";
 import { cn } from "@/lib/utils";
-import { CLUB_PLAN_SEAT_LIMIT, TEAM_THEME_COLORS, type TeamThemeColor } from "@shared/schema";
+import { CLUB_PLAN_SEAT_LIMIT, TEAM_THEME_COLORS, type TeamThemeColor, type Club } from "@shared/schema";
 
 interface CoachMember {
   memberAccountId: number;
@@ -47,6 +47,15 @@ export default function CoachSettings() {
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [themeColor, setThemeColor] = useState<TeamThemeColor | null>(null);
   const [publicName, setPublicName] = useState<string>("");
+  const [clubName, setClubName] = useState<string>("");
+  const [clubLogoUrl, setClubLogoUrl] = useState<string>("");
+
+  const { data: club } = useQuery<Club | null>({ queryKey: ["/api/club"] });
+
+  useEffect(() => {
+    setClubName(club?.name ?? "");
+    setClubLogoUrl(club?.logoUrl ?? "");
+  }, [club?.name, club?.logoUrl]);
 
   useEffect(() => {
     setDefaultDuration(currentTeam?.defaultSessionDuration ? String(currentTeam.defaultSessionDuration) : "");
@@ -89,6 +98,22 @@ export default function CoachSettings() {
     onError: (error) => {
       toast({
         title: t("coachSettings.couldntSavePublicName"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveClubMutation = useMutation({
+    mutationFn: async () =>
+      apiRequest("PUT", "/api/club", { name: clubName.trim(), logoUrl: clubLogoUrl.trim() || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/club"] });
+      toast({ title: t("coachSettings.clubSaved") });
+    },
+    onError: (error) => {
+      toast({
+        title: t("coachSettings.couldntSaveClub"),
         description: extractErrorMessage(error) ?? t("common.tryAgain"),
         variant: "destructive",
       });
@@ -180,6 +205,62 @@ export default function CoachSettings() {
       <TopBar title={t("coachSettings.title")} subtitle={t("coachSettings.subtitle")} />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-2xl fade-in">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+              {t("coachSettings.clubIdentity")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div>
+              <label htmlFor="club-name" className="text-sm font-medium text-foreground mb-2 block">
+                {t("coachSettings.clubName")}
+              </label>
+              <p className="text-sm text-muted-foreground mb-3">{t("coachSettings.clubNameDescription")}</p>
+              <Input
+                id="club-name"
+                value={clubName}
+                onChange={(e) => setClubName(e.target.value)}
+                placeholder={t("coachSettings.clubNamePlaceholder")}
+                maxLength={100}
+                className="max-w-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="club-logo-url" className="text-sm font-medium text-foreground mb-2 block">
+                {t("coachSettings.clubLogo")}
+              </label>
+              <div className="flex items-center gap-3">
+                {clubLogoUrl.trim() && (
+                  <img
+                    src={clubLogoUrl.trim()}
+                    alt=""
+                    className="w-10 h-10 rounded-md object-cover border border-border flex-shrink-0"
+                    onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                  />
+                )}
+                <Input
+                  id="club-logo-url"
+                  value={clubLogoUrl}
+                  onChange={(e) => setClubLogoUrl(e.target.value)}
+                  placeholder={t("coachSettings.teamLogoPlaceholder")}
+                  aria-label={t("coachSettings.clubLogo")}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => saveClubMutation.mutate()}
+              disabled={saveClubMutation.isPending || !clubName.trim()}
+              className="basketball-orange basketball-orange-hover text-white w-full sm:w-auto"
+            >
+              {saveClubMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

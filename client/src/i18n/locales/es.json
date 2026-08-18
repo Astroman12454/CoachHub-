@@ -44,6 +44,7 @@
     "exerciseLibrary": "Biblioteca de Ejercicios",
     "evaluations": "Evaluaciones",
     "players": "Jugadores",
+    "club": "Club",
     "coaches": "Entrenadores",
     "account": "Cuenta",
     "adminReports": "Reportes"
@@ -1312,6 +1313,25 @@
     "submitted": "Gracias — un admin lo va a revisar.",
     "couldntSubmit": "No se pudo enviar el reporte"
   },
+  "clubOverview": {
+    "title": "Resumen del Club",
+    "subtitle": "Todos los equipos de este club, uno al lado del otro.",
+    "notAvailable": "Función del plan Club",
+    "notAvailableDescription": "Esta página solo está disponible en el plan Club.",
+    "couldntLoad": "No se pudo cargar el resumen del club",
+    "couldntLoadDescription": "Algo salió mal. Intenta recargar la página.",
+    "emptyTitle": "Todavía no hay equipos",
+    "emptyDescription": "Cuando tu club tenga equipos, van a aparecer acá uno al lado del otro.",
+    "nameYourClubPrefix": "Este club todavía no tiene nombre.",
+    "nameYourClubLink": "Ponle nombre desde Gestionar Entrenadores.",
+    "totalActivePlayers": "Jugadores Activos (todo el club)",
+    "totalSessions": "Sesiones (todo el club)",
+    "avgAttendance": "Asistencia Media",
+    "team": "Equipo",
+    "activePlayers": "Jugadores Activos",
+    "sessions": "Sesiones",
+    "attendance": "Asistencia"
+  },
   "adminReports": {
     "title": "Reportes",
     "subtitle": "Contenido de la comunidad marcado para revisión",
@@ -1368,6 +1388,13 @@
   "coachSettings": {
     "title": "Gestionar Entrenadores",
     "subtitle": "Invitá a otros entrenadores a los equipos de tu club.",
+    "clubIdentity": "Identidad del Club",
+    "clubName": "Nombre del Club",
+    "clubNameDescription": "Se muestra a todos los entrenadores de este club, y en la página de resumen del club.",
+    "clubNamePlaceholder": "ej., Club de Baloncesto Riverside",
+    "clubLogo": "Logo del Club",
+    "clubSaved": "Club guardado",
+    "couldntSaveClub": "No se pudo guardar el club",
     "teamPreferences": "Preferencias del Equipo",
     "defaultSessionDuration": "Duración de Sesión por Defecto",
     "defaultSessionDurationDescription": "Rellena la duración de una nueva sesión de entrenamiento cuando no hay una sesión reciente de la que copiarla.",
