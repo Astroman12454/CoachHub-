@@ -8,6 +8,7 @@ import { registerBillingRoutes } from "./billing";
 import { registerCoachRoutes } from "./coaches";
 import { registerGuardianAuthorizationRoutes } from "./guardian-authorization";
 import { isMinor } from "@shared/age";
+import { trackEvent, trackMilestoneEvent, getEventCounts } from "./analytics";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, filterExercisesForPlayerCount, type SessionPlanContext } from "./ai-session-plan";
 import { parseCommand } from "./ai-command";
@@ -193,6 +194,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerBillingRoutes(app);
   registerCoachRoutes(app);
   registerGuardianAuthorizationRoutes(app);
+
+  // The only event the client is trusted to report itself — everything else
+  // in ANALYTICS_EVENTS is fired server-side, at the exact route that
+  // proves the thing actually happened. "Completed the onboarding
+  // checklist" has no server action of its own to hang off (it's a
+  // derived, client-computed state), so this is the one deliberate
+  // exception; the closed enum plus the milestone dedupe keep it from being
+  // a general-purpose event-injection endpoint.
+  app.post("/api/analytics/track", async (req, res) => {
+    try {
+      if (req.body?.event !== "onboarding_checklist_completed") {
+        return res.status(400).json({ message: "Unknown event" });
+      }
+      await trackMilestoneEvent(req.session.accountId!, "onboarding_checklist_completed");
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to record event" });
+    }
+  });
 
   // Team routes
   app.get("/api/teams", async (req, res) => {
@@ -1379,6 +1399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const plan = await generateSessionPlan(exercises, recentSessions, instructions, context, playerCount);
       plan.exerciseIds = (await sanitizeExerciseIds(accountId, plan.exerciseIds)) ?? [];
+      trackEvent(accountId, "ai_session_plan_generated");
       res.json(plan);
     } catch (error) {
       res.status(502).json({ message: "Couldn't generate a plan right now. Try again, or build the session by hand." });
@@ -1470,6 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sessionData.playIds = await sanitizePlayIds(req.session.currentTeamId!, sessionData.playIds);
       sessionData.testIds = await sanitizeTestIds(req.session.accountId!, sessionData.testIds);
       const session = await storage.createTrainingSession(req.session.currentTeamId!, sessionData);
+      trackEvent(req.session.accountId!, "training_session_created");
       res.status(201).json(session);
     } catch (error) {
       res.status(400).json({ message: "Invalid training session data" });
@@ -1490,10 +1512,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updateData.testIds) {
         updateData.testIds = await sanitizeTestIds(req.session.accountId!, updateData.testIds);
       }
+      // Fetched before the update purely to detect an actual status
+      // transition below — re-saving a session that's already "completed"
+      // (editing notes afterward, say) shouldn't fire the event again.
+      const before = updateData.status ? await storage.getTrainingSessionById(id, req.session.currentTeamId!) : undefined;
       const session = await storage.updateTrainingSession(id, req.session.currentTeamId!, updateData);
 
       if (!session) {
         return res.status(404).json({ message: "Training session not found" });
+      }
+      if (updateData.status && updateData.status !== before?.status) {
+        if (updateData.status === "in_progress") trackEvent(req.session.accountId!, "training_started");
+        else if (updateData.status === "completed") trackEvent(req.session.accountId!, "training_completed");
       }
 
       res.json(session);
@@ -1675,6 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         medicalNotesWithheld = true;
       }
       const player = await storage.createPlayer(teamId, playerData);
+      trackEvent(effectiveAccountId, "player_added", { count: 1 });
       res.status(201).json({ ...player, medicalNotesWithheld });
     } catch (error) {
       res.status(400).json({ message: "Invalid player data" });
@@ -1704,6 +1735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const created = await storage.createPlayers(teamId, newPlayers);
+      trackEvent(effectiveAccountId, "player_added", { count: created.length, bulk: true });
       res.status(201).json(created);
     } catch (error) {
       res.status(400).json({ message: "Invalid player data" });
@@ -2678,6 +2710,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(reports);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch reports" });
+    }
+  });
+
+  // The 10 product metrics from the audit, last 30 days — same admin gate
+  // as reports above.
+  app.get("/api/admin/analytics", async (req, res) => {
+    try {
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const account = await storage.getAccountById(accountId);
+      if (account?.isAdmin !== 1) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const counts = await getEventCounts(30);
+      res.json(counts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 

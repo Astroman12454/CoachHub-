@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { requireTeam } from "./auth";
 import { isEmailConfigured, sendGuardianAuthorizationEmail } from "./email";
 import { requestGuardianAuthorizationSchema, type ConsentPurpose } from "@shared/schema";
+import { trackEvent } from "./analytics";
 
 function originOf(req: Request): string {
   return `${req.protocol}://${req.get("host")}`;
@@ -72,6 +73,7 @@ export function registerGuardianAuthorizationRoutes(app: Express) {
         }
       }
 
+      trackEvent(req.session.accountId, "guardian_authorization_requested");
       res.status(201).json({ id: request.id, guardianEmail: request.guardianEmail, expiresAt: request.expiresAt });
     } catch {
       res.status(500).json({ message: "Failed to send authorization request" });
@@ -149,6 +151,12 @@ export function registerGuardianAuthorizationRoutes(app: Express) {
 
       const updated = await storage.respondToGuardianAuthorizationRequest(request.id, decision);
       if (!updated) return res.status(409).json({ message: "This request was already resolved." });
+
+      if (decision === "approved") {
+        const player = await storage.getPlayerByIdUnscoped(request.playerId);
+        const team = player ? await storage.getTeamByIdUnscoped(player.teamId) : undefined;
+        if (team) trackEvent(team.accountId, "guardian_authorization_approved");
+      }
 
       res.json({ status: updated.status });
     } catch {

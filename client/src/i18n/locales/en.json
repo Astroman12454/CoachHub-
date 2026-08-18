@@ -1332,7 +1332,22 @@
     "removeContent": "Remove from community",
     "dismissed": "Report dismissed",
     "removed": "Content removed from community",
-    "couldntResolve": "Couldn't resolve report"
+    "couldntResolve": "Couldn't resolve report",
+    "analyticsTitle": "Product metrics — last 30 days",
+    "analyticsEvents": {
+      "signup_completed": "Signups",
+      "onboarding_checklist_completed": "Onboarding completed",
+      "player_added": "Players added",
+      "training_session_created": "Sessions created",
+      "training_started": "Sessions started",
+      "training_completed": "Sessions completed",
+      "ai_session_plan_generated": "AI plans generated",
+      "upgrade_to_paid": "Upgrades to Paid",
+      "upgrade_to_club": "Upgrades to Club",
+      "subscription_cancelled": "Cancellations",
+      "guardian_authorization_requested": "Guardian requests sent",
+      "guardian_authorization_approved": "Guardian requests approved"
+    }
   },
   "billing": {
     "nativeUpgradeTitle": "Upgrade from a browser",

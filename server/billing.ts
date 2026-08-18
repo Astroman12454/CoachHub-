@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { z } from "zod";
 import { storage } from "./storage";
 import { getStripe, isStripeConfigured, priceIdFor, planForPriceId, type PurchasablePlan, type BillingInterval } from "./stripe";
+import { trackEvent } from "./analytics";
 
 function requireStripeConfigured(_req: Request, res: Response, next: express.NextFunction) {
   if (!isStripeConfigured()) {
@@ -127,6 +128,7 @@ export function setupStripeWebhook(app: Express) {
           const plan = session.metadata?.plan === "club" ? "club" : "paid";
           if (!isNaN(accountId) && session.subscription) {
             await storage.setAccountSubscription(accountId, plan, session.subscription as string);
+            trackEvent(accountId, plan === "club" ? "upgrade_to_club" : "upgrade_to_paid");
           }
           break;
         }
@@ -145,6 +147,7 @@ export function setupStripeWebhook(app: Express) {
               isActive ? plan : "free",
               isActive ? subscription.id : null,
             );
+            if (!isActive) trackEvent(account.id, "subscription_cancelled");
           }
           break;
         }

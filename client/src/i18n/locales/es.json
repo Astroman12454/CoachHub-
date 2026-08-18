@@ -1332,7 +1332,22 @@
     "removeContent": "Quitar de la comunidad",
     "dismissed": "Reporte descartado",
     "removed": "Contenido quitado de la comunidad",
-    "couldntResolve": "No se pudo resolver el reporte"
+    "couldntResolve": "No se pudo resolver el reporte",
+    "analyticsTitle": "Métricas de producto — últimos 30 días",
+    "analyticsEvents": {
+      "signup_completed": "Altas",
+      "onboarding_checklist_completed": "Onboarding completado",
+      "player_added": "Jugadores añadidos",
+      "training_session_created": "Sesiones creadas",
+      "training_started": "Sesiones iniciadas",
+      "training_completed": "Sesiones finalizadas",
+      "ai_session_plan_generated": "Planes de IA generados",
+      "upgrade_to_paid": "Mejoras a Paid",
+      "upgrade_to_club": "Mejoras a Club",
+      "subscription_cancelled": "Cancelaciones",
+      "guardian_authorization_requested": "Solicitudes al tutor enviadas",
+      "guardian_authorization_approved": "Solicitudes al tutor aprobadas"
+    }
   },
   "billing": {
     "nativeUpgradeTitle": "Mejorá tu plan desde un navegador",

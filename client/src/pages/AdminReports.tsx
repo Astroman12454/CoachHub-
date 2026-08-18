@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Flag, ShieldAlert, Trash2, X } from "lucide-react";
+import { Flag, ShieldAlert, Trash2, X, BarChart3 } from "lucide-react";
 import TopBar from "@/components/TopBar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,9 +11,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { formatTimestamp as formatWhen } from "@/lib/time";
-import type { AdminReportView } from "@shared/schema";
+import type { AdminReportView, AnalyticsEvent } from "@shared/schema";
 
 const REPORTS_QUERY_KEY = "/api/admin/reports";
+const ANALYTICS_QUERY_KEY = "/api/admin/analytics";
 
 // Reachable only from the Sidebar's own isAdmin-gated link, but a direct
 // URL visit from a non-admin account is still possible — the real gate is
@@ -27,6 +28,11 @@ export default function AdminReports() {
 
   const { data: reports, isLoading, isError } = useQuery<AdminReportView[]>({
     queryKey: [REPORTS_QUERY_KEY],
+    enabled: !!account?.isAdmin,
+  });
+
+  const { data: analytics } = useQuery<{ event: AnalyticsEvent; count: number }[]>({
+    queryKey: [ANALYTICS_QUERY_KEY],
     enabled: !!account?.isAdmin,
   });
 
@@ -65,6 +71,25 @@ export default function AdminReports() {
       />
 
       <main className="flex-1 overflow-y-auto p-4 lg:p-6 max-w-3xl fade-in">
+        {analytics && (
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+                {t("adminReports.analyticsTitle")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {analytics.map(({ event, count }) => (
+                <div key={event} className="rounded-md border border-border p-3">
+                  <p className="text-2xl font-display font-bold tabular-nums text-foreground">{count}</p>
+                  <p className="text-xs text-muted-foreground">{t(`adminReports.analyticsEvents.${event}`)}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}

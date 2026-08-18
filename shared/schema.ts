@@ -72,6 +72,43 @@ export const accounts = pgTable("accounts", {
   isAdmin: integer("is_admin").default(0),
 });
 
+// The ten product metrics identified as actually deciding whether the
+// product works (funnel from signup through habitual use to revenue) — a
+// fixed, closed set rather than a free-text event name, so a typo can't
+// silently create a new event nobody ever queries for. Self-hosted in the
+// app's own Postgres rather than a third-party analytics service: it needs
+// no account/API key to start capturing data, and the sink can be swapped
+// later (or mirrored to PostHog/etc.) without touching every call site,
+// since every event still goes through the one trackEvent() helper.
+export const ANALYTICS_EVENTS = [
+  "signup_completed",
+  "onboarding_checklist_completed",
+  "player_added",
+  "training_session_created",
+  "training_started",
+  "training_completed",
+  "ai_session_plan_generated",
+  "upgrade_to_paid",
+  "upgrade_to_club",
+  "subscription_cancelled",
+  "guardian_authorization_requested",
+  "guardian_authorization_approved",
+] as const;
+export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
+
+// Null accountId is deliberately allowed (not used yet, but the column
+// shouldn't have to change shape the day an anonymous pre-signup event is
+// worth tracking). properties is a small, event-specific bag (e.g.
+// {"count": 3} on player_added) — free-form on purpose, since a rigid
+// per-event column set would need a migration for every new question.
+export const analyticsEvents = pgTable("analytics_events", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").references(() => accounts.id, { onDelete: "cascade" }),
+  event: text("event").notNull().$type<AnalyticsEvent>(),
+  properties: json("properties"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // A pending invitation to join a Club account as a coach — consumed (row
 // deleted) the moment it's accepted, turning into an accountMemberships row.
 // Mirrors accounts' password-reset token fields: a sha256 hash of the raw

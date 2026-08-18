@@ -1,6 +1,8 @@
+import { useEffect, useRef } from "react";
 import { CheckCircle2, Circle, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { apiRequest } from "@/lib/queryClient";
 
 interface GettingStartedCardProps {
   hasPlayers: boolean;
@@ -38,7 +40,21 @@ export default function GettingStartedCard({
     { done: hasSessions, label: t("dashboard.gettingStarted.createSession"), onClick: onCreateSession },
   ];
 
-  if (steps.every((step) => step.done)) return null;
+  const allDone = steps.every((step) => step.done);
+
+  // Fires once per mount when the checklist first reads as fully done —
+  // the server dedupes across repeat visits/reloads (see
+  // trackMilestoneEvent), so this doesn't need to track "have I already
+  // sent this" itself.
+  const hasTracked = useRef(false);
+  useEffect(() => {
+    if (allDone && !hasTracked.current) {
+      hasTracked.current = true;
+      apiRequest("POST", "/api/analytics/track", { event: "onboarding_checklist_completed" }).catch(() => {});
+    }
+  }, [allDone]);
+
+  if (allDone) return null;
 
   return (
     <Card className="mb-5 border-basketball-orange/30">

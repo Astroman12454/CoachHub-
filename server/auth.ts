@@ -10,6 +10,7 @@ import { insertAccountSchema, loginSchema, forgotPasswordSchema, resetPasswordSc
 import { pool } from "./db";
 import { isEmailConfigured, sendPasswordResetEmail } from "./email";
 import { getStripe, isStripeConfigured } from "./stripe";
+import { trackEvent } from "./analytics";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 
@@ -154,6 +155,7 @@ export function setupAuth(app: Express) {
     }
     const team = await storage.createTeam(account.id, "My Team");
     await seedDefaultExercises(account.id);
+    trackEvent(account.id, "signup_completed");
 
     req.session.accountId = account.id;
     req.session.currentTeamId = team.id;

@@ -153,6 +153,7 @@ export interface IStorage {
   createTeam(accountId: number, name: string): Promise<Team>;
   getTeamsByAccount(accountId: number): Promise<Team[]>;
   getTeamById(id: number, accountId: number): Promise<Team | undefined>;
+  getTeamByIdUnscoped(id: number): Promise<Team | undefined>;
   updateTeam(id: number, accountId: number, data: Partial<InsertTeam>): Promise<Team | undefined>;
 
   // Exercise methods (scoped by account — shared across that account's teams)
@@ -675,6 +676,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(teams)
       .where(and(eq(teams.id, id), eq(teams.accountId, accountId)));
+    return team || undefined;
+  }
+
+  // Unscoped — only for resolving which account owns a team from a public,
+  // token-authorized route (e.g. a guardian's authorization decision), the
+  // same carve-out as getPlayerByIdUnscoped above.
+  async getTeamByIdUnscoped(id: number): Promise<Team | undefined> {
+    const [team] = await db.select().from(teams).where(eq(teams.id, id));
     return team || undefined;
   }
 
