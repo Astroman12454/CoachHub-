@@ -38,6 +38,7 @@ const PlayerProfile = lazy(() => import("@/pages/PlayerProfile"));
 const WeeklySchedule = lazy(() => import("@/pages/WeeklySchedule"));
 const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 const Portal = lazy(() => import("@/pages/Portal"));
+const SeasonSummary = lazy(() => import("@/pages/SeasonSummary"));
 const ExerciseShare = lazy(() => import("@/pages/ExerciseShare"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
@@ -194,6 +195,11 @@ const PortalRoute = () => (
     <Portal />
   </Suspense>
 );
+const SeasonSummaryRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <SeasonSummary />
+  </Suspense>
+);
 const ExerciseShareRoute = () => (
   <Suspense fallback={<PageLoadingFallback />}>
     <ExerciseShare />
@@ -236,6 +242,7 @@ function App() {
                 <Route path="/accept-invite" component={AcceptInviteRoute} />
                 <Route path="/guardian-authorization/:token" component={GuardianAuthorizationRoute} />
                 <Route path="/portal/:token" component={PortalRoute} />
+                <Route path="/portal/:token/summary" component={SeasonSummaryRoute} />
                 <Route path="/exercise/:token" component={ExerciseShareRoute} />
                 <Route component={AuthGate} />
               </Switch>

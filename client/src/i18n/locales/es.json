@@ -1241,7 +1241,22 @@
     "noAttendanceRecorded": "Aún no hay asistencia registrada.",
     "poweredByPrefix": "Con la tecnología de",
     "areYouACoach": "¿Sos entrenador/a?",
-    "createYourTeam": "Creá tu equipo gratis"
+    "createYourTeam": "Creá tu equipo gratis",
+    "viewSeasonSummary": "Ver resumen de temporada"
+  },
+  "seasonSummary": {
+    "title": "Resumen de Temporada",
+    "backToPortal": "Volver",
+    "attendanceRate": "Asistencia",
+    "sessionsAndHours": "{{present}} de {{total}} sesiones · {{hours}}h entrenadas",
+    "gamesPlayed": "PJ",
+    "points": "PTS",
+    "rebounds": "REB",
+    "assists": "AST",
+    "topSkills": "Mejores Habilidades",
+    "share": "Compartir",
+    "copyLink": "Copiar Enlace",
+    "linkCopied": "Enlace Copiado"
   },
   "newTeamDialog": {
     "createdToast": "\"{{name}}\" creado",

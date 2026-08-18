@@ -2019,6 +2019,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Same token, a different shape — one shareable card instead of the
+  // day-to-day utility view above, meant to be linked or screenshotted
+  // outward. Doesn't log a portal-access visit the way the GET above does;
+  // logPortalAccess exists to flag unusual traffic on the family's own
+  // link, and a recap getting reshared is the point, not a signal to flag.
+  app.get("/api/portal/:token/summary", portalRateLimiter, async (req, res) => {
+    try {
+      const summary = await storage.getPlayerSeasonSummary(req.params.token);
+      if (!summary) {
+        return res.status(404).json({ message: "Link not found or no longer active" });
+      }
+      res.json(summary);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load season summary" });
+    }
+  });
+
   // Push subscribe/unsubscribe — same public, token-scoped shape as the GET
   // above (covered by the same requireAuth /portal/ exemption).
   app.post("/api/portal/:token/subscribe", portalRateLimiter, async (req, res) => {

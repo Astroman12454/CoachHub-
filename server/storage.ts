@@ -62,6 +62,7 @@ import {
   type PlayStep,
   type CreatePlay,
   type PortalData,
+  type PlayerSeasonSummary,
   type PlayerNote,
   type PlayerInjury,
   type CreatePlayerInjury,
@@ -361,6 +362,7 @@ export interface IStorage {
   revokePortalToken(playerId: number, teamId: number): Promise<boolean>;
   logPortalAccess(playerId: number): Promise<void>;
   getPortalData(token: string): Promise<PortalData | undefined>;
+  getPlayerSeasonSummary(token: string): Promise<PlayerSeasonSummary | undefined>;
 
   // Attendance methods — callers verify session/player ownership first
   // (via getTrainingSessionById/getPlayerById above) since attendance rows
@@ -2482,6 +2484,50 @@ export class DatabaseStorage implements IStorage {
       })),
       attendance: attendanceRows,
       stats,
+    };
+  }
+
+  async getPlayerSeasonSummary(token: string): Promise<PlayerSeasonSummary | undefined> {
+    const [player] = await db.select().from(players).where(eq(players.portalToken, token));
+    if (!player) return undefined;
+    if (player.portalTokenExpiresAt && player.portalTokenExpiresAt.getTime() <= Date.now()) return undefined;
+
+    const [team] = await db.select().from(teams).where(eq(teams.id, player.teamId));
+    if (!team) return undefined;
+
+    const [attendanceStats, seasonStats, evaluationHistory] = await Promise.all([
+      this.getPlayerAttendanceStats(player.id),
+      this.getPlayerGameStatsSummary(player.teamId),
+      this.getEvaluationTestResultsForPlayer(player.id),
+    ]);
+    const gameStats = seasonStats.find((s) => s.playerId === player.id) ?? null;
+
+    // One entry per test, its most recent result only (results[0] — see
+    // getEvaluationTestResultsForPlayer's ordering), ranked by normalized
+    // score so a personal-best in one test doesn't get buried under a
+    // weaker, more test-heavy category.
+    const evaluationHighlights = evaluationHistory
+      .filter((h) => h.results.length > 0)
+      .map((h) => ({
+        testName: h.testName,
+        value: h.results[0].value,
+        unit: h.unit,
+        score: computeEvaluationScore(h.results[0].value, h.worstValue, h.bestValue),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    return {
+      player: { name: player.name, position: player.position, jerseyNumber: player.jerseyNumber },
+      team: { name: team.name },
+      attendance: {
+        total: attendanceStats.total,
+        present: attendanceStats.present,
+        rate: attendanceStats.rate,
+        totalHoursTrained: attendanceStats.totalHoursTrained,
+      },
+      gameStats,
+      evaluationHighlights,
     };
   }
 

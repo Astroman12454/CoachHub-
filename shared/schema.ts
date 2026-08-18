@@ -1399,3 +1399,19 @@ export interface PortalData {
   attendance: { sessionId: number; sessionName: string; date: string; status: string }[];
   stats: PlayerGameStatsSummary | null;
 }
+
+// A shareable recap — same portalToken auth as PortalData above (same
+// public route's own sub-path, GET /api/portal/:token/summary), but shaped
+// for a single card meant to be screenshotted or linked outward, not the
+// day-to-day utility view. "Season" is cumulative-to-date, not a fixed
+// date range — the schema has no explicit season-boundary concept, so this
+// doesn't invent one. evaluationHighlights is the 3 tests with the highest
+// current normalized score (see computeEvaluationScore in
+// shared/evaluationScore.ts), latest result only, not full history.
+export interface PlayerSeasonSummary {
+  player: { name: string; position: string | null; jerseyNumber: number | null };
+  team: { name: string };
+  attendance: { total: number; present: number; rate: number; totalHoursTrained: number };
+  gameStats: PlayerGameStatsSummary | null;
+  evaluationHighlights: { testName: string; score: number; value: number; unit: string }[];
+}

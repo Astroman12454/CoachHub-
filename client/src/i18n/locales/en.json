@@ -1241,7 +1241,22 @@
     "noAttendanceRecorded": "No attendance recorded yet.",
     "poweredByPrefix": "Powered by",
     "areYouACoach": "Are you a coach?",
-    "createYourTeam": "Create your team free"
+    "createYourTeam": "Create your team free",
+    "viewSeasonSummary": "View season summary"
+  },
+  "seasonSummary": {
+    "title": "Season Summary",
+    "backToPortal": "Back",
+    "attendanceRate": "Attendance",
+    "sessionsAndHours": "{{present}} of {{total}} sessions · {{hours}}h trained",
+    "gamesPlayed": "GP",
+    "points": "PTS",
+    "rebounds": "REB",
+    "assists": "AST",
+    "topSkills": "Top Skills",
+    "share": "Share",
+    "copyLink": "Copy Link",
+    "linkCopied": "Link Copied"
   },
   "newTeamDialog": {
     "createdToast": "\"{{name}}\" created",

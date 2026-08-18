@@ -96,6 +96,9 @@ export default function Portal() {
             {data.player.position && (
               <Badge variant="secondary" className="mt-1">{data.player.position}</Badge>
             )}
+            <Link href={`/portal/${token}/summary`} className="block text-sm text-basketball-orange font-medium hover:underline mt-1.5">
+              {t("portal.viewSeasonSummary")}
+            </Link>
           </div>
           <div className="flex items-center gap-2 text-foreground">
             <LanguageToggle />
