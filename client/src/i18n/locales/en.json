@@ -1486,13 +1486,16 @@
         "heading": "4. Who we share data with",
         "items": [
           { "bold": "Stripe", "text": "(payment processing) — only if you subscribe to the paid plan." },
-          { "bold": "Render", "text": "(application hosting and database infrastructure) — processes all data on our behalf to run the service." }
+          { "bold": "Render", "text": "(application hosting and database infrastructure) — processes all data on our behalf to run the service." },
+          { "bold": "Anthropic", "text": "(AI-assisted features) — only when you use one: generating a practice plan (injured players are referred to by an anonymized label, never their real name), importing stats from a box-score photo (which may show player names visible in the photo you upload), natural-language scheduling, or the in-app help assistant." },
+          { "bold": "Resend", "text": "(transactional email) — only to send an email you triggered: password reset, a coach invite, a weekly team digest, or a guardian-authorization request." },
+          { "bold": "Sentry", "text": "(error monitoring) — only if configured on our end; receives technical crash/error details to help us fix bugs, not your team or player data." }
         ],
-        "footer": "Both act as processors under our instructions; neither is authorized to use your data for their own purposes. We do not share your data with anyone else, and we don't sell it."
+        "footer": "All of them act as processors under our instructions; none is authorized to use your data for their own purposes. We do not share your data with anyone else, and we don't sell it."
       },
       "transfers": {
         "heading": "5. International transfers",
-        "body": "Stripe and Render may process data on infrastructure located outside the European Economic Area (primarily the United States). Where that happens, it relies on the safeguards each provider has in place (such as Standard Contractual Clauses) to ensure an adequate level of protection."
+        "body": "Stripe, Render, Anthropic, Resend, and Sentry may process data on infrastructure located outside the European Economic Area (primarily the United States). Where that happens, it relies on the safeguards each provider has in place (such as Standard Contractual Clauses) to ensure an adequate level of protection."
       },
       "retention": {
         "heading": "6. How long we keep your data",

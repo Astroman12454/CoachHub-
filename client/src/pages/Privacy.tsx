@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import BrandMark from "@/components/BrandMark";
 import LanguageToggle from "@/components/LanguageToggle";
 
-const LAST_UPDATED = "August 4, 2026";
+const LAST_UPDATED = "August 18, 2026";
 const CONTACT_EMAIL = "luis.barrionuevo0308@gmail.com";
 
 interface BulletItem {

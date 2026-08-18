@@ -1486,13 +1486,16 @@
         "heading": "4. Con quién compartimos datos",
         "items": [
           { "bold": "Stripe", "text": "(procesamiento de pagos) — solo si te suscribes al plan de pago." },
-          { "bold": "Render", "text": "(alojamiento de la aplicación e infraestructura de base de datos) — trata todos los datos por nuestra cuenta para operar el servicio." }
+          { "bold": "Render", "text": "(alojamiento de la aplicación e infraestructura de base de datos) — trata todos los datos por nuestra cuenta para operar el servicio." },
+          { "bold": "Anthropic", "text": "(funciones basadas en IA) — solo cuando usas alguna: generar un plan de entrenamiento (los jugadores lesionados se identifican con una etiqueta anonimizada, nunca su nombre real), importar estadísticas desde una foto del marcador (que puede mostrar nombres de jugadores visibles en la foto que subes), programación por lenguaje natural, o el asistente de ayuda dentro de la app." },
+          { "bold": "Resend", "text": "(correo transaccional) — solo para enviar un correo que tú mismo has originado: restablecimiento de contraseña, una invitación a un entrenador, el resumen semanal del equipo, o una solicitud de autorización al tutor." },
+          { "bold": "Sentry", "text": "(monitorización de errores) — solo si está configurado por nuestra parte; recibe detalles técnicos de fallos/errores para ayudarnos a corregirlos, no datos de tu equipo o de los jugadores." }
         ],
-        "footer": "Ambos actúan como encargados del tratamiento bajo nuestras instrucciones; ninguno está autorizado a usar tus datos para sus propios fines. No compartimos tus datos con nadie más, y no los vendemos."
+        "footer": "Todos ellos actúan como encargados del tratamiento bajo nuestras instrucciones; ninguno está autorizado a usar tus datos para sus propios fines. No compartimos tus datos con nadie más, y no los vendemos."
       },
       "transfers": {
         "heading": "5. Transferencias internacionales",
-        "body": "Stripe y Render pueden tratar datos en infraestructura ubicada fuera del Espacio Económico Europeo (principalmente Estados Unidos). Cuando esto ocurre, se basa en las garantías que cada proveedor tiene establecidas (como las Cláusulas Contractuales Tipo) para asegurar un nivel de protección adecuado."
+        "body": "Stripe, Render, Anthropic, Resend y Sentry pueden tratar datos en infraestructura ubicada fuera del Espacio Económico Europeo (principalmente Estados Unidos). Cuando esto ocurre, se basa en las garantías que cada proveedor tiene establecidas (como las Cláusulas Contractuales Tipo) para asegurar un nivel de protección adecuado."
       },
       "retention": {
         "heading": "6. Cuánto tiempo conservamos tus datos",
