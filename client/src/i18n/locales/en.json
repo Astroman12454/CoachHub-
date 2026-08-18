@@ -413,6 +413,16 @@
     "injured": "Injured",
     "emergencyInfo": "Emergency Info",
     "emergencyContact": "Contact",
+    "guardianAuthorization": "Guardian Authorization",
+    "guardianAuthorizationDescription": "This player is a minor. Health information (medical notes, injuries) can't be recorded until their parent or guardian authorizes it.",
+    "guardianEmailPlaceholder": "Guardian's email address",
+    "requestAuthorization": "Request Authorization",
+    "authorizationRequestSent": "Authorization request sent.",
+    "couldntSendAuthorizationRequest": "Couldn't send the authorization request",
+    "authorizationPending": "Waiting on a response from {{email}}.",
+    "authorizedBy": "Authorized by {{email}}.",
+    "revokeAuthorization": "Revoke",
+    "couldntRevokeAuthorization": "Couldn't revoke authorization",
     "injuries": "Injuries",
     "injuryDescriptionPlaceholder": "e.g., Sprained ankle",
     "injuryDescription": "Injury description",
@@ -1384,6 +1394,16 @@
     "joining": "Joining…",
     "joined": "You're in! Redirecting to your dashboard…",
     "couldntJoin": "Couldn't accept the invite"
+  },
+  "guardianAuthorization": {
+    "title": "Guardian Authorization",
+    "invalidRequest": "This link is invalid or has expired.",
+    "description": "A coach is asking for your authorization to record the following for {{player}}: {{purpose}}. You can approve or decline below.",
+    "approve": "Authorize",
+    "decline": "Decline",
+    "approvedMessage": "Thank you — your authorization has been recorded.",
+    "declinedMessage": "Your decision has been recorded. Nothing will be recorded without your authorization.",
+    "couldntRespond": "Couldn't record your response"
   },
   "pricing": {
     "title": "Plans & Pricing",

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, Plus, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, Gauge, FileDown, Loader2, Crown, Phone, Clock, Calendar, Trophy } from "lucide-react";
+import { ArrowLeft, Star, Plus, MessageSquarePlus, Trash2, Menu, CheckCircle2, TrendingUp, HeartPulse, Check, Target, Gauge, FileDown, Loader2, Crown, Phone, Clock, Calendar, Trophy, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import StatCard from "@/components/StatCard";
 import ShotChart from "@/components/ShotChart";
@@ -22,7 +22,13 @@ import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { exportSeasonReportPdf } from "@/lib/exportSeasonReportPdf";
 import { calculateAge, formatPlainDate } from "@/lib/time";
 import { computeEvaluationScore } from "@shared/evaluationScore";
-import type { Player, PlayerNote, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerEvaluationTestHistory } from "@shared/schema";
+import { isMinor } from "@shared/age";
+import type { Player, PlayerNote, PlayerGameStatsSummary, PlayerInjury, DrillAttempt, PlayerEvaluationTestHistory, Consent } from "@shared/schema";
+
+interface ConsentsResponse {
+  consents: Consent[];
+  pendingRequest: { guardianEmail: string; expiresAt: string } | null;
+}
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -56,6 +62,7 @@ export default function PlayerProfile() {
   const [injuryDescription, setInjuryDescription] = useState("");
   const [injuryDate, setInjuryDate] = useState(todayISO());
   const [injuryToDelete, setInjuryToDelete] = useState<number | null>(null);
+  const [guardianEmailDraft, setGuardianEmailDraft] = useState("");
 
   const { data: players = [], isLoading: isLoadingPlayers } = useQuery<Player[]>({ queryKey: ["/api/players"] });
   const player = useMemo(() => players.find((p) => p.id === playerId), [players, playerId]);
@@ -182,6 +189,39 @@ export default function PlayerProfile() {
   const { data: notes = [], isError: isErrorNotes } = useQuery<PlayerNote[]>({
     queryKey: [`/api/players/${playerId}/notes`],
     enabled: !isNaN(playerId),
+  });
+
+  // Only a minor's record needs guardian authorization at all (LOPDGDD art.
+  // 7, see shared/age.ts) — the query is still gated on the player being
+  // loaded since isMinor needs the real birthDate, not a guess mid-render.
+  const playerIsMinor = !!player && isMinor(player.birthDate);
+  const { data: consentsData } = useQuery<ConsentsResponse>({
+    queryKey: [`/api/players/${playerId}/consents`],
+    enabled: !isNaN(playerId) && playerIsMinor,
+  });
+  const activeMedicalConsent = consentsData?.consents.find((c) => c.purpose === "medical_data" && !c.revokedAt);
+
+  const requestAuthorizationMutation = useMutation({
+    mutationFn: async () =>
+      apiRequest("POST", `/api/players/${playerId}/guardian-authorization/request`, { guardianEmail: guardianEmailDraft.trim() }),
+    onSuccess: () => {
+      setGuardianEmailDraft("");
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/consents`] });
+      toast({ title: t("playerProfile.authorizationRequestSent") });
+    },
+    onError: (error) => {
+      toast({ title: t("playerProfile.couldntSendAuthorizationRequest"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
+  });
+
+  const revokeConsentMutation = useMutation({
+    mutationFn: async (consentId: number) => apiRequest("DELETE", `/api/players/${playerId}/consents/${consentId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/players/${playerId}/consents`] });
+    },
+    onError: (error) => {
+      toast({ title: t("playerProfile.couldntRevokeAuthorization"), description: extractErrorMessage(error) ?? t("common.tryAgain"), variant: "destructive" });
+    },
   });
 
   if (isLoadingPlayers || isLoadingDev) {
@@ -417,6 +457,59 @@ export default function PlayerProfile() {
                   <span className="text-muted-foreground">{t("playerForm.medicalNotes")}: </span>
                   <span className="text-foreground whitespace-pre-wrap">{player.medicalNotes}</span>
                 </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {playerIsMinor && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-basketball-orange" strokeWidth={1.75} aria-hidden="true" />
+                {t("playerProfile.guardianAuthorization")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p className="text-muted-foreground">{t("playerProfile.guardianAuthorizationDescription")}</p>
+              {activeMedicalConsent ? (
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <p className="text-foreground">
+                    {t("playerProfile.authorizedBy", { email: activeMedicalConsent.guardianEmail })}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => revokeConsentMutation.mutate(activeMedicalConsent.id)}
+                    disabled={revokeConsentMutation.isPending}
+                    className="whitespace-nowrap"
+                  >
+                    {t("playerProfile.revokeAuthorization")}
+                  </Button>
+                </div>
+              ) : consentsData?.pendingRequest ? (
+                <p className="text-foreground border-t border-border pt-3">
+                  {t("playerProfile.authorizationPending", { email: consentsData.pendingRequest.guardianEmail })}
+                </p>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-2 border-t border-border pt-3">
+                  <Input
+                    type="email"
+                    value={guardianEmailDraft}
+                    onChange={(e) => setGuardianEmailDraft(e.target.value)}
+                    placeholder={t("playerProfile.guardianEmailPlaceholder")}
+                    aria-label={t("playerProfile.guardianEmailPlaceholder")}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => requestAuthorizationMutation.mutate()}
+                    disabled={!guardianEmailDraft.trim() || requestAuthorizationMutation.isPending}
+                    className="sm:self-end whitespace-nowrap"
+                  >
+                    {t("playerProfile.requestAuthorization")}
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

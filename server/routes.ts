@@ -6,6 +6,8 @@ import { storage } from "./storage";
 import { requireTeam } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { registerCoachRoutes } from "./coaches";
+import { registerGuardianAuthorizationRoutes } from "./guardian-authorization";
+import { isMinor } from "@shared/age";
 import { isAIConfigured, extractBoxScore } from "./ai-vision";
 import { generateSessionPlan, filterExercisesForPlayerCount, type SessionPlanContext } from "./ai-session-plan";
 import { parseCommand } from "./ai-command";
@@ -38,6 +40,7 @@ import {
   createExerciseCommentSchema,
   createReportSchema,
   rateContentSchema,
+  requestGuardianAuthorizationSchema,
   FREE_PLAN_PLAYER_LIMIT,
   FREE_PLAN_PLAY_LIMIT,
   type TrainingSession,
@@ -170,9 +173,24 @@ export async function buildSessionPlanContext(teamId: number): Promise<SessionPl
   return { injuredPlayerNames, weakDrills, neglectedPlays };
 }
 
+// Gate for writing health data (medicalNotes, playerInjuries) on a player
+// who's a minor: LOPDGDD art. 7 requires guardian consent below the digital
+// age of consent (14 in Spain) for this kind of sensitive processing. Adults
+// and players with no birth date on file (isMinor's documented default)
+// aren't gated at all — this only ever blocks the minor case.
+async function hasMedicalDataAuthorization(player: { id: number; birthDate: string | null }): Promise<boolean> {
+  if (!isMinor(player.birthDate)) return true;
+  const consent = await storage.getActiveConsent(player.id, "medical_data");
+  return !!consent;
+}
+
+const MEDICAL_CONSENT_REQUIRED_MESSAGE =
+  "This player is a minor. Recording health information requires the parent or guardian's authorization first — request it from the player's profile.";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   registerBillingRoutes(app);
   registerCoachRoutes(app);
+  registerGuardianAuthorizationRoutes(app);
 
   // Team routes
   app.get("/api/teams", async (req, res) => {
@@ -1644,8 +1662,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const playerData = insertPlayerSchema.parse(req.body);
+      // A minor's medical notes can't be recorded without guardian
+      // authorization, which can't exist yet for a player who doesn't exist
+      // yet — rather than blocking creation of the rest of the roster entry,
+      // silently drop them and tell the client so it can prompt the coach to
+      // request authorization from the new player's profile afterward.
+      let medicalNotesWithheld = false;
+      if (playerData.medicalNotes && isMinor(playerData.birthDate)) {
+        playerData.medicalNotes = null;
+        medicalNotesWithheld = true;
+      }
       const player = await storage.createPlayer(teamId, playerData);
-      res.status(201).json(player);
+      res.status(201).json({ ...player, medicalNotesWithheld });
     } catch (error) {
       res.status(400).json({ message: "Invalid player data" });
     }
@@ -1655,9 +1683,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseId(req, res);
       if (id === null) return;
-      const updateData = insertPlayerSchema.partial().parse(req.body);
-      const player = await storage.updatePlayer(id, req.session.currentTeamId!, updateData);
+      const existing = await storage.getPlayerById(id, req.session.currentTeamId!);
+      if (!existing) {
+        return res.status(404).json({ message: "Player not found" });
+      }
 
+      const updateData = insertPlayerSchema.partial().parse(req.body);
+      const newMedicalNotes = updateData.medicalNotes;
+      const isNewOrChangedMedicalNotes =
+        typeof newMedicalNotes === "string" && newMedicalNotes.trim() && newMedicalNotes !== existing.medicalNotes;
+      if (isNewOrChangedMedicalNotes) {
+        const birthDate = updateData.birthDate !== undefined ? updateData.birthDate : existing.birthDate;
+        if (!(await hasMedicalDataAuthorization({ id, birthDate }))) {
+          return res.status(403).json({ message: MEDICAL_CONSENT_REQUIRED_MESSAGE, code: "guardian_authorization_required" });
+        }
+      }
+
+      const player = await storage.updatePlayer(id, req.session.currentTeamId!, updateData);
       if (!player) {
         return res.status(404).json({ message: "Player not found" });
       }
@@ -1766,6 +1808,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const player = await storage.getPlayerById(id, req.session.currentTeamId!);
       if (!player) {
         return res.status(404).json({ message: "Player not found" });
+      }
+      if (!(await hasMedicalDataAuthorization(player))) {
+        return res.status(403).json({ message: MEDICAL_CONSENT_REQUIRED_MESSAGE, code: "guardian_authorization_required" });
       }
       const data = createPlayerInjurySchema.parse(req.body);
       const injury = await storage.createPlayerInjury(id, data);
@@ -1899,6 +1944,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!data) {
         return res.status(404).json({ message: "Link not found or no longer active" });
       }
+      // Fire-and-forget — a logging hiccup shouldn't fail a parent's page
+      // load, it just means this one visit is missing from the log.
+      storage.logPortalAccess(data.player.id).catch(() => {});
       // null when VAPID keys aren't configured — the client hides the
       // "enable notifications" button in that case rather than offering a
       // subscribe flow that would just fail.

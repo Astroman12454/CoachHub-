@@ -15,6 +15,13 @@ export const FREE_PLAN_TEAM_LIMIT = 1;
 export const FREE_PLAN_PLAY_LIMIT = 3;
 export const CLUB_PLAN_SEAT_LIMIT = 3;
 
+// A season-length window, not a short-lived credential like a coach invite —
+// parents realistically use the same portal link for months. Regenerated
+// automatically the next time a coach opens the share dialog after it lapses
+// (see getOrCreatePortalToken, server/storage.ts), so a link nobody's used
+// in a long time doesn't stay valid indefinitely.
+export const PORTAL_TOKEN_LIFETIME_DAYS = 180;
+
 // Why a coach is reporting a piece of community content — shown as the
 // report dialog's reason picker and, on the admin side, as a filter/label
 // on each report row.
@@ -399,7 +406,80 @@ export const players = pgTable("players", {
   // portal — a coach shares a link built from this instead of the parent
   // needing an account. Null until the coach first generates a link.
   portalToken: text("portal_token").unique(),
+  // Null for a token generated before this field existed (treated as
+  // never-expiring, so nobody's existing shared link breaks retroactively)
+  // — every newly generated token gets one going forward (see
+  // PORTAL_TOKEN_LIFETIME_DAYS, server/storage.ts's getOrCreatePortalToken),
+  // so an old link left lying around doesn't stay valid forever.
+  portalTokenExpiresAt: timestamp("portal_token_expires_at"),
 });
+
+// Every successful visit to a player's portal (server/routes.ts's
+// GET /api/portal/:token) — just enough to notice unexpected access
+// patterns (e.g. far more visits than one family would make). Deliberately
+// not storing the visitor's IP or any other identifier: this table exists
+// for the coach/operator to notice something's wrong, not to profile who's
+// looking, so it stays minimal on purpose.
+export const portalAccessLogs = pgTable("portal_access_logs", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  accessedAt: timestamp("accessed_at").defaultNow(),
+});
+
+// What a guardian's authorization actually covers. Just health data for now
+// (medicalNotes + playerInjuries) — the only category on the player record
+// that needs explicit authorization beyond the general roster data already
+// covered by the coach's own account relationship with the club/parents.
+export const CONSENT_PURPOSES = ["medical_data"] as const;
+export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
+
+// Evidence that a guardian actually authorized a purpose for a player —
+// the granted state itself. Always produced by a guardianAuthorizationRequests
+// row being approved (mirrors accountInvites -> accountMemberships: the ask
+// vs. the grant), never written directly by a coach. A player can end up
+// with more than one row per purpose over time (revoked then re-requested),
+// so "is this purpose currently authorized" means "latest row for
+// (playerId, purpose) has revokedAt still null", not row existence alone.
+export const consents = pgTable("consents", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  purpose: text("purpose").notNull().$type<ConsentPurpose>(),
+  // The guardian's email as given at request time — not a persisted contact
+  // field on players (no such field exists, and none was requested), just
+  // kept here for the audit trail of who granted it.
+  guardianEmail: text("guardian_email").notNull(),
+  grantedAt: timestamp("granted_at").defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+});
+
+export const GUARDIAN_AUTHORIZATION_STATUSES = ["pending", "approved", "declined", "expired"] as const;
+export type GuardianAuthorizationStatus = (typeof GUARDIAN_AUTHORIZATION_STATUSES)[number];
+
+// The pending "ask" a coach sends a guardian by email — a token-link flow
+// mirroring accountInvites (sha256 tokenHash, never the raw token, expiring).
+// Consumed by the guardian visiting /guardian-authorization/:token and
+// approving or declining; approval creates a consents row.
+export const guardianAuthorizationRequests = pgTable("guardian_authorization_requests", {
+  id: serial("id").primaryKey(),
+  playerId: integer("player_id").notNull().references(() => players.id, { onDelete: "cascade" }),
+  purpose: text("purpose").notNull().$type<ConsentPurpose>(),
+  guardianEmail: text("guardian_email").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  status: text("status").notNull().default("pending").$type<GuardianAuthorizationStatus>(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const requestGuardianAuthorizationSchema = z.object({
+  guardianEmail: z.string().trim().email(),
+});
+export type RequestGuardianAuthorization = z.infer<typeof requestGuardianAuthorizationSchema>;
+
+export const respondGuardianAuthorizationSchema = z.object({
+  decision: z.enum(["approved", "declined"]),
+});
+export type RespondGuardianAuthorization = z.infer<typeof respondGuardianAuthorizationSchema>;
 
 // A browser's Web Push subscription, scoped to one player's portal (not an
 // account — portal visitors never sign in). One physical device can end up
@@ -989,6 +1069,9 @@ export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type AccountInvite = typeof accountInvites.$inferSelect;
 export type AccountMembership = typeof accountMemberships.$inferSelect;
 export type InviteCoach = z.infer<typeof inviteCoachSchema>;
+
+export type Consent = typeof consents.$inferSelect;
+export type GuardianAuthorizationRequest = typeof guardianAuthorizationRequests.$inferSelect;
 
 // A membership row plus the member's own email, for the "manage coaches"
 // list — the membership table itself only stores the account id.

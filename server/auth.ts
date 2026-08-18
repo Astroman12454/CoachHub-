@@ -309,7 +309,10 @@ export function setupAuth(app: Express) {
 // /exercise-share/ is the same kind of public, token-scoped read as /portal/
 // above — a coach shares a link to one drill instead of the recipient
 // needing an account.
-const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/", "/exercise-share/"];
+// /guardian-authorization/ is the same token-link pattern as /invites/ above
+// (server/guardian-authorization.ts) — a guardian approves or declines by
+// visiting the link, never needing an account of their own.
+const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/", "/exercise-share/", "/guardian-authorization/"];
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (PUBLIC_API_PREFIXES.some((prefix) => req.path.startsWith(prefix))) return next();

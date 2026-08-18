@@ -28,6 +28,7 @@ import {
   plays,
   playSteps,
   pushSubscriptions,
+  portalAccessLogs,
   playerNotes,
   playerInjuries,
   drillAttempts,
@@ -35,6 +36,8 @@ import {
   recurringPracticeSlots,
   accountInvites,
   accountMemberships,
+  consents,
+  guardianAuthorizationRequests,
   evaluationTests,
   evaluationTestResults,
   type Account,
@@ -71,6 +74,9 @@ import {
   type Plan,
   type AccountInvite,
   type AccountMembership,
+  type Consent,
+  type ConsentPurpose,
+  type GuardianAuthorizationRequest,
   type CoachMember,
   type EvaluationTest,
   type InsertEvaluationTest,
@@ -86,6 +92,7 @@ import {
   type ReportReason,
   type ReportStatus,
   type AdminReportView,
+  PORTAL_TOKEN_LIFETIME_DAYS,
 } from "@shared/schema";
 import { computeEvaluationScore } from "@shared/evaluationScore";
 import { db } from "./db";
@@ -127,6 +134,20 @@ export interface IStorage {
   createAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<AccountMembership>;
   getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]>;
   removeAccountMembership(ownerAccountId: number, memberAccountId: number): Promise<boolean>;
+  getActiveConsent(playerId: number, purpose: ConsentPurpose): Promise<Consent | undefined>;
+  getConsentsForPlayer(playerId: number): Promise<Consent[]>;
+  createConsent(playerId: number, purpose: ConsentPurpose, guardianEmail: string): Promise<Consent>;
+  revokeConsent(id: number, playerId: number): Promise<boolean>;
+  createGuardianAuthorizationRequest(
+    playerId: number,
+    purpose: ConsentPurpose,
+    guardianEmail: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<GuardianAuthorizationRequest>;
+  getGuardianAuthorizationRequestByValidTokenHash(tokenHash: string): Promise<GuardianAuthorizationRequest | undefined>;
+  getPendingGuardianAuthorizationRequest(playerId: number, purpose: ConsentPurpose): Promise<GuardianAuthorizationRequest | undefined>;
+  respondToGuardianAuthorizationRequest(id: number, decision: "approved" | "declined"): Promise<GuardianAuthorizationRequest | undefined>;
 
   // Team methods
   createTeam(accountId: number, name: string): Promise<Team>;
@@ -316,6 +337,7 @@ export interface IStorage {
   // Player methods (scoped by team)
   getAllPlayers(teamId: number): Promise<Player[]>;
   getPlayerById(id: number, teamId: number): Promise<Player | undefined>;
+  getPlayerByIdUnscoped(id: number): Promise<Player | undefined>;
   createPlayer(teamId: number, player: InsertPlayer): Promise<Player>;
   updatePlayer(id: number, teamId: number, player: Partial<InsertPlayer>): Promise<Player | undefined>;
   deletePlayer(id: number, teamId: number): Promise<boolean>;
@@ -323,6 +345,7 @@ export interface IStorage {
   getPlayerCount(teamId: number): Promise<number>;
   getOrCreatePortalToken(playerId: number, teamId: number): Promise<string | undefined>;
   revokePortalToken(playerId: number, teamId: number): Promise<boolean>;
+  logPortalAccess(playerId: number): Promise<void>;
   getPortalData(token: string): Promise<PortalData | undefined>;
 
   // Attendance methods — callers verify session/player ownership first
@@ -505,6 +528,116 @@ export class DatabaseStorage implements IStorage {
       .values({ ownerAccountId, memberAccountId })
       .returning();
     return membership;
+  }
+
+  // "Currently authorized" means the latest row for this (playerId, purpose)
+  // has never been revoked — not just "a row exists", since a guardian can
+  // revoke and a coach can re-request later, leaving older granted-then-
+  // revoked rows in place for the audit trail.
+  async getActiveConsent(playerId: number, purpose: ConsentPurpose): Promise<Consent | undefined> {
+    const [row] = await db
+      .select()
+      .from(consents)
+      .where(and(eq(consents.playerId, playerId), eq(consents.purpose, purpose), isNull(consents.revokedAt)))
+      .orderBy(desc(consents.grantedAt))
+      .limit(1);
+    return row || undefined;
+  }
+
+  async getConsentsForPlayer(playerId: number): Promise<Consent[]> {
+    return await db
+      .select()
+      .from(consents)
+      .where(eq(consents.playerId, playerId))
+      .orderBy(desc(consents.grantedAt));
+  }
+
+  async createConsent(playerId: number, purpose: ConsentPurpose, guardianEmail: string): Promise<Consent> {
+    const [row] = await db.insert(consents).values({ playerId, purpose, guardianEmail }).returning();
+    return row;
+  }
+
+  async revokeConsent(id: number, playerId: number): Promise<boolean> {
+    const result = await db
+      .update(consents)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(consents.id, id), eq(consents.playerId, playerId), isNull(consents.revokedAt)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async createGuardianAuthorizationRequest(
+    playerId: number,
+    purpose: ConsentPurpose,
+    guardianEmail: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<GuardianAuthorizationRequest> {
+    const [row] = await db
+      .insert(guardianAuthorizationRequests)
+      .values({ playerId, purpose, guardianEmail, tokenHash, expiresAt })
+      .returning();
+    return row;
+  }
+
+  async getGuardianAuthorizationRequestByValidTokenHash(tokenHash: string): Promise<GuardianAuthorizationRequest | undefined> {
+    const [row] = await db
+      .select()
+      .from(guardianAuthorizationRequests)
+      .where(
+        and(
+          eq(guardianAuthorizationRequests.tokenHash, tokenHash),
+          eq(guardianAuthorizationRequests.status, "pending"),
+          sql`${guardianAuthorizationRequests.expiresAt} > now()`,
+        ),
+      );
+    return row || undefined;
+  }
+
+  async getPendingGuardianAuthorizationRequest(playerId: number, purpose: ConsentPurpose): Promise<GuardianAuthorizationRequest | undefined> {
+    const [row] = await db
+      .select()
+      .from(guardianAuthorizationRequests)
+      .where(
+        and(
+          eq(guardianAuthorizationRequests.playerId, playerId),
+          eq(guardianAuthorizationRequests.purpose, purpose),
+          eq(guardianAuthorizationRequests.status, "pending"),
+          sql`${guardianAuthorizationRequests.expiresAt} > now()`,
+        ),
+      );
+    return row || undefined;
+  }
+
+  // Approving creates the consents row in the same transaction as marking
+  // the request resolved — the two states must never drift apart (an
+  // "approved" request with no matching consent, or vice versa).
+  async respondToGuardianAuthorizationRequest(
+    id: number,
+    decision: "approved" | "declined",
+  ): Promise<GuardianAuthorizationRequest | undefined> {
+    return await db.transaction(async (tx) => {
+      const [request] = await tx
+        .select()
+        .from(guardianAuthorizationRequests)
+        .where(and(eq(guardianAuthorizationRequests.id, id), eq(guardianAuthorizationRequests.status, "pending")));
+      if (!request) return undefined;
+
+      const [updated] = await tx
+        .update(guardianAuthorizationRequests)
+        .set({ status: decision, respondedAt: new Date() })
+        .where(eq(guardianAuthorizationRequests.id, id))
+        .returning();
+
+      if (decision === "approved") {
+        await tx.insert(consents).values({
+          playerId: request.playerId,
+          purpose: request.purpose,
+          guardianEmail: request.guardianEmail,
+        });
+      }
+
+      return updated;
+    });
   }
 
   async getAccountMemberships(ownerAccountId: number): Promise<CoachMember[]> {
@@ -2125,6 +2258,15 @@ export class DatabaseStorage implements IStorage {
     return player || undefined;
   }
 
+  // Unscoped by team — only for the public guardian-authorization pages
+  // (server/guardian-authorization.ts), where the token itself (not team
+  // membership) is the authorization, same as getPortalData/
+  // getPlayerIdByPortalToken below.
+  async getPlayerByIdUnscoped(id: number): Promise<Player | undefined> {
+    const [player] = await db.select().from(players).where(eq(players.id, id));
+    return player || undefined;
+  }
+
   async createPlayer(teamId: number, insertPlayer: InsertPlayer): Promise<Player> {
     const [player] = await db
       .insert(players)
@@ -2167,22 +2309,33 @@ export class DatabaseStorage implements IStorage {
     return teamPlayers.length;
   }
 
+  // Returns the existing token as long as it hasn't lapsed; past its
+  // expiry (or if none was ever generated) a fresh one is issued instead of
+  // just extending the old one, so a link nobody's opened in
+  // PORTAL_TOKEN_LIFETIME_DAYS quietly stops working rather than staying
+  // valid forever.
   async getOrCreatePortalToken(playerId: number, teamId: number): Promise<string | undefined> {
     const player = await this.getPlayerById(playerId, teamId);
     if (!player) return undefined;
-    if (player.portalToken) return player.portalToken;
+    const notExpired = player.portalTokenExpiresAt && player.portalTokenExpiresAt.getTime() > Date.now();
+    if (player.portalToken && notExpired) return player.portalToken;
 
     const token = crypto.randomBytes(24).toString("hex");
-    await db.update(players).set({ portalToken: token }).where(eq(players.id, playerId));
+    const expiresAt = new Date(Date.now() + PORTAL_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
+    await db.update(players).set({ portalToken: token, portalTokenExpiresAt: expiresAt }).where(eq(players.id, playerId));
     return token;
   }
 
   async revokePortalToken(playerId: number, teamId: number): Promise<boolean> {
     const result = await db
       .update(players)
-      .set({ portalToken: null })
+      .set({ portalToken: null, portalTokenExpiresAt: null })
       .where(and(eq(players.id, playerId), eq(players.teamId, teamId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async logPortalAccess(playerId: number): Promise<void> {
+    await db.insert(portalAccessLogs).values({ playerId });
   }
 
   // Public, unauthenticated lookup for the player/parent portal — the token
@@ -2191,6 +2344,7 @@ export class DatabaseStorage implements IStorage {
   async getPortalData(token: string): Promise<PortalData | undefined> {
     const [player] = await db.select().from(players).where(eq(players.portalToken, token));
     if (!player) return undefined;
+    if (player.portalTokenExpiresAt && player.portalTokenExpiresAt.getTime() <= Date.now()) return undefined;
 
     const [team] = await db.select().from(teams).where(eq(teams.id, player.teamId));
     if (!team) return undefined;
@@ -2650,8 +2804,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPlayerIdByPortalToken(token: string): Promise<number | undefined> {
-    const [player] = await db.select({ id: players.id }).from(players).where(eq(players.portalToken, token));
-    return player?.id;
+    const [player] = await db
+      .select({ id: players.id, portalTokenExpiresAt: players.portalTokenExpiresAt })
+      .from(players)
+      .where(eq(players.portalToken, token));
+    if (!player) return undefined;
+    if (player.portalTokenExpiresAt && player.portalTokenExpiresAt.getTime() <= Date.now()) return undefined;
+    return player.id;
   }
 
   async savePushSubscription(

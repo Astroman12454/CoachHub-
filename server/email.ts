@@ -46,6 +46,26 @@ export async function sendCoachInviteEmail(to: string, ownerEmail: string, accep
   });
 }
 
+export async function sendGuardianAuthorizationEmail(
+  to: string,
+  playerName: string,
+  coachEmail: string,
+  purposeLabel: string,
+  decisionUrl: string,
+): Promise<void> {
+  await getClient().emails.send({
+    from: FROM_EMAIL!,
+    to,
+    subject: `${coachEmail} is requesting your authorization on Coach Hub`,
+    html: `
+      <p><strong>${coachEmail}</strong>, who coaches <strong>${playerName}</strong> on Coach Hub, is asking for your authorization to record: ${purposeLabel}.</p>
+      <p><a href="${decisionUrl}">Click here to review and respond</a>. This link works for 7 days.</p>
+      <p>If you weren't expecting this, you can safely ignore this email — nothing is recorded without your response.</p>
+    `,
+    text: `${coachEmail}, who coaches ${playerName} on Coach Hub, is asking for your authorization to record: ${purposeLabel}.\n\nOpen this link to review and respond (works for 7 days):\n${decisionUrl}\n\nIf you weren't expecting this, you can safely ignore this email — nothing is recorded without your response.`,
+  });
+}
+
 export interface WeeklyDigestData {
   teamName: string;
   sessionsHeld: number;

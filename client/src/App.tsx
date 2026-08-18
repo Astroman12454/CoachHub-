@@ -41,6 +41,7 @@ const Portal = lazy(() => import("@/pages/Portal"));
 const ExerciseShare = lazy(() => import("@/pages/ExerciseShare"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
+const GuardianAuthorization = lazy(() => import("@/pages/GuardianAuthorization"));
 const CoachSettings = lazy(() => import("@/pages/CoachSettings"));
 const AccountSettings = lazy(() => import("@/pages/AccountSettings"));
 const AdminReports = lazy(() => import("@/pages/AdminReports"));
@@ -180,6 +181,11 @@ const AcceptInviteRoute = () => (
     <AcceptInvite />
   </Suspense>
 );
+const GuardianAuthorizationRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <GuardianAuthorization />
+  </Suspense>
+);
 const PortalRoute = () => (
   <Suspense fallback={<PageLoadingFallback />}>
     <Portal />
@@ -225,6 +231,7 @@ function App() {
                 <Route path="/pricing" component={Pricing} />
                 <Route path="/reset-password" component={ResetPasswordRoute} />
                 <Route path="/accept-invite" component={AcceptInviteRoute} />
+                <Route path="/guardian-authorization/:token" component={GuardianAuthorizationRoute} />
                 <Route path="/portal/:token" component={PortalRoute} />
                 <Route path="/exercise/:token" component={ExerciseShareRoute} />
                 <Route component={AuthGate} />

@@ -78,7 +78,13 @@ export async function generateSessionPlan(
 
   const contextLines: string[] = [];
   if (context?.injuredPlayerNames.length) {
-    contextLines.push(`Currently injured (avoid aggravating, no need to name them in your output): ${context.injuredPlayerNames.join(", ")}.`);
+    // Never send a real player's name to a third-party API — the model
+    // only needs to know an injured player exists and steer around
+    // aggravating it, not who they are. Anonymized labels (never reused
+    // across calls, so they carry no identity of their own) do that job
+    // just as well as a real name would.
+    const anonymizedLabels = context.injuredPlayerNames.map((_, i) => `Player ${i + 1}`);
+    contextLines.push(`Currently injured (anonymized labels, avoid aggravating, no need to name them in your output): ${anonymizedLabels.join(", ")}.`);
   }
   if (context?.weakDrills.length) {
     contextLines.push(

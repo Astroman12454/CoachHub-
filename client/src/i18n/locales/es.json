@@ -413,6 +413,16 @@
     "injured": "Lesionado",
     "emergencyInfo": "Información de Emergencia",
     "emergencyContact": "Contacto",
+    "guardianAuthorization": "Autorización del Tutor",
+    "guardianAuthorizationDescription": "Este jugador es menor de edad. No se puede registrar información de salud (notas médicas, lesiones) hasta que su padre, madre o tutor lo autorice.",
+    "guardianEmailPlaceholder": "Correo del tutor",
+    "requestAuthorization": "Solicitar Autorización",
+    "authorizationRequestSent": "Solicitud de autorización enviada.",
+    "couldntSendAuthorizationRequest": "No se pudo enviar la solicitud de autorización",
+    "authorizationPending": "Esperando respuesta de {{email}}.",
+    "authorizedBy": "Autorizado por {{email}}.",
+    "revokeAuthorization": "Revocar",
+    "couldntRevokeAuthorization": "No se pudo revocar la autorización",
     "injuries": "Lesiones",
     "injuryDescriptionPlaceholder": "ej., Esguince de tobillo",
     "injuryDescription": "Descripción de la lesión",
@@ -1384,6 +1394,16 @@
     "joining": "Uniéndote…",
     "joined": "¡Listo! Redirigiendo a tu panel…",
     "couldntJoin": "No se pudo aceptar la invitación"
+  },
+  "guardianAuthorization": {
+    "title": "Autorización del Tutor",
+    "invalidRequest": "Este enlace no es válido o ha expirado.",
+    "description": "Un entrenador te pide autorización para registrar lo siguiente sobre {{player}}: {{purpose}}. Puedes aprobar o rechazar a continuación.",
+    "approve": "Autorizar",
+    "decline": "Rechazar",
+    "approvedMessage": "Gracias — tu autorización ha sido registrada.",
+    "declinedMessage": "Tu decisión ha sido registrada. No se registrará nada sin tu autorización.",
+    "couldntRespond": "No se pudo registrar tu respuesta"
   },
   "pricing": {
     "title": "Planes y Precios",
