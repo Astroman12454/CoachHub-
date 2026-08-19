@@ -17,9 +17,10 @@ import AICoachBanner from "@/components/AICoachBanner";
 import AIRecommendationsModal from "@/components/AIRecommendationsModal";
 import RecentExercisesCard from "@/components/RecentExercisesCard";
 import WelcomeOnboardingDialog from "@/components/WelcomeOnboardingDialog";
+import TeamProgressCard from "@/components/TeamProgressCard";
 import { computeInsights } from "@/lib/insights";
 import { useAuth } from "@/hooks/use-auth";
-import type { Exercise, TrainingSession, RecurringPracticeSlot } from "@shared/schema";
+import type { Exercise, TrainingSession, RecurringPracticeSlot, TeamProgressSummary } from "@shared/schema";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -46,6 +47,10 @@ export default function Dashboard() {
 
   const { data: recurringSlots = [], isError: recurringSlotsError, refetch: refetchRecurringSlots } = useQuery<RecurringPracticeSlot[]>({
     queryKey: ['/api/recurring-slots'],
+  });
+
+  const { data: teamProgress } = useQuery<TeamProgressSummary>({
+    queryKey: ['/api/team-progress'],
   });
 
   // Lets BottomTabBar's central "+" open the create-session modal from any
@@ -235,6 +240,8 @@ export default function Dashboard() {
         </div>
 
         <DashboardStatsGrid stats={stats} />
+
+        <TeamProgressCard progress={teamProgress} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2">

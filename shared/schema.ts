@@ -217,6 +217,22 @@ export interface ClubRosterPlayer {
   isActive: number | null;
 }
 
+// The dashboard hook the audit said didn't exist: "no hay racha, no hay
+// resumen semanal proactivo... nada se vuelve más valioso con el tiempo."
+// Computed on the fly from trainingSessions (see getTeamProgressSummary,
+// storage.ts) — nothing new stored.
+export interface TeamProgressSummary {
+  // Consecutive calendar weeks (Mon–Sun), most recent first, with at least
+  // one completed session — the week in progress doesn't break the streak
+  // just because practice hasn't happened yet this week.
+  streakWeeks: number;
+  // Team-wide attendance rate for the current and previous calendar month —
+  // null when a month has no completed sessions with recorded attendance,
+  // so the client can say "not enough data" instead of showing a false 0%.
+  attendanceRateThisMonth: number | null;
+  attendanceRateLastMonth: number | null;
+}
+
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),

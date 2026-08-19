@@ -170,6 +170,10 @@
   "dashboard": {
     "title": "Panel",
     "subtitle": "¡Bienvenido de nuevo! Esto es lo que pasa con tu equipo.",
+    "streakWeeks": "semana seguida",
+    "streakWeeks_other": "semanas seguidas",
+    "attendanceThisMonth": "{{rate}}% de asistencia este mes",
+    "vsLastMonthSuffix": "% vs. el mes pasado",
     "gettingStarted": {
       "title": "Primeros pasos",
       "addPlayers": "Añade a tus jugadores",

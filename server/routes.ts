@@ -2231,6 +2231,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/team-progress", requireTeam, async (req, res) => {
+    try {
+      const summary = await storage.getTeamProgressSummary(req.session.currentTeamId!);
+      res.json(summary);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch team progress" });
+    }
+  });
+
   // Game routes — scoped by the session's current team. Manual box-score
   // entry is free; AI photo/PDF import (below) is a paid-plan convenience.
   app.get("/api/games", requireTeam, async (req, res) => {

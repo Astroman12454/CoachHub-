@@ -82,6 +82,7 @@ import {
   type UpsertClub,
   type ClubTeamOverview,
   type ClubRosterPlayer,
+  type TeamProgressSummary,
   type Consent,
   type ConsentPurpose,
   type GuardianAuthorizationRequest,
@@ -336,6 +337,7 @@ export interface IStorage {
 
   // Training Session methods (scoped by team)
   getAllTrainingSessions(teamId: number): Promise<TrainingSession[]>;
+  getTeamProgressSummary(teamId: number): Promise<TeamProgressSummary>;
   getTrainingSessionById(id: number, teamId: number): Promise<TrainingSession | undefined>;
   getTrainingSessionsByDateRange(teamId: number, startDate: string, endDate: string): Promise<TrainingSession[]>;
   createTrainingSession(teamId: number, session: InsertTrainingSession): Promise<TrainingSession>;
@@ -2254,6 +2256,55 @@ export class DatabaseStorage implements IStorage {
           sql`${trainingSessions.date} >= ${startDate} AND ${trainingSessions.date} <= ${endDate}`
         )
       );
+  }
+
+  async getTeamProgressSummary(teamId: number): Promise<TeamProgressSummary> {
+    const sessions = await this.getAllTrainingSessions(teamId);
+    const completed = sessions.filter((s) => s.status === "completed");
+
+    // Monday of the week containing this "YYYY-MM-DD" date, as the same
+    // format — a stable grouping key without pulling in a date library.
+    const mondayOf = (dateStr: string): string => {
+      const d = new Date(`${dateStr}T00:00:00`);
+      const isoDay = (d.getDay() + 6) % 7; // Mon=0 .. Sun=6
+      d.setDate(d.getDate() - isoDay);
+      return d.toISOString().slice(0, 10);
+    };
+    const weeksWithSessions = new Set(completed.map((s) => mondayOf(s.date)));
+
+    const today = new Date().toISOString().slice(0, 10);
+    let cursor = mondayOf(today);
+    // The current week not having a session yet doesn't break the streak —
+    // it just isn't over. Only start counting from last week in that case.
+    if (!weeksWithSessions.has(cursor)) {
+      const d = new Date(`${cursor}T00:00:00`);
+      d.setDate(d.getDate() - 7);
+      cursor = d.toISOString().slice(0, 10);
+    }
+    let streakWeeks = 0;
+    while (weeksWithSessions.has(cursor)) {
+      streakWeeks++;
+      const d = new Date(`${cursor}T00:00:00`);
+      d.setDate(d.getDate() - 7);
+      cursor = d.toISOString().slice(0, 10);
+    }
+
+    const rateForMonth = (monthKey: string): number | null => {
+      const monthSessions = completed.filter((s) => s.date.slice(0, 7) === monthKey);
+      const totalAttendance = monthSessions.reduce((acc, s) => acc + (s.attendanceCount || 0), 0);
+      const totalPossible = monthSessions.reduce((acc, s) => acc + (s.totalPlayers || 0), 0);
+      return totalPossible > 0 ? Math.round((totalAttendance / totalPossible) * 100) : null;
+    };
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
+    return {
+      streakWeeks,
+      attendanceRateThisMonth: rateForMonth(thisMonthKey),
+      attendanceRateLastMonth: rateForMonth(lastMonthKey),
+    };
   }
 
   async getTrainingSessionById(id: number, teamId: number): Promise<TrainingSession | undefined> {

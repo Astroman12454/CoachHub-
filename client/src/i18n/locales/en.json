@@ -170,6 +170,10 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Welcome back! Here's what's happening with your team.",
+    "streakWeeks": "week streak",
+    "streakWeeks_other": "week streak",
+    "attendanceThisMonth": "{{rate}}% attendance this month",
+    "vsLastMonthSuffix": "% vs. last month",
     "gettingStarted": {
       "title": "Getting started",
       "addPlayers": "Add your players",
