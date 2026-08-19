@@ -66,6 +66,7 @@ import {
   type ReferralStats,
   type PlayerNote,
   type PlayerInjury,
+  type PlayerAttentionFlag,
   type CreatePlayerInjury,
   type DrillAttempt,
   type LogDrillAttempt,
@@ -405,6 +406,7 @@ export interface IStorage {
   // "injured" badge on the players list and the attendance modal.
   getPlayerInjuries(playerId: number): Promise<PlayerInjury[]>;
   getActiveInjuriesForTeam(teamId: number): Promise<PlayerInjury[]>;
+  getPlayersNeedingAttention(teamId: number): Promise<PlayerAttentionFlag[]>;
   createPlayerInjury(playerId: number, data: CreatePlayerInjury): Promise<PlayerInjury>;
   markInjuryRecovered(id: number, teamId: number, recoveredDate: string): Promise<PlayerInjury | undefined>;
   deletePlayerInjury(id: number, teamId: number): Promise<boolean>;
@@ -2802,6 +2804,50 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(players, eq(playerInjuries.playerId, players.id))
       .where(and(eq(players.teamId, teamId), eq(playerInjuries.status, "active")));
     return rows.map((r) => r.injury);
+  }
+
+  // A player with an active injury who was still marked present/late in the
+  // last 7 days — worth a coach's attention regardless of whether that was
+  // intentional (cleared to a limited return) or an oversight. One query,
+  // ordered newest-first so the first row per player is their most recent
+  // flagged attendance.
+  async getPlayersNeedingAttention(teamId: number): Promise<PlayerAttentionFlag[]> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const cutoff = sevenDaysAgo.toISOString().slice(0, 10);
+
+    const rows = await db
+      .select({
+        playerId: players.id,
+        playerName: players.name,
+        injuryDescription: playerInjuries.description,
+        sessionDate: trainingSessions.date,
+      })
+      .from(playerInjuries)
+      .innerJoin(players, eq(playerInjuries.playerId, players.id))
+      .innerJoin(attendance, eq(attendance.playerId, players.id))
+      .innerJoin(trainingSessions, eq(attendance.sessionId, trainingSessions.id))
+      .where(and(
+        eq(players.teamId, teamId),
+        eq(playerInjuries.status, "active"),
+        or(eq(attendance.status, "present"), eq(attendance.status, "late")),
+        sql`${trainingSessions.date} >= ${cutoff}`,
+      ))
+      .orderBy(desc(trainingSessions.date));
+
+    const flags = new Map<number, PlayerAttentionFlag>();
+    for (const row of rows) {
+      if (!flags.has(row.playerId)) {
+        flags.set(row.playerId, {
+          playerId: row.playerId,
+          playerName: row.playerName,
+          reason: "active_injury_recent_attendance",
+          injuryDescription: row.injuryDescription,
+          lastPresentDate: row.sessionDate,
+        });
+      }
+    }
+    return Array.from(flags.values());
   }
 
   async createPlayerInjury(playerId: number, data: CreatePlayerInjury): Promise<PlayerInjury> {

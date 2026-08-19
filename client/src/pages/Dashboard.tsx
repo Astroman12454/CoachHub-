@@ -18,9 +18,10 @@ import AIRecommendationsModal from "@/components/AIRecommendationsModal";
 import RecentExercisesCard from "@/components/RecentExercisesCard";
 import WelcomeOnboardingDialog from "@/components/WelcomeOnboardingDialog";
 import TeamProgressCard from "@/components/TeamProgressCard";
+import PlayersToWatchCard from "@/components/PlayersToWatchCard";
 import { computeInsights } from "@/lib/insights";
 import { useAuth } from "@/hooks/use-auth";
-import type { Exercise, TrainingSession, RecurringPracticeSlot, TeamProgressSummary } from "@shared/schema";
+import type { Exercise, TrainingSession, RecurringPracticeSlot, TeamProgressSummary, PlayerAttentionFlag } from "@shared/schema";
 
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -51,6 +52,10 @@ export default function Dashboard() {
 
   const { data: teamProgress } = useQuery<TeamProgressSummary>({
     queryKey: ['/api/team-progress'],
+  });
+
+  const { data: attentionFlags } = useQuery<PlayerAttentionFlag[]>({
+    queryKey: ['/api/players/attention'],
   });
 
   // Lets BottomTabBar's central "+" open the create-session modal from any
@@ -242,6 +247,7 @@ export default function Dashboard() {
         <DashboardStatsGrid stats={stats} />
 
         <TeamProgressCard progress={teamProgress} />
+        <PlayersToWatchCard flags={attentionFlags} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2">

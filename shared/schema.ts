@@ -1403,6 +1403,21 @@ export type PlayerNote = typeof playerNotes.$inferSelect;
 export type PlayerInjury = typeof playerInjuries.$inferSelect;
 export type DrillAttempt = typeof drillAttempts.$inferSelect;
 
+// Cross-references attendance against active injuries — the kind of
+// "flags something no competitor's tool does" signal the audit's AI
+// section asked for (sección 16, idea 1: "detección automática de
+// fatiga/sobrecarga cruzando asistencia + evaluaciones físicas"). Scoped
+// down from that to just the injury+attendance half — a real, deterministic
+// safety check today, not a speculative fatigue model built on data too
+// thin to trust yet. See getPlayersNeedingAttention, storage.ts.
+export interface PlayerAttentionFlag {
+  playerId: number;
+  playerName: string;
+  reason: "active_injury_recent_attendance";
+  injuryDescription: string;
+  lastPresentDate: string;
+}
+
 export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
 export type Attendance = typeof attendance.$inferSelect;
 
