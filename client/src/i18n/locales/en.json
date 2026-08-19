@@ -1348,7 +1348,20 @@
     "team": "Team",
     "activePlayers": "Active Players",
     "sessions": "Sessions",
-    "attendance": "Attendance"
+    "attendance": "Attendance",
+    "clickToManage": "Click a team to switch to it",
+    "roster": "Club Roster",
+    "rosterSubtitle": "Every player across every team, in one place.",
+    "searchPlaceholder": "Search players…",
+    "allTeams": "All teams",
+    "player": "Player",
+    "position": "Position",
+    "jersey": "#",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "noPlayersFound": "No players match your search.",
+    "couldntLoadRoster": "Couldn't load the roster"
   },
   "adminReports": {
     "title": "Reports",

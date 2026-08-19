@@ -102,6 +102,26 @@ describe("Club identity and overview", () => {
     expect(res.body[0]).toMatchObject({ teamName: "My Team", activePlayersCount: 1, totalSessions: 1 });
   });
 
+  it("GET /api/club/roster lists every player across every team, active and inactive alike", async () => {
+    const { agent } = await signedInClubAgent(app);
+    await agent.post("/api/players").send({ name: "Zoe", position: "Guard", jerseyNumber: 5 });
+    await agent.post("/api/players").send({ name: "Amir", isActive: 0 });
+
+    const res = await agent.get("/api/club/roster");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    // Ordered by team name then player name — "Amir" before "Zoe" within
+    // the one team both belong to.
+    expect(res.body[0]).toMatchObject({ name: "Amir", teamName: "My Team", isActive: 0 });
+    expect(res.body[1]).toMatchObject({ name: "Zoe", teamName: "My Team", position: "Guard", jerseyNumber: 5, isActive: 1 });
+  });
+
+  it("GET /api/club/roster is a Club plan feature, same as the overview", async () => {
+    const { agent } = await signedInAgent(app);
+    const res = await agent.get("/api/club/roster");
+    expect(res.status).toBe(403);
+  });
+
   // Membership is set up directly at the DB level (rather than going
   // through the real invite-email flow, which coaches.test.ts already
   // covers end to end) — what's under test here is specifically the

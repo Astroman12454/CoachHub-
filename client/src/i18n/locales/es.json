@@ -1348,7 +1348,20 @@
     "team": "Equipo",
     "activePlayers": "Jugadores Activos",
     "sessions": "Sesiones",
-    "attendance": "Asistencia"
+    "attendance": "Asistencia",
+    "clickToManage": "Hacé clic en un equipo para cambiarte a él",
+    "roster": "Plantilla del Club",
+    "rosterSubtitle": "Todos los jugadores de todos los equipos, en un solo lugar.",
+    "searchPlaceholder": "Buscar jugadores…",
+    "allTeams": "Todos los equipos",
+    "player": "Jugador",
+    "position": "Posición",
+    "jersey": "#",
+    "status": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "noPlayersFound": "Ningún jugador coincide con tu búsqueda.",
+    "couldntLoadRoster": "No se pudo cargar la plantilla"
   },
   "adminReports": {
     "title": "Reportes",

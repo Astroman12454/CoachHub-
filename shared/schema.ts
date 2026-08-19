@@ -202,6 +202,21 @@ export interface ClubTeamOverview {
   avgAttendance: number;
 }
 
+// The other half of "centralización" the audit flagged as missing — every
+// player across every team in the club in one list, instead of switching
+// teams one at a time to find someone. Computed on the fly (see
+// getClubRoster, storage.ts), not stored — same convention as
+// ClubTeamOverview above.
+export interface ClubRosterPlayer {
+  id: number;
+  name: string;
+  teamId: number;
+  teamName: string;
+  position: string | null;
+  jerseyNumber: number | null;
+  isActive: number | null;
+}
+
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),

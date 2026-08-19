@@ -77,6 +77,15 @@ export function registerCoachRoutes(app: Express) {
     }
   });
 
+  app.get("/api/club/roster", requireClubMember, async (req: Request, res: Response) => {
+    try {
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const roster = await storage.getClubRoster(effectiveAccountId);
+      res.json(roster);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch club roster" });
+    }
+  });
 
   app.get("/api/coaches", requireClubOwner, async (req: Request, res: Response) => {
     try {

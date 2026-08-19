@@ -81,6 +81,7 @@ import {
   type Club,
   type UpsertClub,
   type ClubTeamOverview,
+  type ClubRosterPlayer,
   type Consent,
   type ConsentPurpose,
   type GuardianAuthorizationRequest,
@@ -158,6 +159,7 @@ export interface IStorage {
   getClubByAccountId(accountId: number): Promise<Club | undefined>;
   upsertClub(accountId: number, data: UpsertClub): Promise<Club>;
   getClubOverview(accountId: number): Promise<ClubTeamOverview[]>;
+  getClubRoster(accountId: number): Promise<ClubRosterPlayer[]>;
   getActiveConsent(playerId: number, purpose: ConsentPurpose): Promise<Consent | undefined>;
   getConsentsForPlayer(playerId: number): Promise<Consent[]>;
   createConsent(playerId: number, purpose: ConsentPurpose, guardianEmail: string): Promise<Consent>;
@@ -792,6 +794,27 @@ export class DatabaseStorage implements IStorage {
         };
       }),
     );
+  }
+
+  // One query across every team the club owns, rather than getClubOverview's
+  // per-team loop — a roster listing has no per-row aggregation to compute,
+  // so there's nothing a join can't do in a single round trip.
+  async getClubRoster(accountId: number): Promise<ClubRosterPlayer[]> {
+    const rows = await db
+      .select({
+        id: players.id,
+        name: players.name,
+        teamId: teams.id,
+        teamName: teams.name,
+        position: players.position,
+        jerseyNumber: players.jerseyNumber,
+        isActive: players.isActive,
+      })
+      .from(players)
+      .innerJoin(teams, eq(players.teamId, teams.id))
+      .where(eq(teams.accountId, accountId))
+      .orderBy(asc(teams.name), asc(players.name));
+    return rows;
   }
 
   // Team methods
