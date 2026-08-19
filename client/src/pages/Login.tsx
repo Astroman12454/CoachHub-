@@ -15,9 +15,12 @@ export default function Login() {
   // A link from outside the app (e.g. the "create your team" CTA on the
   // read-only player/parent portal) can land straight on the signup form
   // instead of making a visitor find and click the toggle themselves.
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">(
-    () => (new URLSearchParams(window.location.search).get("signup") ? "signup" : "login"),
-  );
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(() => {
+    const params = new URLSearchParams(window.location.search);
+    // A referral link (?ref=CODE) implies signup intent on its own — nobody
+    // shares their code hoping a friend logs into their own existing account.
+    return params.get("signup") || params.get("ref") ? "signup" : "login";
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   // Player rosters commonly include minors (see privacy.sections.minors) —

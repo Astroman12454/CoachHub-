@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp, json, unique, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, timestamp, json, unique, varchar, index, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -70,6 +70,20 @@ export const accounts = pgTable("accounts", {
   // isActive/isFavorite. Not settable through any API; flipped by hand in
   // the database for whoever runs the app.
   isAdmin: integer("is_admin").default(0),
+  // Referral program (coach-to-coach growth loop). code is generated
+  // lazily the first time a coach opens their own referral page (see
+  // getOrCreateReferralCode, storage.ts) — most accounts never refer
+  // anyone, so there's no reason to burn a code on every signup.
+  // referredByAccountId is set once, at signup, from a ?ref= link, and
+  // never changes after. referralConvertedAt is set once, the first time
+  // this account reaches a paid plan — the trigger for the referrer's
+  // reward (see the checkout.session.completed handler, server/billing.ts).
+  // The reward itself (a free month) isn't auto-applied to Stripe yet —
+  // this is the data an operator needs to grant it by hand until volume
+  // justifies automating that part.
+  referralCode: text("referral_code").unique(),
+  referredByAccountId: integer("referred_by_account_id").references((): AnyPgColumn => accounts.id, { onDelete: "set null" }),
+  referralConvertedAt: timestamp("referral_converted_at"),
 });
 
 // The ten product metrics identified as actually deciding whether the
@@ -93,6 +107,8 @@ export const ANALYTICS_EVENTS = [
   "subscription_cancelled",
   "guardian_authorization_requested",
   "guardian_authorization_approved",
+  "referral_signup",
+  "referral_converted",
 ] as const;
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
@@ -1184,6 +1200,17 @@ export interface CoachMember {
   email: string;
   createdAt: string | null;
   role: AccountMembershipRole;
+}
+
+// The referring coach's own view of who they've brought in — GET
+// /api/referrals. referrals is every account with referredByAccountId
+// pointing at this one; convertedAt mirrors that account's own
+// referralConvertedAt (null until they reach a paid plan).
+export interface ReferralStats {
+  code: string;
+  totalReferred: number;
+  totalConverted: number;
+  referrals: { email: string; joinedAt: string | null; convertedAt: string | null }[];
 }
 
 export type InsertExercise = z.infer<typeof insertExerciseSchema>;

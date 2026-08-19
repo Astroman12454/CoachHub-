@@ -63,6 +63,7 @@ import {
   type CreatePlay,
   type PortalData,
   type PlayerSeasonSummary,
+  type ReferralStats,
   type PlayerNote,
   type PlayerInjury,
   type CreatePlayerInjury,
@@ -102,7 +103,7 @@ import {
 } from "@shared/schema";
 import { computeEvaluationScore } from "@shared/evaluationScore";
 import { db } from "./db";
-import { eq, and, or, isNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, or, isNull, isNotNull, lt, sql, sum, countDistinct, asc, desc, inArray } from "drizzle-orm";
 import crypto from "crypto";
 
 export interface IStorage {
@@ -115,6 +116,16 @@ export interface IStorage {
   setAccountStripeCustomerId(id: number, stripeCustomerId: string): Promise<void>;
   setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void>;
   setAccountPublicName(id: number, publicName: string): Promise<Account | undefined>;
+  getOrCreateReferralCode(accountId: number): Promise<string>;
+  getAccountByReferralCode(code: string): Promise<Account | undefined>;
+  setReferredBy(accountId: number, referrerAccountId: number): Promise<void>;
+  getReferralStats(accountId: number): Promise<ReferralStats>;
+  // Sets referralConvertedAt on the first paid conversion only (a no-op if
+  // already set, or if this account was never referred) and returns the
+  // referrer's id so the caller can track the milestone event — null in
+  // every other case, including "already converted before" so a plan
+  // change/renewal never double-fires the reward trigger.
+  markReferralConvertedIfFirstTime(accountId: number): Promise<number | null>;
   setPasswordResetToken(id: number, tokenHash: string, expiresAt: Date): Promise<void>;
   getAccountByValidResetTokenHash(tokenHash: string): Promise<Account | undefined>;
   resetPassword(id: number, passwordHash: string): Promise<void>;
@@ -472,6 +483,63 @@ export class DatabaseStorage implements IStorage {
 
   async setAccountSubscription(id: number, plan: Plan, stripeSubscriptionId: string | null): Promise<void> {
     await db.update(accounts).set({ plan, stripeSubscriptionId }).where(eq(accounts.id, id));
+  }
+
+  // 8 chars of unambiguous base32 (no 0/O/1/I) — short enough to type from
+  // a locker-room whiteboard, long enough that guessing someone else's
+  // isn't practical. Collisions are astronomically unlikely at this scale,
+  // so no retry loop — the unique constraint would just fail the insert.
+  async getOrCreateReferralCode(accountId: number): Promise<string> {
+    const account = await this.getAccountById(accountId);
+    if (account?.referralCode) return account.referralCode;
+    const alphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+    const bytes = crypto.randomBytes(8);
+    const code = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+    const [updated] = await db.update(accounts).set({ referralCode: code }).where(eq(accounts.id, accountId)).returning();
+    return updated.referralCode!;
+  }
+
+  async getAccountByReferralCode(code: string): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.referralCode, code));
+    return account || undefined;
+  }
+
+  async setReferredBy(accountId: number, referrerAccountId: number): Promise<void> {
+    await db.update(accounts).set({ referredByAccountId: referrerAccountId }).where(eq(accounts.id, accountId));
+  }
+
+  async getReferralStats(accountId: number): Promise<ReferralStats> {
+    const code = await this.getOrCreateReferralCode(accountId);
+    const referred = await db
+      .select({ email: accounts.email, joinedAt: accounts.createdAt, convertedAt: accounts.referralConvertedAt })
+      .from(accounts)
+      .where(eq(accounts.referredByAccountId, accountId))
+      .orderBy(desc(accounts.createdAt));
+
+    const referrals = referred.map((r) => ({
+      email: r.email,
+      joinedAt: r.joinedAt ? r.joinedAt.toISOString() : null,
+      convertedAt: r.convertedAt ? r.convertedAt.toISOString() : null,
+    }));
+    return {
+      code,
+      totalReferred: referrals.length,
+      totalConverted: referrals.filter((r) => r.convertedAt !== null).length,
+      referrals,
+    };
+  }
+
+  async markReferralConvertedIfFirstTime(accountId: number): Promise<number | null> {
+    // The WHERE clause (both referredByAccountId set AND not already
+    // converted) makes this update itself the idempotency guard — two
+    // concurrent webhook deliveries for the same account can't both
+    // "win" and double-count the conversion.
+    const [updated] = await db
+      .update(accounts)
+      .set({ referralConvertedAt: new Date() })
+      .where(and(eq(accounts.id, accountId), isNotNull(accounts.referredByAccountId), isNull(accounts.referralConvertedAt)))
+      .returning({ referredByAccountId: accounts.referredByAccountId });
+    return updated?.referredByAccountId ?? null;
   }
 
   async setAccountPublicName(id: number, publicName: string): Promise<Account | undefined> {

@@ -47,6 +47,7 @@
     "players": "Players",
     "club": "Club",
     "coaches": "Coaches",
+    "referrals": "Refer a Coach",
     "account": "Account",
     "adminReports": "Reports"
   },
@@ -1395,6 +1396,21 @@
     "dangerZone": "Danger Zone",
     "deleteAccountDescription": "Permanently deletes your account, teams, players, sessions, plays, exercises, and everything else tied to it. This can't be undone.",
     "deleteAccount": "Delete my account"
+  },
+  "referrals": {
+    "title": "Refer a Coach",
+    "subtitle": "Invite another coach — when they upgrade to Paid, you get a free month.",
+    "yourLink": "Your Link",
+    "yourLinkDescription": "Share it with a coach you know. It fills in the signup form automatically.",
+    "copyLink": "Copy Link",
+    "copied": "Copied",
+    "totalReferred": "Coaches Referred",
+    "totalConverted": "Converted to Paid",
+    "yourReferrals": "Your Referrals",
+    "noReferralsYet": "No one's signed up with your link yet.",
+    "statusConverted": "Converted",
+    "statusInvited": "Signed up",
+    "loadError": "Couldn't load your referrals"
   },
   "deleteAccountDialog": {
     "title": "Delete your account?",

@@ -47,6 +47,7 @@
     "players": "Jugadores",
     "club": "Club",
     "coaches": "Entrenadores",
+    "referrals": "Invitar Entrenador",
     "account": "Cuenta",
     "adminReports": "Reportes"
   },
@@ -1395,6 +1396,21 @@
     "dangerZone": "Zona de Peligro",
     "deleteAccountDescription": "Elimina permanentemente tu cuenta, equipos, jugadores, sesiones, jugadas, ejercicios y todo lo demás asociado. No se puede deshacer.",
     "deleteAccount": "Eliminar mi cuenta"
+  },
+  "referrals": {
+    "title": "Invitar Entrenador",
+    "subtitle": "Invitá a otro entrenador — cuando pase al plan Paid, te ganás un mes gratis.",
+    "yourLink": "Tu Enlace",
+    "yourLinkDescription": "Compartilo con un entrenador que conozcas. Completa el formulario de alta automáticamente.",
+    "copyLink": "Copiar Enlace",
+    "copied": "Copiado",
+    "totalReferred": "Entrenadores Invitados",
+    "totalConverted": "Convertidos a Paid",
+    "yourReferrals": "Tus Invitados",
+    "noReferralsYet": "Todavía nadie se registró con tu enlace.",
+    "statusConverted": "Convertido",
+    "statusInvited": "Registrado",
+    "loadError": "No se pudieron cargar tus invitados"
   },
   "deleteAccountDialog": {
     "title": "¿Eliminar tu cuenta?",

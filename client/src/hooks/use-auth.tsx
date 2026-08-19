@@ -75,7 +75,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signupMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const res = await apiRequest("POST", "/api/signup", { email, password });
+      // Read directly from the URL rather than threading a ref param through
+      // signup()'s own signature — a referral link is just "?ref=CODE" on
+      // top of the normal "?signup=1" deep link (see Login.tsx), so nothing
+      // else has to know this exists.
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      const res = await apiRequest("POST", "/api/signup", { email, password, ...(ref ? { ref } : {}) });
       return res.json() as Promise<SessionResponse>;
     },
     onSuccess: (session) => {

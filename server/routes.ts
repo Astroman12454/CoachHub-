@@ -287,6 +287,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deliberately req.session.accountId, not resolveEffectiveAccountId — a
+  // referral code belongs to the specific login that shared it, not to
+  // whichever club it happens to have joined (a Club member referring a
+  // friend shouldn't hand out the club owner's code).
+  app.get("/api/account/referrals", async (req, res) => {
+    try {
+      const stats = await storage.getReferralStats(req.session.accountId!);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load referral stats" });
+    }
+  });
+
   // A one-shot JSON snapshot of everything under this team — roster,
   // schedule, attendance, games/stats, plays/steps, and evaluation-test
   // history — for a coach who wants a personal backup or wants to move the

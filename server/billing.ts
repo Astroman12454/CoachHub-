@@ -129,6 +129,8 @@ export function setupStripeWebhook(app: Express) {
           if (!isNaN(accountId) && session.subscription) {
             await storage.setAccountSubscription(accountId, plan, session.subscription as string);
             trackEvent(accountId, plan === "club" ? "upgrade_to_club" : "upgrade_to_paid");
+            const referrerAccountId = await storage.markReferralConvertedIfFirstTime(accountId);
+            if (referrerAccountId !== null) trackEvent(referrerAccountId, "referral_converted");
           }
           break;
         }

@@ -162,6 +162,22 @@ export function setupAuth(app: Express) {
     await seedDefaultExercises(account.id);
     trackEvent(account.id, "signup_completed");
 
+    // Optional referral attribution — a raw body field, not part of
+    // insertAccountSchema, since a malformed/unknown code should never fail
+    // the signup itself, only silently skip crediting the referrer. No
+    // self-referral guard needed: a code is only ever generated for an
+    // account that already exists (see getOrCreateReferralCode), so it's
+    // never possible for the brand-new account being created right here to
+    // already own the code it's submitting.
+    const ref = typeof req.body?.ref === "string" ? req.body.ref.trim() : "";
+    if (ref) {
+      const referrer = await storage.getAccountByReferralCode(ref);
+      if (referrer) {
+        await storage.setReferredBy(account.id, referrer.id);
+        trackEvent(referrer.id, "referral_signup");
+      }
+    }
+
     req.session.accountId = account.id;
     req.session.currentTeamId = team.id;
     res.status(201).json(await sessionPayload(account.id, team.id));

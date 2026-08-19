@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings, Flag, Building2 } from "lucide-react";
+import { LayoutDashboard, CalendarRange, CalendarDays, Dumbbell, Users, Trophy, PencilRuler, LogOut, ChevronsUpDown, Plus, UserCog, Target, Pencil, Settings, Flag, Building2, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -113,6 +113,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const items = [
     ...(isInAClub ? [...navigation, { key: "nav.club", href: "/club", icon: Building2 }] : navigation),
     ...(canManageCoaches ? [{ key: "nav.coaches", href: "/settings/coaches", icon: UserCog }] : []),
+    // Every account gets this — referring a peer coach has nothing to do
+    // with plan or club membership, unlike Coaches above.
+    { key: "nav.referrals", href: "/referrals", icon: Gift },
     // Every plan gets this one, unlike Coaches above — it's where the
     // account-level "delete my account" action lives (see AccountSettings),
     // and every coach needs a way to reach it, not just Club owners.
