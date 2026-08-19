@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -33,6 +35,11 @@ interface PlayerFormProps {
 export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps) {
   const { t } = useTranslation();
   const isEditing = !!player;
+  // New players start with just name + jersey number visible, per the audit's
+  // "nombre + dorsal visible de entrada, el resto plegado" suggestion. Editing
+  // an existing player always starts expanded so nothing already on file is
+  // silently hidden.
+  const [showDetails, setShowDetails] = useState(isEditing);
   const restoreFocus = useDialogFocusReturn(isOpen);
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
@@ -112,204 +119,224 @@ export default function PlayerForm({ isOpen, onClose, player }: PlayerFormProps)
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="position"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("playerForm.position")}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("playerForm.selectPosition")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {positions.map(position => (
-                          <SelectItem key={position} value={position}>
-                            {t(`playerForm.positions.${position}`, position)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="jerseyNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("playerForm.jerseyNumber")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder={t("playerForm.jerseyNumberPlaceholder")}
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="birthDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("playerForm.birthDate")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value === "" ? null : e.target.value)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="height"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("playerForm.height")}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder={t("playerForm.heightPlaceholder")}
-                        {...field}
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="dominantHand"
+              name="jerseyNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("playerForm.dominantHand")}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("playerForm.selectDominantHand")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="left">{t("playerForm.dominantHandOptions.left")}</SelectItem>
-                      <SelectItem value="right">{t("playerForm.dominantHandOptions.right")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="emergencyContactName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("playerForm.emergencyContactName")}</FormLabel>
-                    <FormControl>
-                      <Input placeholder={t("playerForm.emergencyContactNamePlaceholder")} {...field} value={field.value ?? ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="emergencyContactPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("playerForm.emergencyContactPhone")}</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder={t("playerForm.emergencyContactPhonePlaceholder")} {...field} value={field.value ?? ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="medicalNotes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("playerForm.medicalNotes")}</FormLabel>
+                  <FormLabel>{t("playerForm.jerseyNumber")}</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder={t("playerForm.medicalNotesPlaceholder")}
-                      rows={2}
-                      className="resize-none"
+                    <Input
+                      type="number"
+                      placeholder={t("playerForm.jerseyNumberPlaceholder")}
                       {...field}
                       value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                     />
                   </FormControl>
-                  <FormDescription>{t("playerForm.medicalNotesConsentHint")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <FormLabel className="text-sm">
-                      {t("playerForm.activePlayer")}
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value === 1}
-                        onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <button
+              type="button"
+              onClick={() => setShowDetails((prev) => !prev)}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              aria-expanded={showDetails}
+            >
+              {showDetails ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {showDetails ? t("playerForm.hideDetails") : t("playerForm.moreDetails")}
+            </button>
 
-              <FormField
-                control={form.control}
-                name="isCaptain"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                    <FormLabel className="text-sm">
-                      {t("playerForm.captain")}
-                    </FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value === 1}
-                        onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
+            {showDetails && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("playerForm.position")}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("playerForm.selectPosition")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {positions.map(position => (
+                              <SelectItem key={position} value={position}>
+                                {t(`playerForm.positions.${position}`, position)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="birthDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("playerForm.birthDate")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value === "" ? null : e.target.value)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="height"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("playerForm.height")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder={t("playerForm.heightPlaceholder")}
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dominantHand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("playerForm.dominantHand")}</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("playerForm.selectDominantHand")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="left">{t("playerForm.dominantHandOptions.left")}</SelectItem>
+                            <SelectItem value="right">{t("playerForm.dominantHandOptions.right")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <FormLabel className="text-sm">
+                          {t("playerForm.activePlayer")}
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value === 1}
+                            onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isCaptain"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <FormLabel className="text-sm">
+                          {t("playerForm.captain")}
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value === 1}
+                            onCheckedChange={(checked) => field.onChange(checked ? 1 : 0)}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-4 rounded-lg border border-border p-4">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {t("playerForm.emergencyAndMedical")}
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="emergencyContactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("playerForm.emergencyContactName")}</FormLabel>
+                          <FormControl>
+                            <Input placeholder={t("playerForm.emergencyContactNamePlaceholder")} {...field} value={field.value ?? ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="emergencyContactPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("playerForm.emergencyContactPhone")}</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder={t("playerForm.emergencyContactPhonePlaceholder")} {...field} value={field.value ?? ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="medicalNotes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("playerForm.medicalNotes")}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={t("playerForm.medicalNotesPlaceholder")}
+                            rows={2}
+                            className="resize-none"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormDescription>{t("playerForm.medicalNotesConsentHint")}</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-end space-x-4 pt-6 border-t border-border">
               <Button
