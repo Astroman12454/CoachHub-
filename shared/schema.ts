@@ -223,6 +223,19 @@ export interface ClubRosterPlayer {
   isActive: number | null;
 }
 
+// The other item the audit named as missing from the club-wide view:
+// "ejercicios más usados en todo el club, etc." — an aggregate across every
+// team's sessions, not scoped to whichever team the coach currently has
+// selected. Computed on the fly (see getClubTopExercises, storage.ts) from
+// the same per-account usage counts the exercise library already tracks.
+export interface ClubTopExercise {
+  exerciseId: number;
+  name: string;
+  nameEs: string | null;
+  category: string;
+  usageCount: number;
+}
+
 // The dashboard hook the audit said didn't exist: "no hay racha, no hay
 // resumen semanal proactivo... nada se vuelve más valioso con el tiempo."
 // Computed on the fly from trainingSessions (see getTeamProgressSummary,

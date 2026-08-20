@@ -1368,7 +1368,12 @@
     "active": "Active",
     "inactive": "Inactive",
     "noPlayersFound": "No players match your search.",
-    "couldntLoadRoster": "Couldn't load the roster"
+    "couldntLoadRoster": "Couldn't load the roster",
+    "topExercises": "Most Used Exercises",
+    "topExercisesSubtitle": "Across every team in the club.",
+    "noExercisesUsed": "No exercises used in sessions yet.",
+    "timesUsed_one": "Used {{count}} time",
+    "timesUsed_other": "Used {{count}} times"
   },
   "adminReports": {
     "title": "Reports",

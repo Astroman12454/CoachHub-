@@ -1368,7 +1368,12 @@
     "active": "Activo",
     "inactive": "Inactivo",
     "noPlayersFound": "Ningún jugador coincide con tu búsqueda.",
-    "couldntLoadRoster": "No se pudo cargar la plantilla"
+    "couldntLoadRoster": "No se pudo cargar la plantilla",
+    "topExercises": "Ejercicios Más Usados",
+    "topExercisesSubtitle": "En todos los equipos del club.",
+    "noExercisesUsed": "Todavía no se usó ningún ejercicio en sesiones.",
+    "timesUsed_one": "Usado {{count}} vez",
+    "timesUsed_other": "Usado {{count}} veces"
   },
   "adminReports": {
     "title": "Reportes",

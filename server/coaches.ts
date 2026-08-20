@@ -87,6 +87,16 @@ export function registerCoachRoutes(app: Express) {
     }
   });
 
+  app.get("/api/club/top-exercises", requireClubMember, async (req: Request, res: Response) => {
+    try {
+      const effectiveAccountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const topExercises = await storage.getClubTopExercises(effectiveAccountId);
+      res.json(topExercises);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch club top exercises" });
+    }
+  });
+
   app.get("/api/coaches", requireClubOwner, async (req: Request, res: Response) => {
     try {
       const accountId = req.session.accountId!;

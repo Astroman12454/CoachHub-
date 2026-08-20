@@ -122,6 +122,41 @@ describe("Club identity and overview", () => {
     expect(res.status).toBe(403);
   });
 
+  it("GET /api/club/top-exercises ranks exercises by how many sessions across the club used them", async () => {
+    const { agent } = await signedInClubAgent(app);
+    const popular = await agent.post("/api/exercises").send({
+      name: "Layup Lines", description: "Basic finishing at the rim", category: "shooting", duration: 10, difficulty: "easy",
+    });
+    const rare = await agent.post("/api/exercises").send({
+      name: "Full Court Press", description: "Defensive pressure drill", category: "defense", duration: 15, difficulty: "hard",
+    });
+    await agent.post("/api/training-sessions").send({
+      name: "Practice 1", date: "2026-01-01", time: "18:00", duration: 60, exerciseIds: [popular.body.id.toString(), rare.body.id.toString()],
+    });
+    await agent.post("/api/training-sessions").send({
+      name: "Practice 2", date: "2026-01-08", time: "18:00", duration: 60, exerciseIds: [popular.body.id.toString()],
+    });
+
+    const res = await agent.get("/api/club/top-exercises");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body[0]).toMatchObject({ name: "Layup Lines", usageCount: 2 });
+    expect(res.body[1]).toMatchObject({ name: "Full Court Press", usageCount: 1 });
+  });
+
+  it("GET /api/club/top-exercises is empty when no session has used any exercise yet", async () => {
+    const { agent } = await signedInClubAgent(app);
+    const res = await agent.get("/api/club/top-exercises");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("GET /api/club/top-exercises is a Club plan feature, same as the roster", async () => {
+    const { agent } = await signedInAgent(app);
+    const res = await agent.get("/api/club/top-exercises");
+    expect(res.status).toBe(403);
+  });
+
   // Membership is set up directly at the DB level (rather than going
   // through the real invite-email flow, which coaches.test.ts already
   // covers end to end) — what's under test here is specifically the

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Users, CalendarDays, TrendingUp, ShieldAlert, Building2, Search, ArrowRight } from "lucide-react";
+import { Users, CalendarDays, TrendingUp, ShieldAlert, Building2, Search, ArrowRight, Dumbbell } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import TopBar from "@/components/TopBar";
 import StatCard from "@/components/StatCard";
@@ -12,7 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import type { Club, ClubTeamOverview, ClubRosterPlayer } from "@shared/schema";
+import type { Club, ClubTeamOverview, ClubRosterPlayer, ClubTopExercise } from "@shared/schema";
+
+// Same fallback rule as localizedExerciseText (lib/exerciseI18n.ts), but
+// ClubTopExercise only carries a name/nameEs pair — pulling in the full
+// LocalizableExercise shape (description/instructions) just for this would
+// be overkill.
+function localizedExerciseName(exercise: Pick<ClubTopExercise, "name" | "nameEs">, language: string): string {
+  return (language.startsWith("es") && exercise.nameEs) || exercise.name;
+}
 
 // The aggregate view a director/club-admin never had before: every team
 // under the account's roster, sessions, and attendance side by side, instead
@@ -20,7 +28,7 @@ import type { Club, ClubTeamOverview, ClubRosterPlayer } from "@shared/schema";
 // hand. Read-only — editing the club's name/logo stays in Manage Coaches
 // (owner-only), this page is for both the owner and any coach who joined.
 export default function ClubOverview() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { account, switchTeam } = useAuth();
   const [, setLocation] = useLocation();
   const [rosterSearch, setRosterSearch] = useState("");
@@ -36,6 +44,10 @@ export default function ClubOverview() {
   });
   const { data: roster, isLoading: isLoadingRoster, isError: isRosterError } = useQuery<ClubRosterPlayer[]>({
     queryKey: ["/api/club/roster"],
+    enabled: !!account?.isClubMember || account?.plan === "club",
+  });
+  const { data: topExercises, isLoading: isLoadingTopExercises } = useQuery<ClubTopExercise[]>({
+    queryKey: ["/api/club/top-exercises"],
     enabled: !!account?.isClubMember || account?.plan === "club",
   });
 
@@ -157,6 +169,39 @@ export default function ClubOverview() {
                     </tbody>
                   </table>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} aria-hidden="true" />
+                  {t("clubOverview.topExercises")}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{t("clubOverview.topExercisesSubtitle")}</p>
+              </CardHeader>
+              <CardContent>
+                {isLoadingTopExercises ? (
+                  <Skeleton className="h-24" />
+                ) : !topExercises || topExercises.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("clubOverview.noExercisesUsed")}</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {topExercises.map((exercise) => (
+                      <li
+                        key={exercise.exerciseId}
+                        className="flex items-center justify-between gap-3 text-sm border border-border rounded-lg p-3"
+                      >
+                        <span className="font-medium text-foreground truncate">
+                          {localizedExerciseName(exercise, i18n.language)}
+                        </span>
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          {t("clubOverview.timesUsed", { count: exercise.usageCount })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </CardContent>
             </Card>
 

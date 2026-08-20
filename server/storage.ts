@@ -83,6 +83,7 @@ import {
   type UpsertClub,
   type ClubTeamOverview,
   type ClubRosterPlayer,
+  type ClubTopExercise,
   type TeamProgressSummary,
   type Consent,
   type ConsentPurpose,
@@ -197,6 +198,7 @@ export interface IStorage {
   // from trainingSessions.exerciseIds rather than a stored counter, since
   // that array is the single source of truth for "what's in a session".
   getExerciseUsageStats(accountId: number): Promise<Record<string, { count: number; lastUsedDate: string | null }>>;
+  getClubTopExercises(accountId: number, limit?: number): Promise<ClubTopExercise[]>;
   getOrCreateExerciseShareToken(id: number, accountId: number): Promise<string | undefined>;
   revokeExerciseShareToken(id: number, accountId: number): Promise<boolean>;
   getExerciseByShareToken(token: string): Promise<Exercise | undefined>;
@@ -947,6 +949,33 @@ export class DatabaseStorage implements IStorage {
       }
     }
     return stats;
+  }
+
+  // The audit named this explicitly as missing from the club-wide view:
+  // "ejercicios más usados en todo el club." getExerciseUsageStats above is
+  // already computed across every team on the account — this just ranks it
+  // and attaches the names/category needed to display it.
+  async getClubTopExercises(accountId: number, limit = 5): Promise<ClubTopExercise[]> {
+    const [usage, allExercises] = await Promise.all([
+      this.getExerciseUsageStats(accountId),
+      this.getAllExercises(accountId),
+    ]);
+    const exerciseById = new Map(allExercises.map((exercise) => [exercise.id, exercise]));
+    return Object.entries(usage)
+      .map(([exerciseId, stat]) => {
+        const exercise = exerciseById.get(Number(exerciseId));
+        if (!exercise) return null;
+        return {
+          exerciseId: exercise.id,
+          name: exercise.name,
+          nameEs: exercise.nameEs,
+          category: exercise.category,
+          usageCount: stat.count,
+        };
+      })
+      .filter((entry): entry is ClubTopExercise => entry !== null)
+      .sort((a, b) => b.usageCount - a.usageCount)
+      .slice(0, limit);
   }
 
   async getOrCreateExerciseShareToken(id: number, accountId: number): Promise<string | undefined> {
