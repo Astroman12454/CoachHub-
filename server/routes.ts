@@ -196,6 +196,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerCoachRoutes(app);
   registerGuardianAuthorizationRoutes(app);
 
+  // Not under /api, so it's outside requireAuth entirely (see index.ts —
+  // that middleware is only mounted on the /api prefix) and reachable
+  // straight from the site root, which is where crawlers expect to find
+  // it. The one thing that actually makes the public exercise pages
+  // discoverable, on top of robots.txt allowing them.
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const origin = `${req.protocol}://${req.get("host")}`;
+      const staticPaths = ["/", "/pricing", "/privacy", "/terms", "/support"];
+      const exerciseIds = await storage.getCommunitySharedExerciseIds();
+      const urls = [
+        ...staticPaths.map((path) => `${origin}${path}`),
+        ...exerciseIds.map((id) => `${origin}/community/exercises/${id}`),
+      ];
+      res.type("application/xml").send(
+        `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+        urls.map((url) => `  <url><loc>${url}</loc></url>`).join("\n") +
+        `\n</urlset>\n`
+      );
+    } catch (error) {
+      res.status(500).type("text/plain").send("Failed to generate sitemap");
+    }
+  });
+
   // The only event the client is trusted to report itself — everything else
   // in ANALYTICS_EVENTS is fired server-side, at the exact route that
   // proves the thing actually happened. "Completed the onboarding
@@ -532,6 +557,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl, courtType, nameEs, descriptionEs, instructionsEs, steps });
     } catch (error) {
       res.status(500).json({ message: "Failed to load shared exercise" });
+    }
+  });
+
+  // Public, read-only, and — unlike /api/exercise-share/:token above —
+  // deliberately indexable: a community-shared exercise's own numeric id is
+  // not a secret, and the coach already opted into publishing it by sharing
+  // it to the community. Backs the public /community/exercises/:id page
+  // that's meant to actually be crawlable (see robots.txt/sitemap.xml),
+  // unlike the rest of the authenticated app.
+  app.get("/api/community-exercises/:id/public", portalRateLimiter, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const exercise = await storage.getPublicCommunityExercise(id);
+      if (!exercise) {
+        return res.status(404).json({ message: "Exercise not found or no longer shared" });
+      }
+      const { name, description, category, duration, difficulty, instructions, imageUrl, courtType, nameEs, descriptionEs, instructionsEs } = exercise;
+      const steps = await storage.getExerciseSteps(id);
+      res.json({ id, name, description, category, duration, difficulty, instructions, imageUrl, courtType, nameEs, descriptionEs, instructionsEs, steps });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to load exercise" });
     }
   });
 

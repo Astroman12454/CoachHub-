@@ -354,7 +354,7 @@ export function setupAuth(app: Express) {
 // /guardian-authorization/ is the same token-link pattern as /invites/ above
 // (server/guardian-authorization.ts) — a guardian approves or declines by
 // visiting the link, never needing an account of their own.
-const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/", "/exercise-share/", "/guardian-authorization/"];
+const PUBLIC_API_PREFIXES = ["/portal/", "/cron/", "/invites/", "/exercise-share/", "/guardian-authorization/", "/community-exercises/"];
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (PUBLIC_API_PREFIXES.some((prefix) => req.path.startsWith(prefix))) return next();

@@ -40,6 +40,7 @@ const BillingStatus = lazy(() => import("@/pages/BillingStatus"));
 const Portal = lazy(() => import("@/pages/Portal"));
 const SeasonSummary = lazy(() => import("@/pages/SeasonSummary"));
 const ExerciseShare = lazy(() => import("@/pages/ExerciseShare"));
+const CommunityExercisePublic = lazy(() => import("@/pages/CommunityExercisePublic"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const GuardianAuthorization = lazy(() => import("@/pages/GuardianAuthorization"));
@@ -208,6 +209,11 @@ const ExerciseShareRoute = () => (
     <ExerciseShare />
   </Suspense>
 );
+const CommunityExercisePublicRoute = () => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <CommunityExercisePublic />
+  </Suspense>
+);
 
 function AuthGate() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -247,6 +253,7 @@ function App() {
                 <Route path="/portal/:token" component={PortalRoute} />
                 <Route path="/portal/:token/summary" component={SeasonSummaryRoute} />
                 <Route path="/exercise/:token" component={ExerciseShareRoute} />
+                <Route path="/community/exercises/:id" component={CommunityExercisePublicRoute} />
                 <Route component={AuthGate} />
               </Switch>
             </TooltipProvider>

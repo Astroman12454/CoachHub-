@@ -959,6 +959,13 @@
     "instructions": "Instrucciones",
     "diagram": "Diagrama"
   },
+  "communityExercisePublic": {
+    "pageTitle": "{{name}} — Ejercicio de Baloncesto | Backboard",
+    "notAvailable": "Ejercicio no disponible",
+    "notAvailableDescription": "Este ejercicio no está compartido públicamente, o ya no existe.",
+    "ctaDescription": "Backboard tiene más de 140 ejercicios como este, listos para armar un entrenamiento completo.",
+    "ctaButton": "Empezar gratis"
+  },
   "diagramPlayback": {
     "diagramPreview": "Vista previa del diagrama",
     "stopPlayback": "Detener reproducción",

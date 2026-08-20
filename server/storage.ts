@@ -202,6 +202,8 @@ export interface IStorage {
   getOrCreateExerciseShareToken(id: number, accountId: number): Promise<string | undefined>;
   revokeExerciseShareToken(id: number, accountId: number): Promise<boolean>;
   getExerciseByShareToken(token: string): Promise<Exercise | undefined>;
+  getPublicCommunityExercise(id: number): Promise<Exercise | undefined>;
+  getCommunitySharedExerciseIds(): Promise<number[]>;
   setExerciseCommunityShare(id: number, accountId: number, shared: boolean): Promise<Exercise | undefined>;
   // Cross-account by design — every exercise any coach has opted into the
   // community library, not scoped to the requesting account. likeCount/
@@ -999,6 +1001,26 @@ export class DatabaseStorage implements IStorage {
   async getExerciseByShareToken(token: string): Promise<Exercise | undefined> {
     const [exercise] = await db.select().from(exercises).where(eq(exercises.shareToken, token));
     return exercise || undefined;
+  }
+
+  // Unlike getExerciseByShareToken (an unguessable secret, meant for one
+  // private link), this is keyed by the exercise's own id — safe to be
+  // public and indexable because sharedToCommunity=1 already means the
+  // coach opted in to publishing it. Anything not community-shared (still
+  // sharedToCommunity=0, or since revoked) 404s the same as a bad token.
+  async getPublicCommunityExercise(id: number): Promise<Exercise | undefined> {
+    const [exercise] = await db
+      .select()
+      .from(exercises)
+      .where(and(eq(exercises.id, id), eq(exercises.sharedToCommunity, 1)));
+    return exercise || undefined;
+  }
+
+  // Every currently-public exercise id, for the sitemap — nothing else
+  // about the exercise is needed there.
+  async getCommunitySharedExerciseIds(): Promise<number[]> {
+    const rows = await db.select({ id: exercises.id }).from(exercises).where(eq(exercises.sharedToCommunity, 1));
+    return rows.map((row) => row.id);
   }
 
   async setExerciseCommunityShare(id: number, accountId: number, shared: boolean): Promise<Exercise | undefined> {

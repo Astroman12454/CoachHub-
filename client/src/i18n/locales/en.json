@@ -959,6 +959,13 @@
     "instructions": "Instructions",
     "diagram": "Diagram"
   },
+  "communityExercisePublic": {
+    "pageTitle": "{{name}} — Basketball Drill | Backboard",
+    "notAvailable": "Exercise not available",
+    "notAvailableDescription": "This exercise isn't shared publicly, or no longer exists.",
+    "ctaDescription": "Backboard has 140+ drills like this one, ready to plan a whole practice around.",
+    "ctaButton": "Start free"
+  },
   "diagramPlayback": {
     "diagramPreview": "Diagram preview",
     "stopPlayback": "Stop playback",

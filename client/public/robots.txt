@@ -1,2 +1,10 @@
 User-agent: *
+Allow: /$
+Allow: /community/exercises/
+Allow: /pricing
+Allow: /privacy
+Allow: /terms
+Allow: /support
 Disallow: /
+
+Sitemap: /sitemap.xml
