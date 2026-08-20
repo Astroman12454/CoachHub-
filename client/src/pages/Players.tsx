@@ -36,13 +36,14 @@ export default function Players() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: players = [], isLoading, isError, refetch } = useQuery<Player[]>({
+  const { data: players = [], isLoading, isError: isPlayersError, refetch } = useQuery<Player[]>({
     queryKey: ['/api/players'],
   });
 
-  const { data: activeInjuries = [] } = useQuery<PlayerInjury[]>({
+  const { data: activeInjuries = [], isError: isInjuriesError, refetch: refetchInjuries } = useQuery<PlayerInjury[]>({
     queryKey: ['/api/players/injuries'],
   });
+  const isError = isPlayersError || isInjuriesError;
   const injuredPlayerIds = useMemo(
     () => new Set(activeInjuries.map((injury) => injury.playerId)),
     [activeInjuries]
@@ -157,7 +158,7 @@ export default function Players() {
           searchPlaceholder={t("players.searchPlaceholder")}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <ErrorState onRetry={() => refetch()} />
+          <ErrorState onRetry={() => { refetch(); refetchInjuries(); }} />
         </main>
       </div>
     );

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorState from "@/components/ErrorState";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -63,7 +64,7 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
   // No `enabled: open` gate — TopBar's own poll (same query key, for the
   // bell's unread badge) keeps this populated even before the dialog opens,
   // so opening it usually just reads an already-warm cache.
-  const { data, isLoading } = useQuery<NotificationsResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<NotificationsResponse>({
     queryKey: ['/api/notifications'],
     refetchOnWindowFocus: true,
   });
@@ -168,6 +169,8 @@ export default function NotificationsDialog({ open, onOpenChange }: Notification
           <div className="space-y-2">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}
           </div>
+        ) : isError ? (
+          <ErrorState onRetry={() => refetch()} />
         ) : notifications.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">{t("notificationsDialog.empty")}</p>
         ) : (

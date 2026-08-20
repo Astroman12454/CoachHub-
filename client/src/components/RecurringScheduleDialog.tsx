@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import ErrorState from "@/components/ErrorState";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useDeleteWithUndo } from "@/hooks/use-delete-with-undo";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +55,7 @@ export default function RecurringScheduleDialog({ open, onOpenChange }: Recurrin
     onOpenChange(next);
   };
 
-  const { data: slots = [], isLoading } = useQuery<RecurringPracticeSlot[]>({
+  const { data: slots = [], isLoading, isError, refetch } = useQuery<RecurringPracticeSlot[]>({
     queryKey: ["/api/recurring-slots"],
     enabled: open,
   });
@@ -139,7 +140,9 @@ export default function RecurringScheduleDialog({ open, onOpenChange }: Recurrin
         </DialogHeader>
 
         <div className="space-y-4">
-          {isLoading ? null : visibleSlots.length === 0 ? (
+          {isLoading ? null : isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : visibleSlots.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("recurringSchedule.noSlots")}</p>
           ) : (
             <ul className="space-y-2">

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import ErrorState from "@/components/ErrorState";
 import { ToastAction } from "@/components/ui/toast";
 import SessionTimeline from "@/components/SessionTimeline";
 import { useSaveMutation } from "@/hooks/use-save-mutation";
@@ -92,7 +93,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Fetch exercises for selection
-  const { data: exercises = [] } = useQuery<Exercise[]>({
+  const { data: exercises = [], isError: exercisesError, refetch: refetchExercises } = useQuery<Exercise[]>({
     queryKey: ['/api/exercises'],
   });
 
@@ -109,7 +110,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
 
   // Playbook plays this session will practice — same id-tracking rationale
   // as selectedExerciseIds above.
-  const { data: plays = [] } = useQuery<Play[]>({ queryKey: ["/api/plays"] });
+  const { data: plays = [], isError: playsError, refetch: refetchPlays } = useQuery<Play[]>({ queryKey: ["/api/plays"] });
   const [selectedPlayIds, setSelectedPlayIds] = useState<string[]>(
     () => source?.playIds ?? []
   );
@@ -121,7 +122,7 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
   // Evaluation tests to run at the start of this session, before the
   // exercise sequence — same id-tracking rationale as selectedExerciseIds
   // above.
-  const { data: evaluationTests = [] } = useQuery<EvaluationTest[]>({ queryKey: ["/api/evaluation-tests"] });
+  const { data: evaluationTests = [], isError: evaluationTestsError, refetch: refetchEvaluationTests } = useQuery<EvaluationTest[]>({ queryKey: ["/api/evaluation-tests"] });
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>(
     () => source?.testIds ?? []
   );
@@ -503,10 +504,14 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
             {/* Evaluation Tests — shown before exercises so the form itself
                 mirrors the order Training Mode runs them in: tests block
                 first, technical exercises after. */}
-            {evaluationTests.length > 0 && (
+            {(evaluationTests.length > 0 || evaluationTestsError) && (
               <div>
                 <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.evaluationTestsToPractice")}</h3>
                 <div className="border border-border rounded-lg p-4">
+                  {evaluationTestsError ? (
+                    <ErrorState onRetry={() => refetchEvaluationTests()} />
+                  ) : (
+                  <>
                   <p className="text-sm text-muted-foreground mb-3">
                     {t("sessionModal.evaluationTestsToPracticeDescription")}
                   </p>
@@ -539,6 +544,8 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                       );
                     })}
                   </div>
+                  </>
+                  )}
                 </div>
               </div>
             )}
@@ -599,7 +606,9 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                 </div>
 
                 {/* Available Exercises */}
-                {filteredExercises.length === 0 ? (
+                {exercisesError ? (
+                  <ErrorState onRetry={() => refetchExercises()} />
+                ) : filteredExercises.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">{t("sessionModal.noExercisesMatchFilters")}</p>
                 ) : (
                 <div
@@ -636,10 +645,14 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
             </div>
 
             {/* Plays to Practice */}
-            {plays.length > 0 && (
+            {(plays.length > 0 || playsError) && (
               <div>
                 <h3 className="font-display uppercase tracking-tight text-lg text-foreground mb-4">{t("sessionModal.playsToPractice")}</h3>
                 <div className="border border-border rounded-lg p-4">
+                  {playsError ? (
+                    <ErrorState onRetry={() => refetchPlays()} />
+                  ) : (
+                  <>
                   <p className="text-sm text-muted-foreground mb-3">
                     {t("sessionModal.playsToPracticeDescription")}
                   </p>
@@ -674,6 +687,8 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                       );
                     })}
                   </div>
+                  </>
+                  )}
                 </div>
               </div>
             )}

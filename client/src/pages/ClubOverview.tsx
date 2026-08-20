@@ -34,11 +34,11 @@ export default function ClubOverview() {
   const [rosterSearch, setRosterSearch] = useState("");
   const [rosterTeamFilter, setRosterTeamFilter] = useState<string>("all");
 
-  const { data: club, isLoading: isLoadingClub } = useQuery<Club | null>({
+  const { data: club, isLoading: isLoadingClub, isError: isClubError } = useQuery<Club | null>({
     queryKey: ["/api/club"],
     enabled: !!account?.isClubMember || account?.plan === "club",
   });
-  const { data: teams, isLoading: isLoadingTeams, isError } = useQuery<ClubTeamOverview[]>({
+  const { data: teams, isLoading: isLoadingTeams, isError: isTeamsError } = useQuery<ClubTeamOverview[]>({
     queryKey: ["/api/club/overview"],
     enabled: !!account?.isClubMember || account?.plan === "club",
   });
@@ -85,6 +85,7 @@ export default function ClubOverview() {
 
   const isClubPlan = account?.plan === "club" || account?.isClubMember;
   const isLoading = isLoadingClub || isLoadingTeams;
+  const isError = isClubError || isTeamsError;
 
   if (!isClubPlan) {
     return (

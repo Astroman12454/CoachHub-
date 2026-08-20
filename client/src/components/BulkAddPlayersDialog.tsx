@@ -97,6 +97,7 @@ export default function BulkAddPlayersDialog({ isOpen, onClose }: BulkAddPlayers
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={t("bulkAddPlayers.placeholder")}
+          aria-label={t("bulkAddPlayers.title")}
           rows={10}
           className="font-mono text-sm"
           autoFocus

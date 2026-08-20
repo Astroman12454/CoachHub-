@@ -48,12 +48,27 @@ export default function TrainingMode() {
     queryKey: [`/api/training-sessions/${sessionId}`],
     enabled: !isNaN(sessionId),
   });
-  const { data: exercises = [] } = useQuery<Exercise[]>({ queryKey: ["/api/exercises"] });
-  const { data: plays = [] } = useQuery<PlaybookPlay[]>({ queryKey: ["/api/plays"] });
-  const { data: evaluationTests = [] } = useQuery<EvaluationTest[]>({ queryKey: ["/api/evaluation-tests"] });
-  const { data: players = [] } = useQuery<Player[]>({ queryKey: ["/api/players"] });
-  const { data: activeInjuries = [] } = useQuery<PlayerInjury[]>({ queryKey: ["/api/players/injuries"] });
+  const { data: exercises = [], isError: isExercisesError, refetch: refetchExercises } = useQuery<Exercise[]>({ queryKey: ["/api/exercises"] });
+  const { data: plays = [], isError: isPlaysError, refetch: refetchPlays } = useQuery<PlaybookPlay[]>({ queryKey: ["/api/plays"] });
+  const { data: evaluationTests = [], isError: isEvaluationTestsError, refetch: refetchEvaluationTests } = useQuery<EvaluationTest[]>({ queryKey: ["/api/evaluation-tests"] });
+  const { data: players = [], isError: isPlayersError, refetch: refetchPlayers } = useQuery<Player[]>({ queryKey: ["/api/players"] });
+  const { data: activeInjuries = [], isError: isInjuriesError, refetch: refetchInjuries } = useQuery<PlayerInjury[]>({ queryKey: ["/api/players/injuries"] });
   const injuredPlayerIds = useMemo(() => new Set(activeInjuries.map((i) => i.playerId)), [activeInjuries]);
+
+  // Every one of these feeds what's on screen live, mid-practice — same
+  // reasoning as isSessionError below, just extended to the session's own
+  // exercises/plays/tests (the sequence itself) and the roster/injury data
+  // the attendance and "watch this player" UI depends on. A silent failure
+  // here would otherwise look like "this practice has no exercises" or drop
+  // injury warnings without any indication something actually broke.
+  const isSupportingDataError = isExercisesError || isPlaysError || isEvaluationTestsError || isPlayersError || isInjuriesError;
+  const refetchSupportingData = () => {
+    refetchExercises();
+    refetchPlays();
+    refetchEvaluationTests();
+    refetchPlayers();
+    refetchInjuries();
+  };
 
   const sequence = useMemo(() => {
     if (!session?.exerciseIds) return [];
@@ -260,7 +275,7 @@ export default function TrainingMode() {
   // stays undefined, so the old `isLoadingSession || !session` check never
   // let go. Worst possible page for that: this is what's on screen live,
   // mid-practice, often on a phone with a spotty gym connection.
-  if (isSessionError) {
+  if (isSessionError || isSupportingDataError) {
     return (
       <div className="min-h-screen bg-rail flex flex-col items-center justify-center gap-4 p-4 text-center">
         <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center">
@@ -271,7 +286,7 @@ export default function TrainingMode() {
           <p className="text-sm text-rail-muted max-w-sm">{t("errorState.description")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => refetchSession()} className="basketball-orange basketball-orange-hover text-white">
+          <Button onClick={() => { refetchSession(); refetchSupportingData(); }} className="basketball-orange basketball-orange-hover text-white">
             <RotateCw className="w-4 h-4 mr-1.5" strokeWidth={2} aria-hidden="true" />
             {t("errorState.tryAgain")}
           </Button>
