@@ -1288,12 +1288,18 @@
     "createTeam": "Crear Equipo"
   },
   "renameTeamDialog": {
-    "title": "Renombrar Equipo",
-    "dialogDescription": "Cambia el nombre visible de este equipo.",
+    "title": "Ajustes del Equipo",
+    "dialogDescription": "Cambia el nombre visible de este equipo, o bórralo por completo.",
     "teamName": "Nombre del Equipo",
     "renamedToast": "Equipo renombrado",
     "couldntRename": "No se pudo renombrar el equipo",
-    "triggerAriaLabel": "Renombrar {{name}}"
+    "triggerAriaLabel": "Gestionar {{name}}",
+    "deleteTeam": "Borrar Equipo",
+    "deleteConfirmTitle": "¿Borrar este equipo?",
+    "deleteConfirmDescription": "Esto borra permanentemente \"{{name}}\" y todo lo que contiene — jugadores, sesiones, asistencia, evaluaciones, partidos y jugadas. No se puede deshacer.",
+    "deletedToast": "\"{{name}}\" borrado",
+    "couldntDelete": "No se pudo borrar el equipo",
+    "onlyTeamCantDelete": "No podés borrar tu único equipo."
   },
   "setPublicNameDialog": {
     "title": "Elegí un nombre público",

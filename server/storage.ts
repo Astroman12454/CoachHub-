@@ -184,6 +184,7 @@ export interface IStorage {
   getTeamById(id: number, accountId: number): Promise<Team | undefined>;
   getTeamByIdUnscoped(id: number): Promise<Team | undefined>;
   updateTeam(id: number, accountId: number, data: Partial<InsertTeam>): Promise<Team | undefined>;
+  deleteTeam(id: number, accountId: number): Promise<boolean>;
 
   // Exercise methods (scoped by account — shared across that account's teams)
   getAllExercises(accountId: number): Promise<Exercise[]>;
@@ -861,6 +862,17 @@ export class DatabaseStorage implements IStorage {
   async getTeamByIdUnscoped(id: number): Promise<Team | undefined> {
     const [team] = await db.select().from(teams).where(eq(teams.id, id));
     return team || undefined;
+  }
+
+  // Every table scoped to a team (players, sessions, attendance, evaluations,
+  // games, plays...) has an onDelete: "cascade" FK to teams.id (see
+  // shared/schema.ts), so this one delete is genuinely all it takes — no
+  // manual cleanup of child rows needed. The route (server/routes.ts) is
+  // what stops the account's last remaining team from being deleted; this
+  // method itself has no opinion on that.
+  async deleteTeam(id: number, accountId: number): Promise<boolean> {
+    const result = await db.delete(teams).where(and(eq(teams.id, id), eq(teams.accountId, accountId)));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async updateTeam(id: number, accountId: number, data: Partial<InsertTeam>): Promise<Team | undefined> {

@@ -275,7 +275,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // starting point for a from-scratch session), but scoped generically like
   // the other insertTeamSchema.partial() update routes in case more team
   // preferences show up later.
-  app.put("/api/teams/:id", async (req, res) => {
+  //
+  // blockReadOnlyMembers (not requireTeam — this doesn't need a currentTeamId,
+  // and the id being edited isn't necessarily the caller's selected team) is
+  // what actually stops an "assistant"/"helper" member from renaming a team;
+  // it was missing here before, which meant a read-only member could
+  // silently rename any team in the club despite every other write being
+  // blocked for them.
+  app.put("/api/teams/:id", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
@@ -290,6 +297,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(team);
     } catch (error) {
       res.status(400).json({ message: "Invalid team data" });
+    }
+  });
+
+  // Deleting the whole team, not just its name — every player/session/
+  // attendance/evaluation/game/play scoped to it cascades at the DB level
+  // (see storage.deleteTeam). Blocked when it's the account's only
+  // remaining team: too much of the app assumes a currentTeamId always
+  // resolves to something real to let that go to zero.
+  app.delete("/api/teams/:id", blockReadOnlyMembers, async (req, res) => {
+    try {
+      const id = parseId(req, res);
+      if (id === null) return;
+      const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
+      const accountTeams = await storage.getTeamsByAccount(accountId);
+      if (!accountTeams.some((team) => team.id === id)) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      if (accountTeams.length <= 1) {
+        return res.status(400).json({ message: "Can't delete your only team." });
+      }
+
+      await storage.deleteTeam(id, accountId);
+      // Only the caller's own session is fixed up here — a club member on a
+      // different login who also had this team selected picks a valid one
+      // the next time they switch teams, same as if it had been renamed out
+      // from under them.
+      if (req.session.currentTeamId === id) {
+        const nextTeam = accountTeams.find((team) => team.id !== id);
+        req.session.currentTeamId = nextTeam?.id;
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete team" });
     }
   });
 

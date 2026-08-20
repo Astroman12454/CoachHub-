@@ -1288,12 +1288,18 @@
     "createTeam": "Create Team"
   },
   "renameTeamDialog": {
-    "title": "Rename Team",
-    "dialogDescription": "Change this team's display name.",
+    "title": "Team Settings",
+    "dialogDescription": "Change this team's display name, or delete it entirely.",
     "teamName": "Team Name",
     "renamedToast": "Team renamed",
     "couldntRename": "Couldn't rename team",
-    "triggerAriaLabel": "Rename {{name}}"
+    "triggerAriaLabel": "Manage {{name}}",
+    "deleteTeam": "Delete Team",
+    "deleteConfirmTitle": "Delete this team?",
+    "deleteConfirmDescription": "This permanently deletes \"{{name}}\" and everything in it — players, sessions, attendance, evaluations, games, and plays. This can't be undone.",
+    "deletedToast": "\"{{name}}\" deleted",
+    "couldntDelete": "Couldn't delete team",
+    "onlyTeamCantDelete": "You can't delete your only team."
   },
   "setPublicNameDialog": {
     "title": "Choose a public name",
