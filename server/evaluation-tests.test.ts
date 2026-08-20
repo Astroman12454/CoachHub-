@@ -433,4 +433,16 @@ describe("evaluation tests — role permissions", () => {
     const res = await memberAgent.post("/api/evaluation-tests").send(sprintTest());
     expect(res.status).toBe(403);
   });
+
+  it("blocks an assistant from importing a community evaluation test — importing creates a real test", async () => {
+    const { memberAgent } = await joinAsRole(app, "assistant");
+
+    const { agent: publisher } = await signedInAgent(app);
+    await publisher.put("/api/account/public-name").send({ publicName: "Community Publisher" });
+    const shared = await publisher.post("/api/evaluation-tests").send(sprintTest());
+    await publisher.put(`/api/evaluation-tests/${shared.body.id}/share-community`).send({ shared: true });
+
+    const res = await memberAgent.post(`/api/community-evaluation-tests/${shared.body.id}/import`);
+    expect(res.status).toBe(403);
+  });
 });

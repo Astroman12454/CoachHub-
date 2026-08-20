@@ -1002,7 +1002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Importing copies the drill into your own library, so it's gated the
   // same as creating any other custom exercise.
-  app.post("/api/community-exercises/:id/import", async (req, res) => {
+  app.post("/api/community-exercises/:id/import", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
@@ -1279,7 +1279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/community-evaluation-tests/:id/import", async (req, res) => {
+  app.post("/api/community-evaluation-tests/:id/import", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;

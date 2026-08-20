@@ -473,4 +473,16 @@ describe("exercise content and account identity — role permissions", () => {
     const res = await memberAgent.put("/api/account/public-name").send({ publicName: "Hijacked Name" });
     expect(res.status).toBe(403);
   });
+
+  it("blocks an assistant from importing a community exercise — importing creates a real exercise in the library", async () => {
+    const { memberAgent } = await joinAsAssistant(app);
+
+    const { agent: publisher } = await signedInPaidAgent(app);
+    await publisher.put("/api/account/public-name").send({ publicName: "Community Publisher" });
+    const shared = await publisher.post("/api/exercises").send(exerciseBody({ name: "Public Drill" }));
+    await publisher.put(`/api/exercises/${shared.body.id}/share-community`).send({ shared: true });
+
+    const res = await memberAgent.post(`/api/community-exercises/${shared.body.id}/import`);
+    expect(res.status).toBe(403);
+  });
 });
