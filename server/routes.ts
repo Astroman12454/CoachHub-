@@ -250,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/teams", async (req, res) => {
+  app.post("/api/teams", blockReadOnlyMembers, async (req, res) => {
     try {
       // A coach who accepted a Club invite creates teams under the club's
       // account (visible to every coach on it), gated by the club's plan
@@ -339,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // afterward from Coach Settings. Applies to the effective (owner)
   // account, same as team/exercise ownership already does for Club
   // members — see sessionPayload in server/auth.ts.
-  app.put("/api/account/public-name", async (req, res) => {
+  app.put("/api/account/public-name", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const { publicName } = setPublicNameSchema.parse(req.body);
@@ -674,7 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // not behind canUseCustomExercises. Publishing (shared: true) does require
   // a public name first, though — since the exercise now shows who
   // published it, there's no such thing as an anonymous publish anymore.
-  app.put("/api/exercises/:id/share-community", async (req, res) => {
+  app.put("/api/exercises/:id/share-community", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
@@ -1037,7 +1037,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/evaluation-tests", async (req, res) => {
+  app.post("/api/evaluation-tests", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const testData = insertEvaluationTestSchema.parse(req.body);
@@ -1048,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/evaluation-tests/:id", async (req, res) => {
+  app.put("/api/evaluation-tests/:id", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const id = parseId(req, res);
@@ -1066,7 +1066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/evaluation-tests/:id", async (req, res) => {
+  app.delete("/api/evaluation-tests/:id", blockReadOnlyMembers, async (req, res) => {
     try {
       const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
       const id = parseId(req, res);
@@ -1085,7 +1085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const setEvaluationTestCommunityShareSchema = z.object({ shared: z.boolean() });
 
-  app.put("/api/evaluation-tests/:id/share-community", async (req, res) => {
+  app.put("/api/evaluation-tests/:id/share-community", blockReadOnlyMembers, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;

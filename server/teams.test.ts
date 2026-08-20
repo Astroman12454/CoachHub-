@@ -243,6 +243,28 @@ describe("teams — rename and role permissions", () => {
     const res = await assistantAgent.put(`/api/teams/${teamId}`).send({ name: "Renamed by assistant" });
     expect(res.status).toBe(403);
   });
+
+  it("blocks an assistant-role member from creating a new team", async () => {
+    const { agent: ownerAgent, email: ownerEmail } = await signedInClubAgent(app);
+
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const ownerRow = await pool.query("SELECT id FROM accounts WHERE email = $1", [ownerEmail]);
+    const ownerId = ownerRow.rows[0].id;
+    const { agent: assistantAgent } = await signedInAgentWithEmail(app);
+    const assistantSession = await assistantAgent.get("/api/session");
+    const assistantAccountId = assistantSession.body.account.id;
+    await pool.query(
+      "INSERT INTO account_memberships (owner_account_id, member_account_id, role) VALUES ($1, $2, 'assistant')",
+      [ownerId, assistantAccountId],
+    );
+    await pool.end();
+
+    const res = await assistantAgent.post("/api/teams").send({ name: "New Team" });
+    expect(res.status).toBe(403);
+
+    const ownerTeamsAfter = await ownerAgent.get("/api/teams");
+    expect(ownerTeamsAfter.body.some((t: { name: string }) => t.name === "New Team")).toBe(false);
+  });
 });
 
 describe("DELETE /api/teams/:id", () => {

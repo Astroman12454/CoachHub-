@@ -435,3 +435,42 @@ describe("exercise diagrams", () => {
     expect(fetched.body.steps[0].tokens).toMatchObject([{ id: "o1", x: 50, y: 90 }]);
   });
 });
+
+describe("exercise content and account identity — role permissions", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  async function joinAsAssistant(app: express.Express) {
+    const { agent: ownerAgent, email: ownerEmail } = await signedInAgent(app);
+    await setPlan(ownerEmail, "club");
+    const { agent: memberAgent } = await signedInAgent(app);
+    const memberSession = await memberAgent.get("/api/session");
+    const memberAccountId = memberSession.body.account.id;
+
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const ownerRow = await pool.query("SELECT id FROM accounts WHERE email = $1", [ownerEmail]);
+    await pool.query(
+      "INSERT INTO account_memberships (owner_account_id, member_account_id, role) VALUES ($1, $2, 'assistant')",
+      [ownerRow.rows[0].id, memberAccountId],
+    );
+    await pool.end();
+    return { ownerAgent, memberAgent };
+  }
+
+  it("blocks an assistant from toggling an exercise's community-share status", async () => {
+    const { ownerAgent, memberAgent } = await joinAsAssistant(app);
+    const exercise = await ownerAgent.post("/api/exercises").send(exerciseBody());
+
+    const res = await memberAgent.put(`/api/exercises/${exercise.body.id}/share-community`).send({ shared: true });
+    expect(res.status).toBe(403);
+  });
+
+  it("blocks an assistant from changing the club's public name", async () => {
+    const { memberAgent } = await joinAsAssistant(app);
+    const res = await memberAgent.put("/api/account/public-name").send({ publicName: "Hijacked Name" });
+    expect(res.status).toBe(403);
+  });
+});

@@ -384,3 +384,53 @@ describe("evaluation tests", () => {
     expect(record.status).toBe(201);
   });
 });
+
+describe("evaluation tests — role permissions", () => {
+  let app: express.Express;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  async function joinAsRole(app: express.Express, role: "assistant" | "helper") {
+    const { agent: ownerAgent, email: ownerEmail } = await signedInAgent(app);
+    await setPlan(ownerEmail, "club");
+    const { agent: memberAgent } = await signedInAgent(app);
+    const memberSession = await memberAgent.get("/api/session");
+    const memberAccountId = memberSession.body.account.id;
+
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const ownerRow = await pool.query("SELECT id FROM accounts WHERE email = $1", [ownerEmail]);
+    await pool.query(
+      "INSERT INTO account_memberships (owner_account_id, member_account_id, role) VALUES ($1, $2, $3)",
+      [ownerRow.rows[0].id, memberAccountId, role],
+    );
+    await pool.end();
+    return { ownerAgent, memberAgent };
+  }
+
+  it("blocks an assistant from creating, editing, deleting, or community-sharing an evaluation test", async () => {
+    const { ownerAgent, memberAgent } = await joinAsRole(app, "assistant");
+
+    const create = await memberAgent.post("/api/evaluation-tests").send(sprintTest());
+    expect(create.status).toBe(403);
+
+    // A real test the owner made, to exercise edit/delete/share against.
+    const test = await ownerAgent.post("/api/evaluation-tests").send(sprintTest());
+
+    const update = await memberAgent.put(`/api/evaluation-tests/${test.body.id}`).send({ name: "Renamed" });
+    expect(update.status).toBe(403);
+
+    const share = await memberAgent.put(`/api/evaluation-tests/${test.body.id}/share-community`).send({ shared: true });
+    expect(share.status).toBe(403);
+
+    const del = await memberAgent.delete(`/api/evaluation-tests/${test.body.id}`);
+    expect(del.status).toBe(403);
+  });
+
+  it("blocks a helper from creating an evaluation test — helpers can only take attendance and add notes", async () => {
+    const { memberAgent } = await joinAsRole(app, "helper");
+    const res = await memberAgent.post("/api/evaluation-tests").send(sprintTest());
+    expect(res.status).toBe(403);
+  });
+});
