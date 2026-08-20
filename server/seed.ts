@@ -6,6 +6,14 @@ import type { InsertExercise, CreatePlay } from "@shared/schema";
 // on day one instead of an empty library. Real, commonly-taught drills
 // (Mikan Drill, 3-man weave, 2-3 zone shell work, etc.), not filler —
 // eight per exercise category.
+//
+// imageUrl is null on every one of them on purpose: an earlier version had
+// 3 stock photos reused across a handful of exercises, which read as filler
+// the moment a coach noticed the same photo twice — worse than no photo at
+// all. ExerciseCard's fallback (a category-colored icon, varied per
+// exercise via getExerciseVisualIcon in lib/types.ts) is the deliberate,
+// consistent visual for the whole starter library until real per-exercise
+// photography or diagrams exist.
 export const DEFAULT_EXERCISES: InsertExercise[] = [
   {
     name: "Free Throw Form Drill",
@@ -17,7 +25,7 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     nameEs: "Ejercicio de Forma en Tiros Libres",
     descriptionEs: "Trabaja la técnica constante de tiro y el acompañamiento del brazo",
     instructionsEs: "Colócate en la línea de tiros libres, concentrándote en la forma y el acompañamiento del brazo",
-    imageUrl: "https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
+    imageUrl: null,
   },
   {
     name: "Mikan Drill",
@@ -113,7 +121,7 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     nameEs: "Ejercicio de Conos en Zigzag",
     descriptionEs: "Mejora el manejo de balón y la agilidad sorteando conos",
     instructionsEs: "Bota el balón entre los conos usando ambas manos",
-    imageUrl: "https://images.unsplash.com/photo-1574623452334-1e0ac2b3ccb4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
+    imageUrl: null,
   },
   {
     name: "Two-Ball Dribbling",
@@ -209,7 +217,7 @@ export const DEFAULT_EXERCISES: InsertExercise[] = [
     nameEs: "Ejercicio de Desplazamientos Defensivos",
     descriptionEs: "Desarrolla rapidez lateral y una postura defensiva correcta",
     instructionsEs: "Mantén una postura baja, desplázate lateralmente sin cruzar los pies",
-    imageUrl: "https://images.unsplash.com/photo-1518611012118-696072aa579a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200",
+    imageUrl: null,
   },
   {
     name: "Closeout Drill",
