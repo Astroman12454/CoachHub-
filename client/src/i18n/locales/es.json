@@ -1294,8 +1294,6 @@
     "couldntSave": "No se pudo guardar tu nombre público"
   },
   "welcomeOnboardingDialog": {
-    "colorTitle": "¡Bienvenido a Backboard!",
-    "colorDescription": "Elegí un color para tu equipo — se va a ver en toda la app. Podés cambiarlo cuando quieras desde Ajustes del entrenador.",
     "tourScheduleTitle": "Planificá tu semana",
     "tourScheduleDescription": "Programá los entrenamientos, registrá quién asiste, y mirá de un vistazo el ritmo de tu equipo.",
     "tourExercisesTitle": "Armá tu biblioteca de ejercicios",
@@ -1308,8 +1306,7 @@
     "followDescription": "Seguí a algunos entrenadores para ver sus ejercicios, jugadas y pruebas de evaluación en tus feeds de Comunidad.",
     "nextStep": "Siguiente",
     "back": "Atrás",
-    "addFirstPlayer": "Añadir mi primer jugador",
-    "couldntSaveColor": "No se pudo guardar el color"
+    "addFirstPlayer": "Añadir mi primer jugador"
   },
   "helpChat": {
     "openHelp": "Preguntarle al asistente de IA",

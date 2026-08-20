@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, Check, CalendarRange, Dumbbell, PencilRuler, Target, ChevronLeft } from "lucide-react";
+import { UserPlus, CalendarRange, Dumbbell, PencilRuler, Target, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
-import { JUST_SIGNED_UP_KEY, useAuth } from "@/hooks/use-auth";
-import { TEAM_THEME_PRESETS, DEFAULT_ORANGE } from "@/lib/teamTheme";
-import { TEAM_THEME_COLORS, type TeamThemeColor } from "@shared/schema";
+import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { JUST_SIGNED_UP_KEY } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 interface SuggestedCoach {
@@ -36,26 +34,29 @@ const TOUR_SLIDES = [
 ] as const;
 
 // A short, one-time tutorial shown right after signup (see JUST_SIGNED_UP_KEY,
-// set by use-auth's signupMutation): pick a team color, a quick tour of the
-// app's main sections, then optionally follow a coach or two before the new
-// account's community feeds have anything in them. Never shown for a plain
-// login, and never at all for an account created directly via the API
-// rather than the signup form.
+// set by use-auth's signupMutation): a quick tour of the app's main sections,
+// then optionally follow a coach or two before the new account's community
+// feeds have anything in them. Never shown for a plain login, and never at
+// all for an account created directly via the API rather than the signup
+// form.
 //
-// The color and tour steps don't depend on the community having anyone to
-// suggest, so — unlike the old follow-only version of this dialog — they
-// always open after a real signup; the follow step is simply skipped if
-// there's nobody to recommend yet (a brand-new deployment).
+// The team-color picker used to be the first step here, but it's pure
+// decoration with zero bearing on whether the coach can actually use the
+// app — it now lives only in Settings, so a brand-new coach lands straight
+// on something that teaches them the product instead.
+//
+// The tour step doesn't depend on the community having anyone to suggest,
+// so — unlike the old follow-only version of this dialog — it always opens
+// after a real signup; the follow step is simply skipped if there's nobody
+// to recommend yet (a brand-new deployment).
 export default function WelcomeOnboardingDialog() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const { teams, currentTeamId } = useAuth();
-  const currentTeam = teams.find((team) => team.id === currentTeamId);
   const [shouldCheck, setShouldCheck] = useState(false);
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"color" | "tour" | "coaches">("color");
+  const [step, setStep] = useState<"tour" | "coaches">("tour");
   const [tourIndex, setTourIndex] = useState(0);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function WelcomeOnboardingDialog() {
       sessionStorage.removeItem(JUST_SIGNED_UP_KEY);
       setShouldCheck(true);
       setOpen(true);
-      setStep("color");
+      setStep("tour");
       setTourIndex(0);
     }
   }, []);
@@ -89,23 +90,6 @@ export default function WelcomeOnboardingDialog() {
     setLocation("/players");
   };
 
-  const saveColorMutation = useMutation({
-    mutationFn: async (color: TeamThemeColor | null) => apiRequest("PUT", `/api/teams/${currentTeamId}`, { themeColor: color }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [SESSION_QUERY_KEY] }),
-    onError: (error) => {
-      toast({
-        title: t("welcomeOnboardingDialog.couldntSaveColor"),
-        description: extractErrorMessage(error) ?? t("common.tryAgain"),
-        variant: "destructive",
-      });
-    },
-  });
-
-  const goToTour = () => {
-    setTourIndex(0);
-    setStep("tour");
-  };
-
   const goToNextTourSlide = () => {
     if (tourIndex < TOUR_SLIDES.length - 1) {
       setTourIndex((i) => i + 1);
@@ -118,7 +102,6 @@ export default function WelcomeOnboardingDialog() {
 
   const goToPreviousTourSlide = () => {
     if (tourIndex > 0) setTourIndex((i) => i - 1);
-    else setStep("color");
   };
 
   const followMutation = useMutation({
@@ -139,7 +122,6 @@ export default function WelcomeOnboardingDialog() {
     },
   });
 
-  const themeColor = (currentTeam?.themeColor as TeamThemeColor | null) ?? null;
   const activeSlide = TOUR_SLIDES[tourIndex];
   const SlideIcon = activeSlide.icon;
 
@@ -148,67 +130,21 @@ export default function WelcomeOnboardingDialog() {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-tight">
-            {step === "color" && t("welcomeOnboardingDialog.colorTitle")}
             {step === "tour" && t(activeSlide.titleKey)}
             {step === "coaches" && t("welcomeOnboardingDialog.followTitle")}
           </DialogTitle>
           <DialogDescription>
-            {step === "color" && t("welcomeOnboardingDialog.colorDescription")}
             {step === "tour" && t(activeSlide.descriptionKey)}
             {step === "coaches" && t("welcomeOnboardingDialog.followDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center gap-1.5 justify-center" aria-hidden="true">
-          <span className={cn("h-1.5 rounded-full transition-all", step === "color" ? "w-6 basketball-orange" : "w-1.5 bg-border")} />
           <span className={cn("h-1.5 rounded-full transition-all", step === "tour" ? "w-6 basketball-orange" : "w-1.5 bg-border")} />
           {hasCoachesStep && (
             <span className={cn("h-1.5 rounded-full transition-all", step === "coaches" ? "w-6 basketball-orange" : "w-1.5 bg-border")} />
           )}
         </div>
-
-        {step === "color" && (
-          <>
-            <div className="flex items-center gap-2.5 flex-wrap justify-center py-2" role="group" aria-label={t("coachSettings.teamColor")}>
-              <button
-                type="button"
-                onClick={() => saveColorMutation.mutate(null)}
-                aria-pressed={themeColor === null}
-                aria-label={t("coachSettings.defaultOrange")}
-                title={t("coachSettings.defaultOrange")}
-                style={{ backgroundColor: DEFAULT_ORANGE }}
-                className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors",
-                  themeColor === null ? "border-foreground" : "border-transparent"
-                )}
-              >
-                {themeColor === null && <Check className="w-4 h-4 text-white" strokeWidth={2.5} aria-hidden="true" />}
-              </button>
-              {TEAM_THEME_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => saveColorMutation.mutate(color)}
-                  aria-pressed={themeColor === color}
-                  aria-label={t(`coachSettings.themeColors.${color}`)}
-                  title={t(`coachSettings.themeColors.${color}`)}
-                  style={{ backgroundColor: TEAM_THEME_PRESETS[color].base }}
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors",
-                    themeColor === color ? "border-foreground" : "border-transparent"
-                  )}
-                >
-                  {themeColor === color && <Check className="w-4 h-4 text-white" strokeWidth={2.5} aria-hidden="true" />}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-end pt-2 border-t border-border">
-              <Button type="button" onClick={goToTour} className="basketball-orange basketball-orange-hover text-white">
-                {t("welcomeOnboardingDialog.nextStep")}
-              </Button>
-            </div>
-          </>
-        )}
 
         {step === "tour" && (
           <>
@@ -223,10 +159,14 @@ export default function WelcomeOnboardingDialog() {
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-border">
-              <Button type="button" variant="ghost" onClick={goToPreviousTourSlide}>
-                <ChevronLeft className="w-4 h-4 mr-1" strokeWidth={2} aria-hidden="true" />
-                {t("welcomeOnboardingDialog.back")}
-              </Button>
+              {tourIndex > 0 ? (
+                <Button type="button" variant="ghost" onClick={goToPreviousTourSlide}>
+                  <ChevronLeft className="w-4 h-4 mr-1" strokeWidth={2} aria-hidden="true" />
+                  {t("welcomeOnboardingDialog.back")}
+                </Button>
+              ) : (
+                <span />
+              )}
               <Button type="button" onClick={goToNextTourSlide} className="basketball-orange basketball-orange-hover text-white">
                 {tourIndex < TOUR_SLIDES.length - 1
                   ? t("welcomeOnboardingDialog.nextStep")
