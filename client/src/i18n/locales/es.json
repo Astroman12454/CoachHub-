@@ -1295,6 +1295,13 @@
     "couldntSave": "No se pudo guardar tu nombre público"
   },
   "welcomeOnboardingDialog": {
+    "addPlayerTitle": "Añadí a tu primer jugador",
+    "addPlayerDescription": "Escribí un nombre para empezar tu plantel — podés completar el resto (posición, dorsal...) después desde su perfil.",
+    "addPlayerPlaceholder": "ej., Carlos García",
+    "skipForNow": "Saltear por ahora",
+    "addAndContinue": "Añadir y continuar",
+    "adding": "Añadiendo...",
+    "couldntAddPlayer": "No se pudo añadir ese jugador",
     "tourScheduleTitle": "Planificá tu semana",
     "tourScheduleDescription": "Programá los entrenamientos, registrá quién asiste, y mirá de un vistazo el ritmo de tu equipo.",
     "tourExercisesTitle": "Armá tu biblioteca de ejercicios",
@@ -1307,7 +1314,7 @@
     "followDescription": "Seguí a algunos entrenadores para ver sus ejercicios, jugadas y pruebas de evaluación en tus feeds de Comunidad.",
     "nextStep": "Siguiente",
     "back": "Atrás",
-    "addFirstPlayer": "Añadir mi primer jugador"
+    "goToRoster": "Ir a mi plantel"
   },
   "helpChat": {
     "openHelp": "Preguntarle al asistente de IA",

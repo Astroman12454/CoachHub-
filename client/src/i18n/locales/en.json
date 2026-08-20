@@ -1295,6 +1295,13 @@
     "couldntSave": "Couldn't save your public name"
   },
   "welcomeOnboardingDialog": {
+    "addPlayerTitle": "Add your first player",
+    "addPlayerDescription": "Type a name to start your roster — you can fill in the rest (position, jersey number...) later from their profile.",
+    "addPlayerPlaceholder": "e.g., Carlos García",
+    "skipForNow": "Skip for now",
+    "addAndContinue": "Add & continue",
+    "adding": "Adding...",
+    "couldntAddPlayer": "Couldn't add that player",
     "tourScheduleTitle": "Plan your week",
     "tourScheduleDescription": "Schedule practices, track who shows up, and see your team's rhythm at a glance.",
     "tourExercisesTitle": "Build your drill library",
@@ -1307,7 +1314,7 @@
     "followDescription": "Follow a few coaches to see their exercises, plays, and evaluation tests in your Community feeds.",
     "nextStep": "Next",
     "back": "Back",
-    "addFirstPlayer": "Add my first player"
+    "goToRoster": "Go to my roster"
   },
   "helpChat": {
     "openHelp": "Ask the AI helper",

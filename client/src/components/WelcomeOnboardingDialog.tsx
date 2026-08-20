@@ -5,6 +5,7 @@ import { UserPlus, CalendarRange, Dumbbell, PencilRuler, Target, ChevronLeft } f
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
@@ -34,16 +35,18 @@ const TOUR_SLIDES = [
 ] as const;
 
 // A short, one-time tutorial shown right after signup (see JUST_SIGNED_UP_KEY,
-// set by use-auth's signupMutation): a quick tour of the app's main sections,
-// then optionally follow a coach or two before the new account's community
-// feeds have anything in them. Never shown for a plain login, and never at
-// all for an account created directly via the API rather than the signup
-// form.
+// set by use-auth's signupMutation): add a real first player, a quick tour of
+// the app's main sections, then optionally follow a coach or two before the
+// new account's community feeds have anything in them. Never shown for a
+// plain login, and never at all for an account created directly via the API
+// rather than the signup form.
 //
 // The team-color picker used to be the first step here, but it's pure
 // decoration with zero bearing on whether the coach can actually use the
-// app — it now lives only in Settings, so a brand-new coach lands straight
-// on something that teaches them the product instead.
+// app — it now lives only in Settings. The audit's own suggestion replaced
+// it with something better: the very first thing a new coach does is add a
+// real player, not read a description of a feature — "conseguir la primera
+// acción real" instead of a passive walkthrough.
 //
 // The tour step doesn't depend on the community having anyone to suggest,
 // so — unlike the old follow-only version of this dialog — it always opens
@@ -56,16 +59,18 @@ export default function WelcomeOnboardingDialog() {
   const [, setLocation] = useLocation();
   const [shouldCheck, setShouldCheck] = useState(false);
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"tour" | "coaches">("tour");
+  const [step, setStep] = useState<"addPlayer" | "tour" | "coaches">("addPlayer");
   const [tourIndex, setTourIndex] = useState(0);
+  const [playerName, setPlayerName] = useState("");
 
   useEffect(() => {
     if (sessionStorage.getItem(JUST_SIGNED_UP_KEY)) {
       sessionStorage.removeItem(JUST_SIGNED_UP_KEY);
       setShouldCheck(true);
       setOpen(true);
-      setStep("tour");
+      setStep("addPlayer");
       setTourIndex(0);
+      setPlayerName("");
     }
   }, []);
 
@@ -81,13 +86,41 @@ export default function WelcomeOnboardingDialog() {
     setOpen(next);
   };
 
-  // Closes the tour by sending the coach straight into adding their first
-  // player, instead of just dismissing back to a dashboard they still have
-  // to notice the checklist on — this account is guaranteed to have zero
-  // players at this point (the dialog only ever opens right after signup).
+  // Closes the tour by sending the coach straight into their roster — either
+  // showing the player they just added in the first step, or (if they
+  // skipped it) landing on the same "add a player" empty state as before.
   const finishToPlayers = () => {
     handleOpenChange(false);
     setLocation("/players");
+  };
+
+  const goToTour = () => {
+    setStep("tour");
+    setTourIndex(0);
+  };
+
+  const addPlayerMutation = useMutation({
+    mutationFn: async (name: string) => apiRequest("POST", "/api/players", { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      setPlayerName("");
+      goToTour();
+    },
+    onError: (error) => {
+      toast({
+        title: t("welcomeOnboardingDialog.couldntAddPlayer"),
+        description: extractErrorMessage(error) ?? t("common.tryAgain"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const submitAddPlayer = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = playerName.trim();
+    if (!trimmed || addPlayerMutation.isPending) return;
+    addPlayerMutation.mutate(trimmed);
   };
 
   const goToNextTourSlide = () => {
@@ -130,21 +163,50 @@ export default function WelcomeOnboardingDialog() {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display uppercase tracking-tight">
+            {step === "addPlayer" && t("welcomeOnboardingDialog.addPlayerTitle")}
             {step === "tour" && t(activeSlide.titleKey)}
             {step === "coaches" && t("welcomeOnboardingDialog.followTitle")}
           </DialogTitle>
           <DialogDescription>
+            {step === "addPlayer" && t("welcomeOnboardingDialog.addPlayerDescription")}
             {step === "tour" && t(activeSlide.descriptionKey)}
             {step === "coaches" && t("welcomeOnboardingDialog.followDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center gap-1.5 justify-center" aria-hidden="true">
+          <span className={cn("h-1.5 rounded-full transition-all", step === "addPlayer" ? "w-6 basketball-orange" : "w-1.5 bg-border")} />
           <span className={cn("h-1.5 rounded-full transition-all", step === "tour" ? "w-6 basketball-orange" : "w-1.5 bg-border")} />
           {hasCoachesStep && (
             <span className={cn("h-1.5 rounded-full transition-all", step === "coaches" ? "w-6 basketball-orange" : "w-1.5 bg-border")} />
           )}
         </div>
+
+        {step === "addPlayer" && (
+          <form onSubmit={submitAddPlayer}>
+            <Input
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder={t("welcomeOnboardingDialog.addPlayerPlaceholder")}
+              aria-label={t("welcomeOnboardingDialog.addPlayerTitle")}
+              autoFocus
+              className="my-4"
+              disabled={addPlayerMutation.isPending}
+            />
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <Button type="button" variant="ghost" onClick={goToTour} disabled={addPlayerMutation.isPending}>
+                {t("welcomeOnboardingDialog.skipForNow")}
+              </Button>
+              <Button
+                type="submit"
+                className="basketball-orange basketball-orange-hover text-white"
+                disabled={!playerName.trim() || addPlayerMutation.isPending}
+              >
+                {addPlayerMutation.isPending ? t("welcomeOnboardingDialog.adding") : t("welcomeOnboardingDialog.addAndContinue")}
+              </Button>
+            </div>
+          </form>
+        )}
 
         {step === "tour" && (
           <>
@@ -170,7 +232,7 @@ export default function WelcomeOnboardingDialog() {
               <Button type="button" onClick={goToNextTourSlide} className="basketball-orange basketball-orange-hover text-white">
                 {tourIndex < TOUR_SLIDES.length - 1
                   ? t("welcomeOnboardingDialog.nextStep")
-                  : hasCoachesStep ? t("welcomeOnboardingDialog.nextStep") : t("welcomeOnboardingDialog.addFirstPlayer")}
+                  : hasCoachesStep ? t("welcomeOnboardingDialog.nextStep") : t("welcomeOnboardingDialog.goToRoster")}
               </Button>
             </div>
           </>
@@ -211,7 +273,7 @@ export default function WelcomeOnboardingDialog() {
 
             <div className="flex items-center justify-end pt-2 border-t border-border">
               <Button type="button" onClick={finishToPlayers} className="basketball-orange basketball-orange-hover text-white">
-                {t("welcomeOnboardingDialog.addFirstPlayer")}
+                {t("welcomeOnboardingDialog.goToRoster")}
               </Button>
             </div>
           </>
