@@ -225,6 +225,47 @@ describe("Club coach invites", () => {
       expect(exerciseCreate.status).toBe(403);
     });
 
+    it("a helper-role invite can take attendance and add player notes, but nothing else", async () => {
+      const { agent: ownerAgent } = await signedInClubAgent(app);
+      const { agent: helperAgent, email: helperEmail } = await signedInAgent(app);
+      await ownerAgent.post("/api/coaches/invite").send({ email: helperEmail, role: "helper" });
+      const token = tokenFromMockedInvite();
+      await helperAgent.post(`/api/invites/${token}/accept`);
+
+      const session = await helperAgent.get("/api/session");
+      expect(session.body.account.membershipRole).toBe("helper");
+      const teamId = session.body.teams[0].id;
+      await helperAgent.put("/api/session/team").send({ teamId });
+
+      // The owner sets up a player and a training session — a helper can't
+      // create either of those.
+      const player = await ownerAgent.post("/api/players").send({ name: "Roster Player" });
+      const trainingSession = await ownerAgent.post("/api/training-sessions").send({
+        name: "Practice", date: "2026-01-01", time: "18:00", duration: 60,
+      });
+
+      const markAttendance = await helperAgent.post("/api/attendance").send({
+        sessionId: trainingSession.body.id, playerId: player.body.id, status: "present",
+      });
+      expect(markAttendance.status).toBe(201);
+
+      const addNote = await helperAgent.post(`/api/players/${player.body.id}/notes`).send({ content: "Worked hard today" });
+      expect(addNote.status).toBe(201);
+
+      const createPlayer = await helperAgent.post("/api/players").send({ name: "Blocked Player" });
+      expect(createPlayer.status).toBe(403);
+
+      const createExercise = await helperAgent.post("/api/exercises").send({
+        name: "Blocked Drill", description: "d", category: "shooting", duration: 10, difficulty: "easy",
+      });
+      expect(createExercise.status).toBe(403);
+
+      const createSession = await helperAgent.post("/api/training-sessions").send({
+        name: "Blocked Session", date: "2026-01-02", time: "18:00", duration: 60,
+      });
+      expect(createSession.status).toBe(403);
+    });
+
     it("consumes the invite — it can't be accepted twice", async () => {
       const { agent: ownerAgent } = await signedInClubAgent(app);
       const { agent: coachAgent, email: coachEmail } = await signedInAgent(app);

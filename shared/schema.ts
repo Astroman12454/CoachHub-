@@ -134,12 +134,16 @@ export const analyticsEvents = pgTable("analytics_events", {
 // "coach" (default) keeps today's behavior: full read/write access to every
 // team the club owns, same as the owner except for club-level administration
 // (seats, identity — still requireClubOwner-only, see server/coaches.ts).
-// "assistant" is new: read access only, enforced centrally in requireTeam
-// (server/auth.ts) plus a handful of account-scoped write routes that fall
-// outside requireTeam (server/routes.ts's exercise-content routes). Not a
+// "helper" sits in between: can run a practice (mark attendance, add a quick
+// player note) but can't create/edit/delete players, exercises, sessions, or
+// anything else — an assistant coach on the bench, not a co-head-coach.
+// "assistant" is read access only. Both non-"coach" roles are enforced
+// centrally in requireTeam/requireTeamAllowHelperWrites (server/auth.ts)
+// plus a handful of account-scoped write routes that fall outside requireTeam
+// (server/routes.ts's exercise-content routes, always "coach"-only). Not a
 // full per-resource permission matrix — a deliberate v1 scope, the same way
 // Club v1 shipped identity+overview without roles at all.
-export const ACCOUNT_MEMBERSHIP_ROLES = ["coach", "assistant"] as const;
+export const ACCOUNT_MEMBERSHIP_ROLES = ["coach", "helper", "assistant"] as const;
 export type AccountMembershipRole = typeof ACCOUNT_MEMBERSHIP_ROLES[number];
 
 // A pending invitation to join a Club account as a coach — consumed (row

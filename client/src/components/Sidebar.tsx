@@ -219,6 +219,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               {t("common.readOnly")}
             </Badge>
           )}
+          {account?.membershipRole === "helper" && (
+            <Badge variant="outline" className="mt-1 ml-1 text-[10px] uppercase tracking-wide border-white/30 text-white/70">
+              {t("common.limitedAccess")}
+            </Badge>
+          )}
         </div>
         <LanguageToggle />
         <ThemeToggle />

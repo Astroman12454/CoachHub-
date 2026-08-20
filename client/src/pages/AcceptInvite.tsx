@@ -8,11 +8,12 @@ import BrandMark from "@/components/BrandMark";
 import LanguageToggle from "@/components/LanguageToggle";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
+import type { AccountMembershipRole } from "@shared/schema";
 
 interface InviteInfo {
   email: string;
   ownerEmail: string;
-  role: "coach" | "assistant";
+  role: AccountMembershipRole;
 }
 
 // Public — a coach opens this from the invite email before necessarily
@@ -111,7 +112,11 @@ export default function AcceptInvite() {
               {t("acceptInvite.invitedBy", { email: inviteQuery.data!.ownerEmail })}
             </p>
             <p className="text-xs text-muted-foreground text-center mb-4">
-              {inviteQuery.data!.role === "assistant" ? t("acceptInvite.roleAssistant") : t("acceptInvite.roleCoach")}
+              {inviteQuery.data!.role === "assistant"
+                ? t("acceptInvite.roleAssistant")
+                : inviteQuery.data!.role === "helper"
+                  ? t("acceptInvite.roleHelper")
+                  : t("acceptInvite.roleCoach")}
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>

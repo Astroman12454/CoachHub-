@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
-import { requireTeam, blockReadOnlyMembers } from "./auth";
+import { requireTeam, requireTeamAllowHelperWrites, blockReadOnlyMembers } from "./auth";
 import { registerBillingRoutes } from "./billing";
 import { registerCoachRoutes } from "./coaches";
 import { registerGuardianAuthorizationRoutes } from "./guardian-authorization";
@@ -1871,7 +1871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/players/:id/notes", requireTeam, async (req, res) => {
+  app.post("/api/players/:id/notes", requireTeamAllowHelperWrites, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;
@@ -1887,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/players/:id/notes/:noteId", requireTeam, async (req, res) => {
+  app.delete("/api/players/:id/notes/:noteId", requireTeamAllowHelperWrites, async (req, res) => {
     try {
       const noteId = parseId(req, res, "noteId");
       if (noteId === null) return;
@@ -2190,7 +2190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  app.post("/api/attendance", requireTeam, async (req, res) => {
+  app.post("/api/attendance", requireTeamAllowHelperWrites, async (req, res) => {
     try {
       const attendanceData = insertAttendanceSchema.parse(req.body);
       const teamId = req.session.currentTeamId!;
@@ -2211,7 +2211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/attendance/:id", requireTeam, async (req, res) => {
+  app.put("/api/attendance/:id", requireTeamAllowHelperWrites, async (req, res) => {
     try {
       const id = parseId(req, res);
       if (id === null) return;

@@ -37,6 +37,12 @@ interface CoachesResponse {
   seatLimit: number;
 }
 
+function roleLabel(role: AccountMembershipRole, t: (key: string) => string): string {
+  if (role === "assistant") return t("coachSettings.roleAssistant");
+  if (role === "helper") return t("coachSettings.roleHelper");
+  return t("coachSettings.roleCoach");
+}
+
 export default function CoachSettings() {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -447,6 +453,7 @@ export default function CoachSettings() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="coach">{t("coachSettings.roleCoach")}</SelectItem>
+                  <SelectItem value="helper">{t("coachSettings.roleHelper")}</SelectItem>
                   <SelectItem value="assistant">{t("coachSettings.roleAssistant")}</SelectItem>
                 </SelectContent>
               </Select>
@@ -456,7 +463,11 @@ export default function CoachSettings() {
               </Button>
             </form>
             <p className="text-xs text-muted-foreground mt-2">
-              {inviteRole === "assistant" ? t("coachSettings.roleAssistantDescription") : t("coachSettings.roleCoachDescription")}
+              {inviteRole === "assistant"
+                ? t("coachSettings.roleAssistantDescription")
+                : inviteRole === "helper"
+                  ? t("coachSettings.roleHelperDescription")
+                  : t("coachSettings.roleCoachDescription")}
             </p>
             {atSeatLimit && <p className="text-sm text-muted-foreground mt-2">{t("coachSettings.atSeatLimit")}</p>}
           </CardContent>
@@ -474,7 +485,7 @@ export default function CoachSettings() {
                     <Mail className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     <span className="text-sm truncate">{invite.email}</span>
                     <Badge variant="outline" className="text-[10px] shrink-0">
-                      {invite.role === "assistant" ? t("coachSettings.roleAssistant") : t("coachSettings.roleCoach")}
+                      {roleLabel(invite.role, t)}
                     </Badge>
                   </div>
                   <Button
@@ -512,7 +523,7 @@ export default function CoachSettings() {
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm truncate">{member.email}</span>
                     <Badge variant="outline" className="text-[10px] shrink-0">
-                      {member.role === "assistant" ? t("coachSettings.roleAssistant") : t("coachSettings.roleCoach")}
+                      {roleLabel(member.role, t)}
                     </Badge>
                   </div>
                   <Button
