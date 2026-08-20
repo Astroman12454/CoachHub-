@@ -478,6 +478,15 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(accounts);
   }
 
+  // Idempotent: a second call after the trial's already marked used is a
+  // harmless no-op (the WHERE clause just matches nothing).
+  async markAiSessionPlanTrialUsed(accountId: number): Promise<void> {
+    await db
+      .update(accounts)
+      .set({ aiSessionPlanTrialUsedAt: new Date() })
+      .where(and(eq(accounts.id, accountId), isNull(accounts.aiSessionPlanTrialUsedAt)));
+  }
+
   async getAccountByStripeCustomerId(stripeCustomerId: string): Promise<Account | undefined> {
     const [account] = await db.select().from(accounts).where(eq(accounts.stripeCustomerId, stripeCustomerId));
     return account || undefined;

@@ -7,6 +7,7 @@ import {
   canCreatePlay,
   canUseCustomExercises,
   canGenerateAiSessionPlan,
+  canUseAiCommands,
   canImportBoxScore,
 } from "./entitlements";
 import { FREE_PLAN_PLAYER_LIMIT, FREE_PLAN_TEAM_LIMIT, FREE_PLAN_PLAY_LIMIT } from "./schema";
@@ -69,15 +70,31 @@ describe("plan-only feature gates", () => {
     expect(canUseCustomExercises("club")).toBe(true);
   });
 
-  it("canGenerateAiSessionPlan excludes only free", () => {
-    expect(canGenerateAiSessionPlan("free")).toBe(false);
-    expect(canGenerateAiSessionPlan("paid")).toBe(true);
-    expect(canGenerateAiSessionPlan("club")).toBe(true);
-  });
-
   it("canImportBoxScore excludes only free", () => {
     expect(canImportBoxScore("free")).toBe(false);
     expect(canImportBoxScore("paid")).toBe(true);
     expect(canImportBoxScore("club")).toBe(true);
+  });
+
+  it("canUseAiCommands excludes only free", () => {
+    expect(canUseAiCommands("free")).toBe(false);
+    expect(canUseAiCommands("paid")).toBe(true);
+    expect(canUseAiCommands("club")).toBe(true);
+  });
+});
+
+describe("canGenerateAiSessionPlan", () => {
+  it("always allows a paid or club account, trial state irrelevant", () => {
+    expect(canGenerateAiSessionPlan("paid", false)).toBe(true);
+    expect(canGenerateAiSessionPlan("paid", true)).toBe(true);
+    expect(canGenerateAiSessionPlan("club", true)).toBe(true);
+  });
+
+  it("allows a free account exactly once, before the trial is used", () => {
+    expect(canGenerateAiSessionPlan("free", false)).toBe(true);
+  });
+
+  it("blocks a free account once the trial is used", () => {
+    expect(canGenerateAiSessionPlan("free", true)).toBe(false);
   });
 });

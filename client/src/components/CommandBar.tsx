@@ -9,7 +9,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import { useAuth } from "@/hooks/use-auth";
-import { canGenerateAiSessionPlan } from "@shared/entitlements";
+import { canUseAiCommands } from "@shared/entitlements";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { TrainingSession } from "@shared/schema";
 
@@ -35,7 +35,7 @@ export default function CommandBar({ sessions, onCreateSession, onDuplicateSessi
   const { account } = useAuth();
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const canUseCommands = canGenerateAiSessionPlan(account?.plan ?? "free");
+  const canUseCommands = canUseAiCommands(account?.plan ?? "free");
   // The full two-example placeholder reads fine on desktop but gets cut
   // off mid-word on a phone-width input with no ellipsis (native
   // placeholder text doesn't reliably ellipsize) — a shorter, single

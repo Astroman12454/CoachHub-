@@ -84,6 +84,12 @@ export const accounts = pgTable("accounts", {
   referralCode: text("referral_code").unique(),
   referredByAccountId: integer("referred_by_account_id").references((): AnyPgColumn => accounts.id, { onDelete: "set null" }),
   referralConvertedAt: timestamp("referral_converted_at"),
+  // Set the first (and only) time a free-plan account successfully
+  // generates an AI practice plan — lets them try the paid "Generate with
+  // AI" feature once for free instead of only ever seeing it locked behind
+  // a paywall badge. Null forever on a paid/club account, since they never
+  // need the trial.
+  aiSessionPlanTrialUsedAt: timestamp("ai_session_plan_trial_used_at"),
 });
 
 // The ten product metrics identified as actually deciding whether the

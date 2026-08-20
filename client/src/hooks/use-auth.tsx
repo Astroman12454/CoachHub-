@@ -27,6 +27,9 @@ interface AccountInfo {
   // Gates the /admin/reports nav item and page — set by hand in the
   // database, never through the app itself.
   isAdmin: boolean;
+  // Whether the one free AI-generated practice plan (free-plan accounts
+  // only) has already been used — see canGenerateAiSessionPlan.
+  aiSessionPlanTrialUsed: boolean;
 }
 
 interface SessionResponse {

@@ -19,11 +19,11 @@ import { useSaveMutation } from "@/hooks/use-save-mutation";
 import { useDialogFocusReturn } from "@/hooks/use-dialog-focus-return";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, extractErrorMessage } from "@/lib/queryClient";
+import { apiRequest, extractErrorMessage, SESSION_QUERY_KEY } from "@/lib/queryClient";
 import { startCheckout } from "@/lib/billing";
 import type { Exercise, Play, EvaluationTest, TrainingSession, SessionTemplate } from "@shared/schema";
 import { DIFFICULTY_LEVELS } from "@shared/schema";
-import { canGenerateAiSessionPlan } from "@shared/entitlements";
+import { canGenerateAiSessionPlan, isPaidPlan } from "@shared/entitlements";
 import { CATEGORY_COLORS } from "@/lib/types";
 import { localizedExerciseText } from "@/lib/exerciseI18n";
 
@@ -62,7 +62,12 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
   const currentTeam = teams.find((team) => team.id === currentTeamId);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const canGeneratePlan = canGenerateAiSessionPlan(account?.plan ?? "free");
+  // Unknown trial state (account not loaded yet) defaults to "already
+  // used" — closed until we actually know a trial's available, so the
+  // button never briefly claims a free trial it can't honor.
+  const aiTrialUsed = account?.aiSessionPlanTrialUsed ?? true;
+  const canGeneratePlan = canGenerateAiSessionPlan(account?.plan ?? "free", aiTrialUsed);
+  const isFreePlan = !isPaidPlan(account?.plan ?? "free");
   const handleOpenChange = (open: boolean) => {
     if (!open) restoreFocus();
     onClose();
@@ -267,6 +272,10 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
       setIsAIPanelOpen(false);
       setAiInstructions("");
       setAiPlayerCount("");
+      // A free-plan generation just spent the account's one trial
+      // server-side — refetch the session so the badge/gate reflect that
+      // without waiting for an unrelated query to refresh it.
+      if (isFreePlan) queryClient.invalidateQueries({ queryKey: [SESSION_QUERY_KEY] });
       toast({ title: t("sessionModal.planGenerated"), description: t("sessionModal.planGeneratedDescription") });
     } catch (error) {
       toast({
@@ -310,7 +319,11 @@ export default function SessionModal({ isOpen, onClose, session, duplicateFrom, 
                 <Button type="button" variant="outline" size="sm" onClick={handleGeneratePlanClick}>
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" strokeWidth={2} aria-hidden="true" />
                   {t("sessionModal.generateWithAi")}
-                  {!canGeneratePlan && <Badge variant="secondary" className="ml-2 text-xs">{t("sessionModal.paid")}</Badge>}
+                  {isFreePlan && (
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {aiTrialUsed ? t("sessionModal.paid") : t("sessionModal.freeTrialBadge")}
+                    </Badge>
+                  )}
                 </Button>
               )}
             </div>

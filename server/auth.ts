@@ -63,6 +63,10 @@ async function sessionPayload(accountId: number, currentTeamId?: number) {
       // a Club — a member seeing /admin/reports because the club owner
       // happens to be an admin would be surprising and wrong.
       isAdmin: account.isAdmin === 1,
+      // The free AI-plan trial belongs to the effective (billing) account,
+      // same as plan — a Club member shares the club's one trial, not a
+      // personal one of their own.
+      aiSessionPlanTrialUsed: (effectiveAccount?.aiSessionPlanTrialUsedAt ?? account.aiSessionPlanTrialUsedAt) != null,
     },
     teams: accountTeams,
     currentTeamId: currentTeamId ?? accountTeams[0]?.id,

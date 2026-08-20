@@ -54,6 +54,7 @@ import {
   canCreatePlay,
   canUseCustomExercises,
   canGenerateAiSessionPlan,
+  canUseAiCommands,
   canImportBoxScore,
   canUseAiHelp,
 } from "@shared/entitlements";
@@ -1382,7 +1383,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/training-sessions/generate-plan", requireTeam, sessionPlanRateLimiter, async (req, res) => {
     const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
     const account = await storage.getAccountById(accountId);
-    if (!canGenerateAiSessionPlan(account?.plan ?? "free")) {
+    const trialUsed = account?.aiSessionPlanTrialUsedAt != null;
+    if (!canGenerateAiSessionPlan(account?.plan ?? "free", trialUsed)) {
       return res.status(403).json({ message: "Upgrade to a paid plan to generate a practice plan with AI." });
     }
 
@@ -1412,6 +1414,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const plan = await generateSessionPlan(exercises, recentSessions, instructions, context, playerCount);
       plan.exerciseIds = (await sanitizeExerciseIds(accountId, plan.exerciseIds)) ?? [];
+      if (!isPaidPlan(account?.plan ?? "free") && !trialUsed) {
+        await storage.markAiSessionPlanTrialUsed(accountId);
+      }
       trackEvent(accountId, "ai_session_plan_generated");
       res.json(plan);
     } catch (error) {
@@ -1431,7 +1436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/parse-command", requireTeam, sessionPlanRateLimiter, async (req, res) => {
     const accountId = await storage.resolveEffectiveAccountId(req.session.accountId!);
     const account = await storage.getAccountById(accountId);
-    if (!canGenerateAiSessionPlan(account?.plan ?? "free")) {
+    if (!canUseAiCommands(account?.plan ?? "free")) {
       return res.status(403).json({ message: "Upgrade to a paid plan to use natural-language commands." });
     }
 

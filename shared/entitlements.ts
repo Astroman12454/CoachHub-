@@ -36,7 +36,16 @@ export function canUseCustomExercises(plan: Plan): boolean {
   return isPaidPlan(plan);
 }
 
-export function canGenerateAiSessionPlan(plan: Plan): boolean {
+// Free-plan accounts get exactly one AI-generated practice plan before
+// hitting the paywall — trialUsed tracks whether that one shot has already
+// been spent (see accounts.aiSessionPlanTrialUsedAt).
+export function canGenerateAiSessionPlan(plan: Plan, trialUsed: boolean): boolean {
+  return isPaidPlan(plan) || !trialUsed;
+}
+
+// The natural-language command bar is a separate paid AI feature — it has
+// no free trial of its own, so it stays on the plain paid/free check.
+export function canUseAiCommands(plan: Plan): boolean {
   return isPaidPlan(plan);
 }
 
